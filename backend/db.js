@@ -1,4 +1,3 @@
-const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -14,7 +13,6 @@ function resolveKioskPaths() {
         return {
             dataDir,
             dbFile: path.join(dataDir, 'kiosk.sqlite'),
-            /** 배포 번들에 포함된 DB가 있으면 최초 1회 복사 */
             legacyDb: path.join(rootDir, 'data', 'kiosk.sqlite'),
         };
     }
@@ -54,14 +52,8 @@ function markReady() {
     resolveReady();
 }
 
-const db = new sqlite3.Database(dbFile, (err) => {
-    if (err) {
-        console.error('Error opening database', err.message);
-        rejectReady(err);
-        return;
-    }
-
-    /** 같은 연결에서 CREATE/INSERT 순서 보장 (비동기 경쟁으로 테이블 없음 오류 방지) */
+/** sqlite3 / node-sqlite-shim 공통 부트스트랩 */
+function bootstrapSchema(db) {
     db.serialize(() => {
         db.run(`CREATE TABLE IF NOT EXISTS restaurants (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -187,7 +179,42 @@ const db = new sqlite3.Database(dbFile, (err) => {
             });
         });
     });
-});
+}
+
+let db;
+
+if (process.env.VERCEL) {
+    let DatabaseSync;
+    try {
+        ({ DatabaseSync } = require('node:sqlite'));
+    } catch (e) {
+        console.error('node:sqlite 로드 실패 — Vercel 프로젝트 Node 버전을 22.5 이상으로 설정하세요.', e.message);
+        rejectReady(e);
+        db = {};
+    }
+    if (DatabaseSync) {
+        const { wrapDb } = require('./node-sqlite-shim');
+        try {
+            const native = new DatabaseSync(dbFile);
+            db = wrapDb(native);
+            bootstrapSchema(db);
+        } catch (e) {
+            console.error('Vercel SQLite 초기화 실패:', e);
+            rejectReady(e);
+            db = {};
+        }
+    }
+} else {
+    const sqlite3 = require('sqlite3').verbose();
+    db = new sqlite3.Database(dbFile, (err) => {
+        if (err) {
+            console.error('Error opening database', err.message);
+            rejectReady(err);
+            return;
+        }
+        bootstrapSchema(db);
+    });
+}
 
 db.ready = readyPromise;
 module.exports = db;
