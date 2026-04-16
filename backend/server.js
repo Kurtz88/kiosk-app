@@ -20,6 +20,16 @@ const publicDir = path.join(projectRoot, 'public');
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+/** Vercel 등 listen 없이 앱만 로드될 때, DB 준비 전 요청을 막음 */
+app.use((req, res, next) => {
+    db.ready
+        .then(() => next())
+        .catch((err) => {
+            console.error(err);
+            res.status(500).type('text/plain').send('Database init failed');
+        });
+});
+
 const uploadsDir = path.join(publicDir, 'uploads');
 const categoryIconsDir = path.join(uploadsDir, 'categories');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
@@ -901,11 +911,15 @@ function printListenBanner() {
     console.log('');
 }
 
-db.ready
-    .then(() => {
-        app.listen(port, host, printListenBanner);
-    })
-    .catch((err) => {
-        console.error('DB 초기화 실패 — 서버를 시작할 수 없습니다:', err);
-        process.exit(1);
-    });
+module.exports = app;
+
+if (require.main === module) {
+    db.ready
+        .then(() => {
+            app.listen(port, host, printListenBanner);
+        })
+        .catch((err) => {
+            console.error('DB 초기화 실패 — 서버를 시작할 수 없습니다:', err);
+            process.exit(1);
+        });
+}
