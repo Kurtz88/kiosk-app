@@ -1,20 +1,45 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const CATEGORY_DEFAULTS = require('../lib/categoryDefaults');
 const SUBCATEGORY_DEFAULTS = require('../lib/subcategoryDefaults');
 
 const rootDir = path.join(__dirname, '..');
-const dataDir = path.join(rootDir, 'data');
-const dbFile = path.join(dataDir, 'kiosk.sqlite');
-const legacyDb = path.join(rootDir, 'kiosk.sqlite');
 
-if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-if (!fs.existsSync(dbFile) && fs.existsSync(legacyDb)) {
+/** Vercel 등: 프로젝트 루트는 읽기 전용 — SQLite는 /tmp 만 안정적으로 쓰기 가능 */
+function resolveKioskPaths() {
+    if (process.env.VERCEL) {
+        const dataDir = path.join(os.tmpdir(), 'kiosk-app', 'data');
+        return {
+            dataDir,
+            dbFile: path.join(dataDir, 'kiosk.sqlite'),
+            /** 배포 번들에 포함된 DB가 있으면 최초 1회 복사 */
+            legacyDb: path.join(rootDir, 'data', 'kiosk.sqlite'),
+        };
+    }
+    const dataDir = path.join(rootDir, 'data');
+    return {
+        dataDir,
+        dbFile: path.join(dataDir, 'kiosk.sqlite'),
+        legacyDb: path.join(rootDir, 'kiosk.sqlite'),
+    };
+}
+
+const { dataDir, dbFile, legacyDb } = resolveKioskPaths();
+
+try {
+    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+} catch (e) {
+    console.error('dataDir 생성 실패:', dataDir, e.message);
+    throw e;
+}
+
+if (!fs.existsSync(dbFile) && legacyDb && fs.existsSync(legacyDb)) {
     try {
         fs.copyFileSync(legacyDb, dbFile);
     } catch (e) {
-        console.error('기존 루트 kiosk.sqlite 복사 실패:', e.message);
+        console.error('기존 kiosk.sqlite 복사 실패:', e.message);
     }
 }
 

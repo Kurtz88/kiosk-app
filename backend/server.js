@@ -16,6 +16,17 @@ const port = Number(process.env.PORT) || 3000;
 
 const projectRoot = path.join(__dirname, '..');
 const publicDir = path.join(projectRoot, 'public');
+/** Vercel: 배포 루트 읽기 전용 — 업로드 파일은 /tmp 아래 webroot 로 미러 */
+const filesRoot = process.env.VERCEL ? path.join(os.tmpdir(), 'kiosk-app', 'webroot') : publicDir;
+const uploadsDir = path.join(filesRoot, 'uploads');
+const categoryIconsDir = path.join(uploadsDir, 'categories');
+try {
+    if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+    if (!fs.existsSync(categoryIconsDir)) fs.mkdirSync(categoryIconsDir, { recursive: true });
+} catch (e) {
+    console.error('uploads 디렉터리 생성 실패:', e.message);
+    throw e;
+}
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -30,17 +41,12 @@ app.use((req, res, next) => {
         });
 });
 
-const uploadsDir = path.join(publicDir, 'uploads');
-const categoryIconsDir = path.join(uploadsDir, 'categories');
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-if (!fs.existsSync(categoryIconsDir)) fs.mkdirSync(categoryIconsDir, { recursive: true });
-
 function safeUnlinkCategoryIcon(urlPath) {
     if (urlPath == null || typeof urlPath !== 'string') return;
     const p = urlPath.replace(/^\//, '');
     if (!p.startsWith('uploads/categories/')) return;
-    const full = path.join(publicDir, p);
-    if (!full.startsWith(publicDir)) return;
+    const full = path.join(filesRoot, p);
+    if (!full.startsWith(filesRoot)) return;
     try {
         if (fs.existsSync(full)) fs.unlinkSync(full);
     } catch (_) {}
@@ -52,7 +58,7 @@ function saveCategoryIconBuffer(categoryId, file) {
     const safeExt = IMAGE_EXT.has(ext) ? ext : '.png';
     const name = 'cat_' + categoryId + '_' + Date.now() + safeExt;
     const rel = 'uploads/categories/' + name;
-    fs.writeFileSync(path.join(publicDir, rel), file.buffer);
+    fs.writeFileSync(path.join(filesRoot, rel), file.buffer);
     invalidateUploadListCache();
     return '/' + rel;
 }
@@ -875,6 +881,7 @@ app.use('/api', (req, res) => {
     res.status(404).json({ error: '알 수 없는 API입니다.', path: req.originalUrl });
 });
 
+app.use('/uploads', express.static(uploadsDir));
 app.use(express.static(publicDir));
 
 function firstLanIPv4() {
