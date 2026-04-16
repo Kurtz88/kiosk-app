@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>달빛거리 먹자골목 음식점 안내도</title>
+	<link rel="stylesheet" type="text/css" href="css/layout.css" />
+
+</head>
+
+<body class="dev-mode">
+
+  <!-- ★ 개발 툴바 — 배포 시 이 블록 삭제 ★ -->
+  <section class="dev-bar" id="devBar">
+    <span class="chip">📐 604 × 1074 — Full HD 세로 키오스크</span>
+    <div class="controls">
+      <label>
+        미리보기 크기
+        <input type="range" id="sl" min="20" max="100" value="40" />
+        <span class="sv" id="sv">40%</span>
+      </label>
+      <button class="btn-full" id="btnFull">⛶ 풀스크린 미리보기</button>
+    </div>
+  </section>
+
+
+
+  <!-- 검정 키오스크 외관 — 배포 시 삭제 -->
+  <section class="shell" id="shell">
+
+    <!-- ██████████████████████████████████████
+         ★ 실제 키오스크 화면 � 604 × 1074
+    ██████████████████████████████████████ -->
+    <article id="kiosk">
+
+      <!-- HEADER -->
+      <header class="k-header">
+        <div class="k-logos">
+			 <img src="img/logo.svg">
+        </div>
+        <div class="k-clock">
+          <div class="k-clock-time" id="cl-t"><strong>00</strong>:00</div>
+          <div class="k-clock-date" id="cl-d">2026.04.01 수요일</div>
+        </div>
+      </header>
+
+      <!-- BODY -->
+      <main class="k-body">
+        <section class="k-inner mainbg">
+
+          <!-- k-hero -->
+          <div class="k-hero">
+            <div class="k-hero-tag">
+              <div class="k-hero-tag-dot"></div>
+              종류별 안내
+            </div>
+              <div class="k-food-icon2"><img src="img/inicon04.png"></div>
+            <h2><em>다국적 음식</em> 음식점 안내</h2>
+           <!--    <div class="k-food-pill2">43개소</div> -->
+
+
+<style>
+
+.chips{display:flex;gap:8px;flex-wrap:wrap;  gap: 2vh; margin-top:8vh; justify-content:center; }
+.chip{ padding:0 16px;border-radius:18vh;
+  border:1.5px solid #e0e0e0;background:#fff;
+  color:#888; cursor:pointer; font-size:4.6vh; padding:1vh 5vh;
+  display:inline-flex;align-items:center;gap:2vh;
+  transition:all .12s;
+}
+.chip.on{background:var(--blue); color:#fff;border-color:var(--blue-deep);font-weight:500;}
+.chip .n{opacity:.7;  font-size:3.8vh;}
+
+</style>
+
+				<article class="chips" id="chips">
+					<button class="chip on" onclick="select('전체')">
+					  전체 <span class="n">23</span>
+					</button>
+					<button class="chip " onclick="select('중국')">
+					  중국 <span class="n">6</span>
+					</button>
+					<button class="chip " onclick="select('일본')">
+					  일본 <span class="n">8</span>
+					</button>
+					<button class="chip " onclick="select('베트남')">
+					  베트남 <span class="n">3</span>
+					</button>
+					<button class="chip " onclick="select('퓨전')">
+					  퓨전 <span class="n">3</span>
+					</button>
+					<button class="chip " onclick="select('뷔페')">
+					  뷔페 <span class="n">1</span>
+					</button>
+					<button class="chip " onclick="select('이탈리아')">
+					  이탈리아 <span class="n">1</span>
+					</button>
+					<button class="chip " onclick="select('인도')">
+					  인도 <span class="n">1</span>
+					</button>
+				  </article>
+          </div>
+          <!-- //k-hero -->
+
+
+
+
+<style>
+
+.list-store2 {display: grid; border:1px solid red; gap:3vh; margin-bottom:5vh;
+  grid-template-columns: repeat(2, 1fr); overflow:hidden; position:relative; z-index:2;}
+
+
+.list-store2 .store{
+  display:flex; gap:3vh;
+  background:#fff; border-radius:3vh; flex-direction:column;
+   overflow:hidden;
+  border-bottom:0.3vh solid #f2f2f2;
+  cursor:pointer;
+  transition:background .1s;
+}
+
+.list-store2  .store:last-child{border-bottom:none;}
+.list-store2  .store:active{background:#f8f9fb;}
+
+.list-store2  .thumb{
+  width:100vh; aspect-ratio:3/1; 
+   flex-shrink:0;overflow:hidden;
+  display:flex; justify-content:center;
+}
+
+.list-store2 .thumb img{width:100%;height:100%;object-fit:cover;}
+
+.list-store2 .info{flex:1; display:flex; flex-wrap:wrap;  padding:1.5vh 5vh 3.5vh 5vh;}
+.list-store2 .name{font-size:5vh; display:flex;  align-items:center;
+flex-wrap:wrap; justify-content:space-between; font-weight:500; margin-bottom:2vh;}
+
+.list-store2 .addr{font-size:6vh; color:#aaa;margin-bottom:2px;}
+
+.list-store2 .addr,
+.list-store2 .tel{font-size:4.2vh; font-weight:300; color:#666;}
+
+.list-store2 .cat-badge{ display:flex; justify-content:center;
+font-size:3vh;  font-weight:400; width:16vh; text-align:Center;
+line-height:1.4; border-radius:16.4vh; align-items:center;
+  background:#edf3fb;color:#1a4fa0; margin:0; height:6vh;
+}
+
+
+/* list-store */
+
+.list-store{background:#fff;border-radius:6vh; overflow:hidden; position:relative; z-index:2;}
+
+
+.list-store .store{
+  display:flex; gap:6vh;
+  padding:5vh 7vh; overflow:hidden;
+  border-bottom:0.3vh solid #f2f2f2;
+  cursor:pointer;
+  transition:background .1s;
+}
+
+.list-store  .store:last-child{border-bottom:none;}
+.list-store  .store:active{background:#f8f9fb;}
+
+
+
+.list-store  .thumb{
+  width:40vh; aspect-ratio:4/3; border-radius:2vh;
+   flex-shrink:0;overflow:hidden;
+  display:flex; justify-content:center;
+}
+
+.list-store .thumb img{width:100%;height:100%;object-fit:cover;}
+.list-store .info{flex:1;min-width:0;}
+.list-store .name{font-size:6vh; font-weight:500; margin-bottom:2vh;}
+.list-store .addr,
+.list-store .tel {font-size:4.6vh; margin-top:1vh; color:#666; font-weight:300; }
+
+.list-store.right{display:flex;flex-direction:column;gap:6px;flex-shrink:0;}
+.list-store .cat-badge{ display:flex; justify-content:center;
+font-size:3.6vh;  font-weight:400; width:17vh; text-align:Center;
+line-height:2; border-radius:16vh;
+  background:#edf3fb;color:#1a4fa0;
+}
+
+
+
+
+
+</style>
+
+
+
+<!-- list-store -->
+<section class="list-store2" style="display:none" >
+    <article class="store">
+      <div class="thumb"><img src="img/sample.jpg"></div>
+      <div class="info">
+        <div class="name">홍콩반점  <span class="cat-badge bd01">중국</span></div>
+        <div class="addr">📍 테크노상업로4길 18-12</div>
+        <div class="tel">📞 053-123-4567</div>
+      </div>
+    </article>
+  
+    <article class="store">
+      <div class="thumb"><img src="img/sample2.jpg"></div>
+      <div class="info">
+        <div class="name">하노이무드   <span class="cat-badge bd02">베트남</span></div>
+        <div class="addr">📍 테크노상업로4길 15-12</div>
+        <div class="tel">📞 053-123-4576</div>
+      </div>
+    </article>
+
+    <article class="store">
+      <div class="thumb"><img src="img/sample2.jpg"></div>
+      <div class="info">
+        <div class="name">부에노파스타   <span class="cat-badge bd03">이탈리아</span></div>
+        <div class="addr">📍 테크노상업로4길 3-12</div>
+        <div class="tel">📞 053-253-6435</div>
+      </div>
+    </article>
+
+
+
+
+    </section>
+<!-- //list-store -->
+
+
+<!-- list-store -->
+<section class="list-store" >
+    <article class="store">
+      <div class="thumb"><img src="img/sample.jpg"></div>
+      <div class="info">
+        <div class="name">홍콩반점</div>
+        <div class="addr">🗺️ 테크노상업로4길 18-12</div>
+        <div class="tel">📱053-123-4567</div>
+      </div>
+      <div class="right">
+        <span class="cat-badge bd01">중국</span>
+      </div>
+    </article>
+  
+    <article class="store">
+      <div class="thumb"><img src="img/sample2.jpg"></div>
+      <div class="info">
+        <div class="name">하노이무드</div>
+        <div class="addr">🗺️테크노상업로4길 15-12</div>
+        <div class="tel">📱053-123-4576</div>
+      </div>
+      <div class="right">
+        <span class="cat-badge bd02">베트남</span>
+      </div>
+    </article>
+
+    <article class="store">
+      <div class="thumb"><img src="img/sample3.jpg"></div>
+      <div class="info">
+        <div class="name">부에노파스타</div>
+        <div class="addr">🗺️테크노상업로2길 15-12</div>
+        <div class="tel">📱053-523-4325</div>
+      </div>
+      <div class="right">
+        <span class="cat-badge bd03">이탈리아</span>
+      </div>
+    </article>
+<article class="store">
+      <div class="thumb"><img src="img/sample.jpg"></div>
+      <div class="info">
+        <div class="name">사이공비어&쌀국수</div>
+        <div class="addr">🗺️테크노상업로2길 3-12</div>
+        <div class="tel">📱053-512-4325</div>
+      </div>
+      <div class="right">
+        <span class="cat-badge bd02">베트남</span>
+      </div>
+    </article>
+
+
+
+    </section>
+<!-- //list-store -->
+
+
+
+
+      </main>
+
+      <!-- FOOTER: 탭 3개 각자 고유 색 -->
+      <footer class="k-footer">
+
+        <button class="k-tab k-tab-home" onclick="location.href='index.html';">
+          <span class="k-tab-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-house-icon lucide-house"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>홈
+		  </button>
+
+        <button class="k-tab k-tab-search">
+          <span class="k-tab-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search-icon lucide-search"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg></span>검색하기</button>
+        <button class="k-tab k-tab-map"onclick="location.href='map.html';">
+          <span class="k-tab-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-icon lucide-map"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></svg></span>지도 검색</button>
+        <button class="k-tab k-tab-category" onclick="location.href='index.html';">
+          <span class="k-tab-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-utensils-crossed-icon lucide-utensils-crossed"><path d="m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8"/><path d="M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7"/><path d="m2.1 21.8 6.4-6.3"/><path d="m19 5-7 7"/></svg></span> 종류별 검색</button>
+      </footer>
+
+    </article><!-- /#kiosk -->
+
+  </section><!-- /.shell -->
+
+
+  <script>
+    /* 슬라이더 */
+    const sl    = document.getElementById('sl');
+    const sv    = document.getElementById('sv');
+    const shell = document.getElementById('shell');
+    const applyScale = v => {
+      shell.style.transform = `scale(${v/100})`;
+      sv.textContent = v + '%';
+    };
+    applyScale(sl.value);
+    sl.addEventListener('input', e => applyScale(+e.target.value));
+
+    /* 풀스크린 */
+    const btnFull    = document.getElementById('btnFull');
+    const devBar     = document.getElementById('devBar');
+    const shellLabel = document.getElementById('shellLabel');
+    let isFull = false;
+
+    function enterFull() {
+      document.body.classList.replace('dev-mode','full-mode');
+      shell.style.transform = '';
+      devBar.style.display = shellLabel.style.display = 'none';
+      btnFull.textContent = '✕ 개발 모드로 돌아가기';
+      isFull = true;
+      document.documentElement.requestFullscreen?.().catch(()=>{});
+    }
+    function exitFull() {
+      document.body.classList.replace('full-mode','dev-mode');
+      devBar.style.display = shellLabel.style.display = '';
+      applyScale(sl.value);
+      btnFull.textContent = '⛶ 풀스크린 미리보기';
+      isFull = false;
+      if (document.fullscreenElement) document.exitFullscreen?.().catch(()=>{});
+    }
+    btnFull.addEventListener('click', () => isFull ? exitFull() : enterFull());
+    document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && isFull) exitFull(); });
+    document.addEventListener('keydown', e => { if (e.key==='Escape' && isFull) exitFull(); });
+
+    /* 시계 */
+    const DAYS = ['일','월','화','수','목','금','토'];
+    const pad  = x => String(x).padStart(2,'0');
+    function tick() {
+      const n = new Date();
+      document.getElementById('cl-t').innerHTML =
+        `<strong>${pad(n.getHours())}</strong>:${pad(n.getMinutes())}`;
+      document.getElementById('cl-d').textContent =
+        `${n.getFullYear()}.${pad(n.getMonth()+1)}.${pad(n.getDate())} ${DAYS[n.getDay()]}요일`;
+    }
+    tick(); setInterval(tick, 1000);
+  </script>
+
+</body>
+</html>

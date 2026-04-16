@@ -1,0 +1,2107 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>맛집 정보 키오스크 - 관리자 페이지</title>
+    <link rel="stylesheet" href="css/style.css?v=202604031200">
+    <style>
+        body { background: #f4f6f9; color: #1b1b1b; padding: 40px; }
+        .dashboard { max-width: 1400px; margin: 0 auto; display: flex; gap: 40px; }
+        .list-section { flex: 1; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); max-height: 85vh; overflow-y: auto; }
+        .form-section { width: 550px; background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); flex-shrink: 0; position: sticky; top: 40px; max-height: 85vh; overflow-y: auto;}
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #efefef; }
+        th { background: #f8f9fa; font-weight: 800; color: #6c757d; }
+        tr:hover { background: #f8f9fa; }
+        .action-btn { padding: 8px 12px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; font-family: inherit; }
+        .edit-btn { background: #4dabf7; color: white; margin-right: 5px; }
+        .delete-btn { background: #ff6b6b; color: white; }
+        /* 목록 테이블 수정·삭제 — 한 줄·작은 크기 */
+        #adminTable td:last-child,
+        #categoryAdminTable td:last-child,
+        #subcategoryAdminTable td:last-child {
+            white-space: nowrap;
+            vertical-align: middle;
+            width: 1%;
+        }
+        #adminTable .action-btn,
+        #categoryAdminTable .action-btn,
+        #subcategoryAdminTable .action-btn {
+            padding: 4px 8px;
+            font-size: 1rem;
+            font-weight: 700;
+            border-radius: 5px;
+            margin-right: 4px;
+        }
+        #adminTable .action-btn:last-child,
+        #categoryAdminTable .action-btn:last-child,
+        #subcategoryAdminTable .action-btn:last-child {
+            margin-right: 0;
+        }
+        .search-box { width: 100%; padding: 15px; border: 2px solid #eee; border-radius: 10px; font-size: 1.1rem; margin-bottom: 20px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-weight: 700; margin-bottom: 8px; color: #495057; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 8px; font-family: inherit; font-size: 1rem; box-sizing: border-box; }
+        .submit-btn { width: 100%; padding: 15px; border: none; background: var(--pink, #DE5B9E); color: white; font-size: 1.2rem; font-weight: 800; border-radius: 10px; cursor: pointer; margin-top: 10px; }
+        .submit-btn:hover { background: var(--pink-deep, #B8447E); }
+        .cancel-btn { width: 100%; padding: 15px; border: none; background: #adb5bd; color: white; font-size: 1.2rem; font-weight: 800; border-radius: 10px; cursor: pointer; margin-top: 10px; display: none; }
+        .header-title { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 25px; }
+        
+        .checkbox-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; margin-top: 10px; }
+        .checkbox-label { display: flex; align-items: center; gap: 8px; background: #f8f9fa; border: 1px solid #ced4da; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; user-select: none; }
+        .checkbox-label:hover { background: #e9ecef; }
+        .checkbox-label input:checked + span { font-weight: 800; color: var(--primary); }
+        .checkbox-label input { width: auto; margin:0; cursor: pointer; accent-color: var(--primary); }
+        .excel-import { margin-top: 24px; padding: 20px; background: #f8f9fa; border-radius: 12px; border: 1px solid #e9ecef; }
+        .excel-import h3 { margin: 0 0 10px 0; font-size: 1.1rem; color: #495057; }
+        .excel-import p { margin: 0 0 14px 0; font-size: 0.9rem; color: #6c757d; line-height: 1.5; }
+        .excel-import-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        .excel-import-actions input[type="file"] { flex: 1; min-width: 200px; font-size: 0.95rem; }
+        .excel-import .btn-template {
+            background: #20c997; color: white; padding: 10px 16px; border: none; border-radius: 8px;
+            font-weight: 700; cursor: pointer; font-family: inherit;
+            text-decoration: none; display: inline-block; box-sizing: border-box;
+        }
+        .excel-import .btn-template:hover { background: #12b886; }
+        .excel-import .btn-upload { background: #5b42f3; color: white; padding: 10px 16px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-family: inherit; }
+        .excel-import .btn-upload:hover { background: #4c36d4; }
+        .excel-import .btn-upload:disabled { opacity: 0.5; cursor: not-allowed; }
+        #excelImportStatus { font-size: 0.9rem; margin-top: 12px; color: #495057; }
+        #excelImportStatus.error { color: #c92a2a; }
+        #excelImportStatus.success { color: #2b8a3e; }
+        .img-preview-wrap {
+            margin-top: 12px;
+            padding: 12px;
+            background: #f1f3f5;
+            border-radius: 10px;
+            border: 1px dashed #ced4da;
+        }
+        .img-preview-wrap[hidden] { display: none !important; }
+        .img-preview-wrap .img-preview-label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #868e96;
+            margin-bottom: 8px;
+        }
+        .img-preview-wrap img {
+            display: block;
+            max-width: 100%;
+            max-height: 200px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            border-radius: 8px;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .category-admin-box { margin-bottom: 24px; padding: 22px; background: #fffbeb; border-radius: 14px; border: 1px solid #ffe066; }
+        .category-admin-box h3 { margin: 0 0 8px 0; font-size: 1.25rem; color: #5c4d00; }
+        .category-admin-box .hint { margin: 0 0 16px 0; font-size: 0.9rem; color: #6c757d; line-height: 1.5; }
+        #categoryTableWrap { overflow-x: auto; margin-bottom: 20px; }
+        #categoryAdminTable { margin-top: 0; }
+        #categoryAdminTable code { background: #f1f3f5; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; }
+        .cat-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        @media (max-width: 900px) { .cat-form-grid { grid-template-columns: 1fr; } }
+        .admin-tab-bar { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 2px solid #e9ecef; flex-wrap: wrap; }
+        .admin-tab {
+            padding: 14px 22px; border: none; background: transparent; font-weight: 800; font-size: 1.05rem;
+            cursor: pointer; color: #868e96; border-bottom: 3px solid transparent; margin-bottom: -2px;
+            font-family: inherit; border-radius: 10px 10px 0 0;
+        }
+        .admin-tab:hover { color: #495057; background: #f8f9fa; }
+        .admin-tab.active { color: #c92a2a; border-bottom-color: #ff5e62; background: #fff5f5; }
+        .admin-panel[hidden] { display: none !important; }
+        .dashboard.categories-only .list-section { flex: 1; max-width: 100%; }
+        /* 지도 탭 — 드래그로 건물에 배치 */
+        .admin-map-dd-layout {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+        .map-drag-palette-col {
+            flex: 0 0 220px;
+            max-width: 100%;
+            min-width: 180px;
+        }
+        .map-drag-palette-col label { font-weight: 800; font-size: 0.9rem; display: block; margin-bottom: 8px; color: #087f5b; }
+        #mapDragSearch {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #96f2d7;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+        #mapDragPaletteInner {
+            max-height: min(48vh, 420px);
+            overflow-y: auto;
+            border: 1px solid #c3fae8;
+            border-radius: 10px;
+            background: #fff;
+            padding: 8px;
+        }
+        .map-drag-chip {
+            display: block;
+            padding: 8px 10px;
+            margin-bottom: 6px;
+            border-radius: 8px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            cursor: grab;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: #212529;
+            user-select: none;
+            touch-action: none;
+        }
+        .map-drag-chip:last-child { margin-bottom: 0; }
+        .map-drag-chip:hover { background: #e7f5ff; border-color: #74c0fc; }
+        .map-drag-chip:active { cursor: grabbing; }
+        .map-drag-chip--assigned {
+            background: #e6fcf5;
+            border-color: #8ce99a;
+            border-left: 4px solid #20c997;
+        }
+        .map-drag-chip--assigned:hover {
+            background: #d3f9d8;
+            border-color: #69db7c;
+        }
+        .map-drag-chip-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .map-drag-chip-name {
+            flex: 1;
+            min-width: 0;
+            line-height: 1.3;
+        }
+        .map-drag-chip-badge {
+            flex-shrink: 0;
+            font-size: 0.7rem;
+            font-weight: 800;
+            color: #087f5b;
+            background: #b2f2bb;
+            padding: 3px 8px;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+        .map-drag-palette-empty { font-size: 0.85rem; color: #868e96; padding: 8px; text-align: center; }
+        .map-drag-stage-col {
+            flex: 1 1 320px;
+            min-width: 280px;
+        }
+        .admin-map-dd-hint {
+            font-size: 0.85rem;
+            color: #495057;
+            margin: 0 0 10px 0;
+            line-height: 1.45;
+        }
+        .admin-map-stage-outer {
+            border: 2px dashed #63e6be;
+            border-radius: 12px;
+            padding: 8px;
+            background: #f8fffe;
+            overflow: hidden;
+        }
+        #adminKioskMapStage.map-stage .bldg.dd-drag-over {
+            outline: 3px solid #20c997;
+            outline-offset: 2px;
+            background: #d3f9d8 !important;
+            box-shadow: 0 0 0 4px rgba(32, 201, 151, 0.35);
+        }
+        .hero-gallery-list {
+            list-style: none;
+            margin: 12px 0 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .hero-gallery-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            cursor: grab;
+        }
+        .hero-gallery-item:active { cursor: grabbing; }
+        .hero-gallery-item.drag-over { outline: 2px dashed #4dabf7; background: #e7f5ff; }
+        .hero-gallery-item-thumb {
+            width: 72px;
+            height: 72px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #e9ecef;
+            flex-shrink: 0;
+        }
+        .hero-gallery-item-meta {
+            flex: 1;
+            min-width: 0;
+            font-size: 0.88rem;
+        }
+        .hero-gallery-item-badge {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 800;
+            color: #fff;
+            background: var(--pink, #DE5B9E);
+            padding: 3px 8px;
+            border-radius: 6px;
+            margin-bottom: 4px;
+        }
+        .hero-gallery-item-hint { color: #868e96; font-size: 0.8rem; }
+        .hero-gallery-item-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .hero-gallery-item-actions button {
+            padding: 6px 10px;
+            font-size: 0.8rem;
+            border-radius: 6px;
+            border: 1px solid #ced4da;
+            background: #fff;
+            cursor: pointer;
+            font-weight: 700;
+        }
+        .hero-gallery-item-actions button:hover { background: #f1f3f5; }
+        .hero-gallery-add-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-top: 8px;
+        }
+        .hero-gallery-drop-zone {
+            margin-top: 8px;
+            padding: 12px;
+            border-radius: 12px;
+            border: 2px dashed #ced4da;
+            background: #fafbfc;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .hero-gallery-drop-zone.is-file-dragover {
+            border-color: #4dabf7;
+            background: #e7f5ff;
+            box-shadow: inset 0 0 0 1px rgba(77, 171, 247, 0.35);
+        }
+        .hero-gallery-drop-hint {
+            font-size: 0.82rem;
+            color: #868e96;
+            margin: 0 0 10px 0;
+            line-height: 1.45;
+        }
+        .admin-bldg-count {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 4px;
+            border-radius: 9px;
+            background: #20c997;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 900;
+            line-height: 18px;
+            text-align: center;
+            z-index: 5;
+            pointer-events: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard" id="adminDashboard">
+        <!-- List Section -->
+        <div class="list-section">
+            <div class="header-title">
+                <h2 id="adminMainTitle" style="margin:0; font-size: 2rem;">등록된 식당 목록</h2>
+                <button class="action-btn" style="background:#5b42f3; color:white; padding:10px 20px; font-size:1.1rem;" onclick="window.location.href='/'">키오스크 뷰어 열기</button>
+            </div>
+
+            <div class="admin-tab-bar" role="tablist">
+                <button type="button" class="admin-tab active" role="tab" aria-selected="true" data-admin-tab="restaurants" id="tabBtnRestaurants">음식점 목록</button>
+                <button type="button" class="admin-tab" role="tab" aria-selected="false" data-admin-tab="categories" id="tabBtnCategories">카테고리·2차 분류</button>
+                <button type="button" class="admin-tab" role="tab" aria-selected="false" data-admin-tab="map" id="tabBtnMap">지도 구역</button>
+            </div>
+
+            <div id="adminPanelRestaurants" class="admin-panel" role="tabpanel">
+            <input type="text" id="adminSearch" class="search-box" placeholder="상호명 또는 카테고리로 검색..." onkeyup="filterAdminList()">
+
+            <div class="excel-import">
+                <h3>엑셀 일괄 등록</h3>
+                <p>첫 행은 열 이름, 둘째 행부터 데이터입니다. <strong>상호명·카테고리·주소</strong>는 필수입니다. <strong>2차분류</strong>는 선택이며, 관리자에서 등록한 2차 저장값과 같아야 합니다. <strong>키오스크숨김</strong>은 0(표시)·1(숨김)·예/아니오 등으로 넣을 수 있습니다. 이미지는 URL 열에 웹 경로(예: <code>/uploads/...</code>)를 넣거나 비워 두면 됩니다.</p>
+                <div class="excel-import-actions">
+                    <a class="btn-template" href="/templates/restaurant-import-template.xlsx" download="restaurant-import-template.xlsx">양식 다운로드 (.xlsx)</a>
+                    <input type="file" id="excelFile" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel">
+                    <button type="button" class="btn-upload" id="excelUploadBtn" onclick="uploadExcelFile()">엑셀 업로드</button>
+                </div>
+                <div id="excelImportStatus" role="status"></div>
+            </div>
+            
+            <table id="adminTable">
+                <thead>
+                    <tr>
+                        <th>번호</th>
+                        <th>상호명</th>
+                        <th>카테고리</th>
+                        <th>2차</th>
+                        <th>키오스크</th>
+                        <th>관리</th>
+                    </tr>
+                </thead>
+                <tbody id="adminListBody"></tbody>
+            </table>
+            </div>
+
+            <div id="adminPanelCategories" class="admin-panel" role="tabpanel" hidden>
+            <div class="category-admin-box">
+                <h3>카테고리 관리</h3>
+                <p class="hint">키오스크 상단 탭과 식당 등록 시 선택 목록에 사용됩니다. <strong>저장값</strong>은 DB·엑셀에 들어가는 고유 문자열이며, 탭 필터는 이 값과 식당의 카테고리가 일치할 때 동작합니다. 저장값을 바꾸면 해당 문자열을 쓰는 식당 행이 함께 갱신됩니다.</p>
+                <div id="categoryTableWrap">
+                    <table id="categoryAdminTable">
+                        <thead>
+                            <tr>
+                                <th>순서</th>
+                                <th>이미지</th>
+                                <th>저장값</th>
+                                <th>한글 표시</th>
+                                <th>관리</th>
+                            </tr>
+                        </thead>
+                        <tbody id="categoryListBody"></tbody>
+                    </table>
+                </div>
+                <h4 id="catFormTitle" style="margin:0 0 12px 0; font-size:1.05rem; color:#495057;">새 카테고리 추가</h4>
+                <form id="categoryAdminForm" onsubmit="submitCategoryForm(event)">
+                    <input type="hidden" id="catEditId" value="">
+                    <div class="cat-form-grid">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>저장값 (필수, 고유)</label>
+                            <input type="text" id="catValue" required placeholder="예: 한식">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>표시 순서 (숫자, 작을수록 앞)</label>
+                            <input type="number" id="catSortOrder" placeholder="비우면 자동">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>한글 표시 (필수)</label>
+                            <input type="text" id="catLabelKo" required placeholder="탭·목록에 보일 한글">
+                        </div>
+                        <input type="hidden" id="catLabelEn" value="">
+                        <input type="hidden" id="catIconImageUrl" value="">
+                        <div class="form-group" style="margin-bottom:0; grid-column: 1 / -1;">
+                            <label>키오스크 카드 이미지 (선택)</label>
+                            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:6px;">
+                                <input type="file" id="catIconFile" accept="image/jpeg,image/png,image/gif,image/webp,image/bmp" style="max-width:100%;">
+                                <button type="button" class="cancel-btn" id="catIconRemoveBtn" style="padding:8px 12px;">이미지 제거</button>
+                            </div>
+                            <p class="hint" style="margin:8px 0 0 0;">등록하면 종류 카드에 표시됩니다. 비우면 기본 inicon(순번) 이미지가 쓰입니다. JPG·PNG 등 권장.</p>
+                            <div id="catIconPreviewWrap" style="margin-top:10px;" hidden>
+                                <img id="catIconPreviewImg" alt="" style="max-width:120px;max-height:120px;object-fit:contain;border:1px solid #dee2e6;border-radius:8px;background:#fff;">
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="submit-btn" id="catSubmitBtn" style="margin-top:16px;">카테고리 추가</button>
+                    <button type="button" class="cancel-btn" id="catCancelBtn" onclick="resetCategoryForm()" style="display:none;">취소</button>
+                </form>
+            </div>
+
+            <div class="category-admin-box" style="background:#e7f5ff;border-color:#74c0fc;">
+                <h3>2차 분류 관리</h3>
+                <p class="hint">선택한 <strong>1차 카테고리</strong> 아래에 키오스크 2차 탭으로 쓸 항목을 등록합니다. <strong>저장값</strong>은 식당·엑셀의 2차분류 열과 동일해야 합니다. 삭제 시 해당 값을 쓰는 식당이 있으면 한 번 더 물은 뒤, 식당의 2차분류만 비우고 삭제할 수 있습니다.</p>
+                <div class="form-group" style="margin-bottom:16px;">
+                    <label>상위 카테고리</label>
+                    <select id="subCatParentPick" onchange="renderSubcategoryAdminTable()"></select>
+                </div>
+                <div id="subcategoryTableWrap" style="overflow-x:auto;margin-bottom:16px;">
+                    <table id="subcategoryAdminTable">
+                        <thead>
+                            <tr>
+                                <th>순서</th>
+                                <th>저장값</th>
+                                <th>한글</th>
+                                <th>관리</th>
+                            </tr>
+                        </thead>
+                        <tbody id="subcategoryListBody"></tbody>
+                    </table>
+                </div>
+                <h4 id="subCatFormTitle" style="margin:0 0 12px 0; font-size:1.05rem; color:#495057;">새 2차 분류 추가</h4>
+                <form id="subcategoryAdminForm" onsubmit="submitSubcategoryForm(event)">
+                    <input type="hidden" id="subCatEditId" value="">
+                    <div class="cat-form-grid">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>저장값 (필수, 영문·숫자·_ 권장)</label>
+                            <input type="text" id="subCatValue" required placeholder="예: coffee">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>표시 순서</label>
+                            <input type="number" id="subCatSortOrder" placeholder="비우면 자동">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>한글 표시 (필수)</label>
+                            <input type="text" id="subCatLabelKo" required placeholder="예: 커피전문점">
+                        </div>
+                        <input type="hidden" id="subCatLabelEn" value="">
+                    </div>
+                    <button type="submit" class="submit-btn" id="subCatSubmitBtn" style="margin-top:16px;background:#339af0;">2차 분류 추가</button>
+                    <button type="button" class="cancel-btn" id="subCatCancelBtn" onclick="resetSubcategoryForm()" style="display:none;">취소</button>
+                </form>
+            </div>
+            </div>
+
+            <div id="adminPanelMap" class="admin-panel" role="tabpanel" hidden>
+                <div class="category-admin-box" style="background:#e6fcf5;border-color:#63e6be;">
+                    <h3>키오스크 지도 — 구역별 식당</h3>
+                    <p class="hint">왼쪽에서 식당 이름을 <strong>끌어</strong> 오른쪽 지도의 <strong>건물 블록</strong>에 놓으면 해당 구역에 배치됩니다. (한 식당은 한 건물에만 — 옮기면 이전 건물에서는 빠집니다. 층·호수는 아래 표에서 입력.) 또는 구역을 고른 뒤 표에서 체크·저장할 수 있습니다.</p>
+                    <div class="admin-map-dd-layout">
+                        <div class="map-drag-palette-col">
+                            <label for="mapDragSearch">식당 (드래그)</label>
+                            <p style="margin:0 0 8px;font-size:0.78rem;color:#495057;line-height:1.4;">회색: 미배치 · <strong style="color:#087f5b;">녹색+뱃지</strong>: 지도에 등록됨</p>
+                            <input type="search" id="mapDragSearch" placeholder="이름 검색…" autocomplete="off">
+                            <div id="mapDragPaletteInner">
+                                <div class="map-drag-palette-empty">식당 목록을 불러오는 중…</div>
+                            </div>
+                        </div>
+                        <div class="map-drag-stage-col">
+                            <p class="admin-map-dd-hint">🖱 식당 칩을 건물 번호 블록 위로 끌어다 놓으세요. 건물 우측 상단 숫자는 배치된 식당 수입니다.</p>
+                            <div class="admin-map-stage-outer">
+                                <section class="map-stage" id="adminKioskMapStage" aria-label="키오스크 지도 미리보기"></section>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <label>구역 번호 (표 편집)</label>
+                        <select id="mapSlotSelect" style="max-width:280px;"></select>
+                    </div>
+                    <div style="overflow-x:auto; max-height:52vh; border:1px solid #c3fae8; border-radius:10px; background:#fff;">
+                        <table class="map-slot-table" style="width:100%; border-collapse:collapse; font-size:0.88rem;">
+                            <thead>
+                                <tr style="background:#d3f9d8;">
+                                    <th style="text-align:left; padding:8px 10px; width:44px;">포함</th>
+                                    <th style="text-align:left; padding:8px 10px; min-width:120px;">식당명</th>
+                                    <th style="text-align:left; padding:8px 10px; width:100px;">층</th>
+                                    <th style="text-align:left; padding:8px 10px; min-width:140px;">위치</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mapSlotRestaurantChecks"></tbody>
+                        </table>
+                    </div>
+                    <button type="button" class="submit-btn" id="mapSlotSaveBtn" style="margin-top:16px;background:#20c997;">선택한 구역에 저장</button>
+                    <p id="mapSlotStatus" role="status" style="margin-top:12px;font-size:0.9rem;"></p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Form Section -->
+        <div class="form-section" id="restaurantFormSection">
+            <h2 id="formTitle" style="margin-top:0; border-bottom: 2px solid #eee; padding-bottom: 15px;">새 식당 등록</h2>
+            <form id="adminForm" onsubmit="submitForm(event)">
+                <input type="hidden" id="editId" name="editId">
+                
+                <div class="form-group admin-cat-sub-row">
+                    <div>
+                        <label>카테고리 (1차)</label>
+                        <select id="category" name="category" required>
+                            <option value="">목록 불러오는 중…</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label>2차 분류 (선택)</label>
+                        <select id="subcategory" name="subcategory">
+                            <option value="">없음 (1차만)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>상호명 (한국어)</label>
+                    <input type="text" id="name" name="name" required placeholder="상호명을 입력하세요">
+                </div>
+                
+                <input type="hidden" id="name_en" name="name_en" value="">
+
+                <div class="form-group">
+                    <label>상세 위치설명 / 주소</label>
+                    <input type="text" id="address" name="address" required placeholder="예: 지하 1층 푸드코트 안쪽">
+                </div>
+                
+                <div style="display:flex; gap:15px;" class="form-group">
+                    <div style="flex:1;">
+                        <label>전화번호 (선택)</label>
+                        <input type="text" id="phone" name="phone" placeholder="예: 02-123-4567">
+                    </div>
+                    <div style="flex:1;">
+                        <label>웹사이트/SNS URL (선택)</label>
+                        <input type="text" id="homepage" name="homepage" placeholder="예: instagram.com/맛쥡">
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:15px;" class="form-group">
+                    <div style="flex:1;">
+                        <label>오픈 시간 (선택)</label>
+                        <input type="time" id="open_time" name="open_time">
+                    </div>
+                    <div style="flex:1;">
+                        <label>마감 시간 (선택)</label>
+                        <input type="time" id="close_time" name="close_time">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>휴무일 (선택)</label>
+                    <input type="text" id="closed_days" name="closed_days" placeholder="예: 매주 월요일, 공휴일">
+                    <p class="hint" style="margin-top:8px;margin-bottom:0;">키오스크 목록·상세 화면에 표시됩니다.</p>
+                </div>
+                
+                <div class="form-group">
+                    <label>도보 소요 시간 (분)</label>
+                    <input type="number" id="walk_time" name="walk_time" placeholder="예: 5" min="1">
+                </div>
+
+                <div class="form-group">
+                    <label>시설 및 서비스 (다중 선택 가능)</label>
+                    <div class="checkbox-grid" id="facilitiesGrid">
+                        <label class="checkbox-label"><input type="checkbox" value="룸"><span> 룸</span></label>
+                        <label class="checkbox-label"><input type="checkbox" value="단체석"><span> 단체석</span></label>
+                        <label class="checkbox-label"><input type="checkbox" value="카운터석"><span> 카운터석</span></label>
+                        <label class="checkbox-label"><input type="checkbox" value="입식"><span> 입식</span></label>
+                        <label class="checkbox-label"><input type="checkbox" value="좌식"><span> 좌식</span></label>
+                        <label class="checkbox-label"><input type="checkbox" value="바테이블"><span> 바테이블</span></label>
+                        <label class="checkbox-label"><input type="checkbox" value="테라스"><span> 테라스</span></label>
+                        <label class="checkbox-label"><input type="checkbox" value="연인석"><span> 연인석</span></label>
+                        <label class="checkbox-label"><input type="checkbox" value="루프탑"><span> 루프탑</span></label>
+                        <label class="checkbox-label"><input type="checkbox" value="1인석"><span> 1인석</span></label>
+                        <label class="checkbox-label"><input type="checkbox" value="주차"><span> 주차</span></label>
+                        <label class="checkbox-label"><input type="checkbox" value="발렛파킹"><span> 발렛파킹</span></label>
+                        <label class="checkbox-label"><input type="checkbox" value="콜키지"><span> 콜키지</span></label>
+                        <label class="checkbox-label"><input type="checkbox" value="유료콜키지"><span> 유료콜키지</span></label>
+                        <label class="checkbox-label"><input type="checkbox" value="무료놀이방"><span> 무료놀이방</span></label>
+                        <label class="checkbox-label"><input type="checkbox" value="유아의자"><span> 유아의자</span></label>
+                        <label class="checkbox-label"><input type="checkbox" value="휠체어출입가능"><span> 휠체어출입가능</span></label>
+                        <label class="checkbox-label"><input type="checkbox" value="대기공간"><span> 대기공간</span></label>
+                        <label class="checkbox-label"><input type="checkbox" value="남녀 화장실 구분"><span> 남/녀 화장실 구분</span></label>
+                        <label class="checkbox-label"><input type="checkbox" value="예약"><span> 예약</span></label>
+                    </div>
+                    <input type="hidden" id="tags" name="tags">
+                </div>
+
+                <div class="form-group">
+                    <label for="main_menu">주요메뉴 (선택)</label>
+                    <input type="text" id="main_menu" name="main_menu" placeholder="예: 짜장면, 탕수육, 볶음밥 (쉼표로 구분)">
+                    <p class="hint" style="margin-top:8px;margin-bottom:0;">목록·상세 화면에 「주요메뉴」로 표시됩니다.</p>
+                </div>
+                                
+                <div class="form-group">
+                    <label>대표 이미지 (최대 4장 · 드래그로 순서 변경 · 맨 위가 대표)</label>
+                    <p class="hint" style="margin-top:0;">첫 번째 이미지가 목록·상세 화면의 대표 썸네일로 사용됩니다. 탐색기에서 여러 장을 선택해 이 영역으로 끌어 넣을 수 있습니다.</p>
+                    <input type="file" id="heroGalleryFileInput" accept="image/*" multiple style="display:none" aria-hidden="true">
+                    <div id="heroGalleryDropZone" class="hero-gallery-drop-zone">
+                        <p class="hero-gallery-drop-hint">이미지 파일을 여기로 드래그하면 한 번에 추가됩니다. (최대 4장까지, 남은 슬롯만큼만 반영)</p>
+                        <div class="hero-gallery-add-row">
+                            <button type="button" class="action-btn edit-btn" id="heroGalleryAddBtn">이미지 추가</button>
+                            <span style="font-size:0.85rem;color:#868e96;">남은 슬롯: <strong id="heroGallerySlotsLeft">4</strong></span>
+                        </div>
+                        <ul id="heroGalleryList" class="hero-gallery-list" aria-label="대표 이미지 목록"></ul>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>메뉴판 사진 (선택, 메뉴 팝업용)</label>
+                    <input type="file" id="menu_image" name="menu_image" accept="image/*">
+                    <div class="img-preview-wrap" id="menu_imagePreviewWrap" hidden>
+                        <span class="img-preview-label">미리보기</span>
+                        <img id="menu_imagePreview" alt="메뉴판 미리보기">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>가시는 길 약도 이미지 (선택, 지도 팝업용)</label>
+                    <input type="file" id="map_image" name="map_image" accept="image/*">
+                    <div class="img-preview-wrap" id="map_imagePreviewWrap" hidden>
+                        <span class="img-preview-label">미리보기</span>
+                        <img id="map_imagePreview" alt="약도 미리보기">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>식당 소개 (한국어)</label>
+                    <textarea id="description" name="description" rows="3" placeholder="매장 소개를 적어주세요"></textarea>
+                </div>
+                
+                <textarea id="description_en" name="description_en" hidden aria-hidden="true"></textarea>
+                
+                <div class="form-group" style="margin-bottom:18px;">
+                    <label class="checkbox-label" style="display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:#fff9db;border:1px solid #ffe066;border-radius:12px;cursor:pointer;max-width:100%;">
+                        <input type="checkbox" id="kiosk_hidden" name="kiosk_hidden" value="1" style="width:auto;margin-top:4px;flex-shrink:0;">
+                        <span style="line-height:1.5;"><strong>키오스크에 표시하지 않음</strong><br><span style="font-weight:500;color:#6c757d;font-size:0.9rem;">체크 시 목록·검색·카테고리 탭에서 빠집니다. 이 관리자 화면과 DB 데이터는 그대로 유지됩니다.</span></span>
+                    </label>
+                </div>
+                
+                <button type="submit" class="submit-btn" id="submitBtn">등록 완료하기</button>
+                <button type="button" class="cancel-btn" id="cancelBtn" onclick="resetForm()">수정 취소 및 새로 등록하기</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let adminData = [];
+        let adminCategoryData = [];
+        let adminSubcategoryData = [];
+        let mapSlotAssignments = {};
+        const previewBlobUrls = { map_image: null, menu_image: null };
+        let editingAssetUrls = { image_url: null, map_url: null, menu_url: null };
+        /** { uid: string, url?: string, file?: File }[] 최대 4 */
+        let heroGalleryItems = [];
+        const HERO_GALLERY_MAX = 4;
+
+        function isFileDragTransfer(dt) {
+            if (!dt || !dt.types) return false;
+            return Array.from(dt.types).includes('Files');
+        }
+
+        /** HTML(예: <!DOCTYPE)이 오면 JSON.parse 대신 안내 메시지로 처리 */
+        function fetchJson(url, init) {
+            return fetch(url, init).then(async (res) => {
+                const text = await res.text();
+                let data;
+                try {
+                    data = text.length ? JSON.parse(text) : {};
+                } catch (parseErr) {
+                    const looksHtml = /^\s*<(!DOCTYPE|html)/i.test(text || '');
+                    throw new Error(
+                        looksHtml
+                            ? 'API 대신 HTML 페이지가 왔습니다. admin.html을 탐색기에서만 연 경우가 많습니다. 프로젝트 루트에서 npm start 를 실행한 뒤, 주소창에 http://localhost:3000/admin.html 을 입력해 접속하세요.'
+                            : 'JSON 파싱 실패: ' + (parseErr.message || '')
+                    );
+                }
+                return { ok: res.ok, status: res.status, data };
+            });
+        }
+
+        function setAdminTab(which) {
+            const isRest = which === 'restaurants';
+            const isCat = which === 'categories';
+            const isMap = which === 'map';
+            const pRest = document.getElementById('adminPanelRestaurants');
+            const pCat = document.getElementById('adminPanelCategories');
+            const pMap = document.getElementById('adminPanelMap');
+            const bRest = document.getElementById('tabBtnRestaurants');
+            const bCat = document.getElementById('tabBtnCategories');
+            const bMap = document.getElementById('tabBtnMap');
+            if (pRest) pRest.hidden = !isRest;
+            if (pCat) pCat.hidden = !isCat;
+            if (pMap) pMap.hidden = !isMap;
+            if (bRest) {
+                bRest.classList.toggle('active', isRest);
+                bRest.setAttribute('aria-selected', isRest ? 'true' : 'false');
+            }
+            if (bCat) {
+                bCat.classList.toggle('active', isCat);
+                bCat.setAttribute('aria-selected', isCat ? 'true' : 'false');
+            }
+            if (bMap) {
+                bMap.classList.toggle('active', isMap);
+                bMap.setAttribute('aria-selected', isMap ? 'true' : 'false');
+            }
+            const title = document.getElementById('adminMainTitle');
+            if (title) {
+                if (isRest) title.textContent = '등록된 식당 목록';
+                else if (isCat) title.textContent = '카테고리·2차 분류';
+                else title.textContent = '지도 구역 설정';
+            }
+            const formSec = document.getElementById('restaurantFormSection');
+            if (formSec) formSec.style.display = isRest ? '' : 'none';
+            const dash = document.getElementById('adminDashboard');
+            if (dash) dash.classList.toggle('categories-only', !isRest);
+            if (isMap) {
+                ensureAdminMapEmbed()
+                    .then(() => fetchMapAssignments())
+                    .then(() => {
+                        requestAnimationFrame(() => fitAdminMapStage());
+                    })
+                    .catch((err) => {
+                        console.error(err);
+                        const st = document.getElementById('mapSlotStatus');
+                        if (st) st.textContent = '오류: ' + (err.message || '');
+                    });
+            }
+        }
+
+        function setupAdminTabs() {
+            const br = document.getElementById('tabBtnRestaurants');
+            const bc = document.getElementById('tabBtnCategories');
+            const bm = document.getElementById('tabBtnMap');
+            if (br) br.addEventListener('click', () => setAdminTab('restaurants'));
+            if (bc) bc.addEventListener('click', () => setAdminTab('categories'));
+            if (bm) bm.addEventListener('click', () => setAdminTab('map'));
+        }
+
+        function fillMapSlotSelect() {
+            const sel = document.getElementById('mapSlotSelect');
+            if (!sel) return;
+            const prev = sel.value;
+            sel.innerHTML = '';
+            for (let i = 1; i <= 33; i++) {
+                const o = document.createElement('option');
+                o.value = String(i);
+                o.textContent = '건물 ' + i + '번';
+                sel.appendChild(o);
+            }
+            if (prev && Number(prev) >= 1 && Number(prev) <= 33) sel.value = prev;
+        }
+
+        function normalizeMapSlotEntryAdmin(e) {
+            if (e == null) return null;
+            if (typeof e === 'number' && Number.isFinite(e)) return { id: e, floor: '', unit: '' };
+            if (typeof e === 'string' && e.trim() !== '') {
+                const n = parseInt(e, 10);
+                return Number.isNaN(n) ? null : { id: n, floor: '', unit: '' };
+            }
+            if (typeof e === 'object' && e.id != null) {
+                const id = parseInt(e.id, 10);
+                if (Number.isNaN(id)) return null;
+                return {
+                    id,
+                    floor: e.floor != null ? String(e.floor).trim() : '',
+                    unit: e.unit != null ? String(e.unit).trim() : ''
+                };
+            }
+            return null;
+        }
+
+        function mapSlotMetaForId(slotArr, id) {
+            const list = slotArr || [];
+            for (let i = 0; i < list.length; i++) {
+                const o = normalizeMapSlotEntryAdmin(list[i]);
+                if (o && o.id === id) return { floor: o.floor || '', unit: o.unit || '' };
+            }
+            return { floor: '', unit: '' };
+        }
+
+        function mapSlotHasRestaurant(slotArr, id) {
+            const list = slotArr || [];
+            for (let i = 0; i < list.length; i++) {
+                const o = normalizeMapSlotEntryAdmin(list[i]);
+                if (o && o.id === id) return true;
+            }
+            return false;
+        }
+
+        /** 지도 어딘가에 배치된 경우 해당 건물 슬롯 번호(문자열), 없으면 null */
+        function mapSlotKeyForRestaurant(restaurantId) {
+            const rid = Number(restaurantId);
+            if (Number.isNaN(rid)) return null;
+            const assign = mapSlotAssignments || {};
+            for (const key of Object.keys(assign)) {
+                if (mapSlotHasRestaurant(assign[key], rid)) return key;
+            }
+            return null;
+        }
+
+        function ensureAdminMapEmbed() {
+            const stage = document.getElementById('adminKioskMapStage');
+            if (!stage) return Promise.resolve();
+            if (stage.dataset.embedLoaded === '1') return Promise.resolve();
+            return fetch('/map-stage-embed.partial.html?v=202604051')
+                .then((r) => {
+                    if (!r.ok) throw new Error('지도 미리보기를 불러오지 못했습니다.');
+                    return r.text();
+                })
+                .then((html) => {
+                    stage.innerHTML = html;
+                    stage.dataset.embedLoaded = '1';
+                    bindAdminMapDropTargets();
+                });
+        }
+
+        function fitAdminMapStage() {
+            const designW = 604;
+            const stage = document.getElementById('adminKioskMapStage');
+            const app = document.getElementById('map-app2');
+            if (!stage || !app) return;
+            const stageWidth = stage.clientWidth || designW;
+            const scale = stageWidth / designW;
+            app.style.transform = 'scale(' + scale + ')';
+            app.style.left = '0px';
+            app.style.top = '0px';
+        }
+
+        function refreshAdminMapBuildingBadges() {
+            const stage = document.getElementById('adminKioskMapStage');
+            if (!stage) return;
+            stage.querySelectorAll('.bldg[data-slot]').forEach((el) => {
+                const slot = el.getAttribute('data-slot');
+                const n = (mapSlotAssignments[slot] || []).length;
+                let badge = el.querySelector('.admin-bldg-count');
+                if (!badge) {
+                    badge = document.createElement('div');
+                    badge.className = 'admin-bldg-count';
+                    badge.setAttribute('aria-hidden', 'true');
+                    el.appendChild(badge);
+                }
+                if (n > 0) {
+                    badge.textContent = String(n);
+                    badge.style.display = '';
+                } else {
+                    badge.textContent = '';
+                    badge.style.display = 'none';
+                }
+            });
+        }
+
+        function bindAdminMapDropTargets() {
+            const stage = document.getElementById('adminKioskMapStage');
+            if (!stage || stage.dataset.dropBound === '1') return;
+            stage.dataset.dropBound = '1';
+            stage.querySelectorAll('.bldg[data-slot]').forEach((bldg) => {
+                bldg.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'copy';
+                    bldg.classList.add('dd-drag-over');
+                });
+                bldg.addEventListener('dragleave', (e) => {
+                    if (!bldg.contains(e.relatedTarget)) bldg.classList.remove('dd-drag-over');
+                });
+                bldg.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    bldg.classList.remove('dd-drag-over');
+                    const raw = e.dataTransfer.getData('text/plain');
+                    const id = parseInt(raw, 10);
+                    if (Number.isNaN(id)) return;
+                    const slot = bldg.getAttribute('data-slot');
+                    if (!slot) return;
+                    assignRestaurantToBuildingSlot(id, slot);
+                    const sel = document.getElementById('mapSlotSelect');
+                    if (sel) sel.value = slot;
+                });
+            });
+        }
+
+        function assignRestaurantToBuildingSlot(restId, targetSlotKey) {
+            const id = Number(restId);
+            if (Number.isNaN(id)) return;
+            const tk = String(targetSlotKey).trim();
+            if (!tk) return;
+            const next = JSON.parse(JSON.stringify(mapSlotAssignments));
+            let preserved = { floor: '', unit: '' };
+            for (const key of Object.keys(next)) {
+                for (const e of next[key] || []) {
+                    const o = normalizeMapSlotEntryAdmin(e);
+                    if (o && o.id === id) {
+                        preserved = { floor: o.floor || '', unit: o.unit || '' };
+                        break;
+                    }
+                }
+            }
+            for (const key of Object.keys(next)) {
+                next[key] = (next[key] || []).filter((e) => {
+                    const o = normalizeMapSlotEntryAdmin(e);
+                    return !o || o.id !== id;
+                });
+            }
+            const list = next[tk] || [];
+            list.push({ id, floor: preserved.floor, unit: preserved.unit });
+            next[tk] = list;
+            putMapAssignments(next, '드롭 반영 · 저장했습니다.');
+        }
+
+        function putMapAssignments(next, okMessage) {
+            const status = document.getElementById('mapSlotStatus');
+            if (status) status.textContent = '저장 중…';
+            return fetch('/api/map-slot-assignments', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ assignments: next })
+            })
+                .then((r) => r.json().then((body) => ({ ok: r.ok, body })))
+                .then(({ ok, body }) => {
+                    if (!ok) throw new Error((body && body.error) || '저장 실패');
+                    mapSlotAssignments = body.assignments || next;
+                    if (status) status.textContent = okMessage != null ? okMessage : '저장했습니다.';
+                    renderMapSlotRestaurantChecks();
+                    refreshAdminMapBuildingBadges();
+                    renderMapDragPalette();
+                })
+                .catch((err) => {
+                    if (status) status.textContent = '오류: ' + (err.message || '');
+                });
+        }
+
+        function renderMapDragPalette() {
+            const inner = document.getElementById('mapDragPaletteInner');
+            const q = document.getElementById('mapDragSearch');
+            if (!inner) return;
+            const filter = q ? String(q.value || '').trim().toLowerCase() : '';
+            inner.innerHTML = '';
+            if (!adminData.length) {
+                inner.innerHTML = '<div class="map-drag-palette-empty">등록된 식당이 없습니다.</div>';
+                return;
+            }
+            const rows = adminData
+                .slice()
+                .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'ko'))
+                .filter((r) => {
+                    if (!filter) return true;
+                    return (
+                        String(r.name || '')
+                            .toLowerCase()
+                            .indexOf(filter) !== -1
+                    );
+                });
+            rows.forEach((r) => {
+                const id = Number(r.id);
+                const slotKey = mapSlotKeyForRestaurant(id);
+                const chip = document.createElement('div');
+                chip.className = 'map-drag-chip' + (slotKey ? ' map-drag-chip--assigned' : '');
+                chip.draggable = true;
+                const nm = r.name || '#' + id;
+                if (slotKey) {
+                    chip.title =
+                        nm +
+                        ' — 건물 ' +
+                        slotKey +
+                        '번에 배치됨. 다른 건물로 옮기려면 끌어다 놓으세요.';
+                    chip.innerHTML =
+                        '<span class="map-drag-chip-inner"><span class="map-drag-chip-name"></span><span class="map-drag-chip-badge"></span></span>';
+                    chip.querySelector('.map-drag-chip-name').textContent = nm;
+                    chip.querySelector('.map-drag-chip-badge').textContent = '건물 ' + slotKey + '번';
+                } else {
+                    chip.title = nm + ' — 드래그하여 건물에 배치';
+                    chip.textContent = nm;
+                }
+                chip.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', String(id));
+                    e.dataTransfer.effectAllowed = 'copy';
+                });
+                inner.appendChild(chip);
+            });
+            if (!rows.length) {
+                inner.innerHTML = '<div class="map-drag-palette-empty">검색 결과가 없습니다.</div>';
+            }
+        }
+
+        function renderMapSlotRestaurantChecks() {
+            const tbody = document.getElementById('mapSlotRestaurantChecks');
+            const sel = document.getElementById('mapSlotSelect');
+            if (!tbody || !sel) return;
+            const slotKey = sel.value;
+            const slotArr = mapSlotAssignments[slotKey] || [];
+            tbody.innerHTML = '';
+            const rows = adminData.slice().sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'ko'));
+            rows.forEach((r) => {
+                const id = Number(r.id);
+                const meta = mapSlotMetaForId(slotArr, id);
+                const checked = mapSlotHasRestaurant(slotArr, id);
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid #e9ecef';
+                const tdCb = document.createElement('td');
+                tdCb.style.padding = '6px 10px';
+                tdCb.style.verticalAlign = 'middle';
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.className = 'map-slot-cb';
+                cb.value = String(id);
+                cb.checked = checked;
+                tdCb.appendChild(cb);
+                const tdName = document.createElement('td');
+                tdName.style.padding = '6px 10px';
+                tdName.textContent = r.name || '#' + id;
+                const tdFloor = document.createElement('td');
+                tdFloor.style.padding = '6px 8px';
+                const inFloor = document.createElement('input');
+                inFloor.type = 'text';
+                inFloor.className = 'map-slot-floor';
+                inFloor.dataset.rid = String(id);
+                inFloor.placeholder = '예: 2F';
+                inFloor.value = meta.floor;
+                inFloor.style.width = '100%';
+                inFloor.style.maxWidth = '120px';
+                inFloor.style.boxSizing = 'border-box';
+                inFloor.style.padding = '6px 8px';
+                tdFloor.appendChild(inFloor);
+                const tdUnit = document.createElement('td');
+                tdUnit.style.padding = '6px 8px';
+                const inUnit = document.createElement('input');
+                inUnit.type = 'text';
+                inUnit.className = 'map-slot-unit';
+                inUnit.dataset.rid = String(id);
+                inUnit.placeholder = '호수·코너 등';
+                inUnit.value = meta.unit;
+                inUnit.style.width = '100%';
+                inUnit.style.minWidth = '120px';
+                inUnit.style.boxSizing = 'border-box';
+                inUnit.style.padding = '6px 8px';
+                tdUnit.appendChild(inUnit);
+                tr.appendChild(tdCb);
+                tr.appendChild(tdName);
+                tr.appendChild(tdFloor);
+                tr.appendChild(tdUnit);
+                tbody.appendChild(tr);
+            });
+        }
+
+        function fetchMapAssignments() {
+            const status = document.getElementById('mapSlotStatus');
+            if (status) status.textContent = '불러오는 중…';
+            return fetchJson('/api/map-slot-assignments')
+                .then(({ data }) => {
+                    const a = data.assignments;
+                    mapSlotAssignments = a && typeof a === 'object' && !Array.isArray(a) ? a : {};
+                    fillMapSlotSelect();
+                    renderMapSlotRestaurantChecks();
+                    refreshAdminMapBuildingBadges();
+                    renderMapDragPalette();
+                    if (status) status.textContent = '구역을 선택한 뒤 음식점을 체크하고 저장하세요.';
+                })
+                .catch((err) => {
+                    if (status) status.textContent = '오류: ' + (err.message || '불러오기 실패');
+                    throw err;
+                });
+        }
+
+        function saveMapSlotAssignments() {
+            const sel = document.getElementById('mapSlotSelect');
+            if (!sel) return;
+            const slotKey = sel.value;
+            const tbody = document.getElementById('mapSlotRestaurantChecks');
+            const out = [];
+            if (tbody) {
+                tbody.querySelectorAll('tr').forEach((tr) => {
+                    const cb = tr.querySelector('.map-slot-cb');
+                    if (!cb || !cb.checked) return;
+                    const id = parseInt(cb.value, 10);
+                    if (Number.isNaN(id)) return;
+                    const floorEl = tr.querySelector('.map-slot-floor');
+                    const unitEl = tr.querySelector('.map-slot-unit');
+                    const floor = floorEl ? String(floorEl.value || '').trim() : '';
+                    const unit = unitEl ? String(unitEl.value || '').trim() : '';
+                    out.push({ id, floor, unit });
+                });
+            }
+            const next = Object.assign({}, mapSlotAssignments, { [slotKey]: out });
+            putMapAssignments(next, '저장했습니다.');
+        }
+
+        function setupMapAdminPanel() {
+            fillMapSlotSelect();
+            const sel = document.getElementById('mapSlotSelect');
+            if (sel) sel.addEventListener('change', () => renderMapSlotRestaurantChecks());
+            const btn = document.getElementById('mapSlotSaveBtn');
+            if (btn) btn.addEventListener('click', () => saveMapSlotAssignments());
+            const mapDragSearch = document.getElementById('mapDragSearch');
+            if (mapDragSearch) mapDragSearch.addEventListener('input', () => renderMapDragPalette());
+            window.addEventListener('resize', () => {
+                const p = document.getElementById('adminPanelMap');
+                if (p && !p.hidden) fitAdminMapStage();
+            });
+            document.addEventListener('dragend', () => {
+                document.querySelectorAll('#adminKioskMapStage .bldg.dd-drag-over').forEach((el) => el.classList.remove('dd-drag-over'));
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setupAdminTabs();
+            setupMapAdminPanel();
+            fetchAdminList();
+            fetchCategoriesAdmin()
+                .then(() => fetchSubcategoriesAdmin())
+                .catch(() => {});
+            setupCategoryIconForm();
+            setupImagePreviews();
+            const catSel = document.getElementById('category');
+            if (catSel) catSel.addEventListener('change', () => fillSubcategorySelectForRestaurant(''));
+        });
+
+        function fetchCategoriesAdmin(selectPreferredValue) {
+            const preferred =
+                selectPreferredValue !== undefined
+                    ? selectPreferredValue
+                    : (document.getElementById('category') ? document.getElementById('category').value : '');
+            return fetchJson('/api/categories')
+                .then(({ data }) => {
+                    adminCategoryData = data.data || [];
+                    renderCategoryAdminTable();
+                    fillCategorySelect(preferred);
+                })
+                .catch((err) => {
+                    console.error(err);
+                    adminCategoryData = [];
+                    renderCategoryAdminTable();
+                    const sel = document.getElementById('category');
+                    if (sel) sel.innerHTML = '<option value="">API 연결 실패 — npm start 후 localhost:3000 으로 여세요</option>';
+                });
+        }
+
+        function fetchSubcategoriesAdmin() {
+            return fetchJson('/api/subcategories')
+                .then(({ data }) => {
+                    adminSubcategoryData = data.data || [];
+                    syncSubCatParentPick();
+                    renderSubcategoryAdminTable();
+                    const subSel = document.getElementById('subcategory');
+                    const keep = subSel ? subSel.value : '';
+                    fillSubcategorySelectForRestaurant(keep);
+                })
+                .catch((err) => {
+                    console.error(err);
+                    adminSubcategoryData = [];
+                });
+        }
+
+        function syncSubCatParentPick() {
+            const pick = document.getElementById('subCatParentPick');
+            if (!pick) return;
+            const cur = pick.value;
+            pick.innerHTML = '';
+            if (!adminCategoryData.length) {
+                const o = document.createElement('option');
+                o.value = '';
+                o.textContent = '먼저 1차 카테고리를 등록하세요';
+                pick.appendChild(o);
+                return;
+            }
+            adminCategoryData.forEach((c) => {
+                const o = document.createElement('option');
+                o.value = c.value;
+                o.textContent = c.label_ko + ' (' + c.value + ')';
+                pick.appendChild(o);
+            });
+            if (cur && [...pick.options].some((x) => x.value === cur)) pick.value = cur;
+            else pick.selectedIndex = 0;
+        }
+
+        function renderSubcategoryAdminTable() {
+            const pick = document.getElementById('subCatParentPick');
+            const tbody = document.getElementById('subcategoryListBody');
+            if (!pick || !tbody) return;
+            const cv = pick.value;
+            tbody.innerHTML = '';
+            if (!cv) {
+                tbody.innerHTML = '<tr><td colspan="4" style="color:#868e96;">상위 카테고리를 선택하세요.</td></tr>';
+                return;
+            }
+            const rows = adminSubcategoryData.filter((s) => s.category_value === cv);
+            if (!rows.length) {
+                tbody.innerHTML = '<tr><td colspan="4" style="color:#868e96;">이 1차 카테고리에 등록된 2차 분류가 없습니다.</td></tr>';
+                return;
+            }
+            rows.forEach((s) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML =
+                    '<td>' +
+                    s.sort_order +
+                    '</td><td><code>' +
+                    escapeAdminHtml(s.value) +
+                    '</code></td><td>' +
+                    escapeAdminHtml(s.label_ko) +
+                    '</td><td></td>';
+                const td = tr.lastElementChild;
+                const eb = document.createElement('button');
+                eb.className = 'action-btn edit-btn';
+                eb.textContent = '수정';
+                eb.onclick = () => editSubcategoryRow(s);
+                const db = document.createElement('button');
+                db.className = 'action-btn delete-btn';
+                db.textContent = '삭제';
+                db.onclick = () => deleteSubcategoryRow(s.id);
+                td.appendChild(eb);
+                td.appendChild(db);
+                tbody.appendChild(tr);
+            });
+        }
+
+        function escapeAdminHtml(t) {
+            return String(t || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function fillSubcategorySelectForRestaurant(preferredSub) {
+            const cat = document.getElementById('category').value;
+            const sel = document.getElementById('subcategory');
+            if (!sel) return;
+            sel.innerHTML = '';
+            const o0 = document.createElement('option');
+            o0.value = '';
+            o0.textContent = '없음 (1차만)';
+            sel.appendChild(o0);
+            if (!cat) return;
+            adminSubcategoryData
+                .filter((s) => s.category_value === cat)
+                .forEach((s) => {
+                    const o = document.createElement('option');
+                    o.value = s.value;
+                    o.textContent = s.label_ko || s.value;
+                    sel.appendChild(o);
+                });
+            const want = preferredSub != null ? String(preferredSub) : '';
+            if (want && [...sel.options].some((op) => op.value === want)) sel.value = want;
+            else sel.value = '';
+        }
+
+        function resetSubcategoryForm() {
+            document.getElementById('subCatEditId').value = '';
+            document.getElementById('subcategoryAdminForm').reset();
+            document.getElementById('subCatFormTitle').innerText = '새 2차 분류 추가';
+            document.getElementById('subCatSubmitBtn').innerText = '2차 분류 추가';
+            document.getElementById('subCatCancelBtn').style.display = 'none';
+        }
+
+        function editSubcategoryRow(s) {
+            document.getElementById('subCatFormTitle').innerText = '2차 분류 수정';
+            document.getElementById('subCatSubmitBtn').innerText = '수정 저장';
+            document.getElementById('subCatCancelBtn').style.display = 'block';
+            document.getElementById('subCatEditId').value = s.id;
+            document.getElementById('subCatValue').value = s.value;
+            document.getElementById('subCatLabelKo').value = s.label_ko;
+            document.getElementById('subCatLabelEn').value = s.label_en || '';
+            document.getElementById('subCatSortOrder').value = s.sort_order != null ? s.sort_order : '';
+            const pick = document.getElementById('subCatParentPick');
+            if (pick && s.category_value) pick.value = s.category_value;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function deleteSubcategoryRow(id, forceDetach) {
+            const msg = forceDetach
+                ? '해당 2차 분류를 쓰는 식당의 「2차분류」만 비우고, 이 항목은 삭제합니다. 계속할까요?'
+                : '이 2차 분류를 삭제할까요? 해당 값을 쓰는 식당이 있으면 먼저 막히며, 안내에 따라 연결 끊고 삭제할 수 있습니다.';
+            if (!confirm(msg)) return;
+            const url = '/api/subcategories/' + id + (forceDetach ? '?detach=1' : '');
+            fetchJson(url, { method: 'DELETE' })
+                .then(({ ok, status, data }) => {
+                    if (!ok || data.error) {
+                        if (
+                            !forceDetach &&
+                            status === 400 &&
+                            data &&
+                            data.error &&
+                            String(data.error).indexOf('2차 분류를 쓰는 식당') !== -1
+                        ) {
+                            const n =
+                                typeof data.inUseCount === 'number'
+                                    ? data.inUseCount
+                                    : parseInt(String(data.error).replace(/[^\d]/g, ''), 10);
+                            if (
+                                confirm(
+                                    '이 2차 분류를 쓰는 식당이 ' +
+                                        (Number.isFinite(n) && n > 0 ? n + '곳 ' : '') +
+                                        '있습니다.\n\n식당 데이터의 2차분류만 비우고 이 항목을 삭제할까요? (1차 카테고리·상호는 그대로입니다.)'
+                                )
+                            ) {
+                                deleteSubcategoryRow(id, true);
+                            }
+                            return;
+                        }
+                        alert(data.error || '삭제 실패');
+                        return;
+                    }
+                    fetchSubcategoriesAdmin();
+                    fetchAdminList();
+                })
+                .catch((err) => alert(err.message));
+        }
+
+        function submitSubcategoryForm(e) {
+            e.preventDefault();
+            const editId = document.getElementById('subCatEditId').value.trim();
+            const parent = document.getElementById('subCatParentPick').value;
+            if (!parent) {
+                alert('상위 카테고리를 선택하세요.');
+                return;
+            }
+            const body = {
+                category_value: parent,
+                value: document.getElementById('subCatValue').value.trim(),
+                label_ko: document.getElementById('subCatLabelKo').value.trim(),
+                label_en: document.getElementById('subCatLabelEn').value.trim(),
+                sort_order: document.getElementById('subCatSortOrder').value.trim()
+            };
+            const url = editId ? '/api/subcategories/' + editId : '/api/subcategories';
+            const method = editId ? 'PUT' : 'POST';
+            fetchJson(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            })
+                .then(({ ok, data }) => {
+                    if (!ok || data.error) {
+                        alert(data.error || '저장 실패');
+                        return;
+                    }
+                    alert(editId ? '수정되었습니다.' : '추가되었습니다.');
+                    resetSubcategoryForm();
+                    fetchSubcategoriesAdmin();
+                    fetchAdminList();
+                })
+                .catch((err) => alert(err.message));
+        }
+
+        function fillCategorySelect(preferredValue) {
+            const sel = document.getElementById('category');
+            if (!sel) return;
+            sel.innerHTML = '';
+            if (!adminCategoryData.length) {
+                const o = document.createElement('option');
+                o.value = '';
+                o.textContent = '등록된 카테고리 없음 — 위에서 추가하세요';
+                sel.appendChild(o);
+                sel.required = false;
+                return;
+            }
+            sel.required = true;
+            adminCategoryData.forEach((c) => {
+                const opt = document.createElement('option');
+                opt.value = c.value;
+                opt.textContent = c.label_ko;
+                sel.appendChild(opt);
+            });
+            const want = preferredValue || '';
+            if (want && [...sel.options].some((o) => o.value === want)) sel.value = want;
+            else sel.selectedIndex = 0;
+        }
+
+        function renderCategoryAdminTable() {
+            const tbody = document.getElementById('categoryListBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            if (!adminCategoryData.length) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = '<td colspan="5" style="color:#868e96;">등록된 카테고리가 없습니다. 서버 재시작 시 빈 DB면 12개 기본이 생성됩니다. 기존 DB는 프로젝트 루트에서 <code>npm run seed-categories</code> 로 추가하세요.</td>';
+                tbody.appendChild(tr);
+                return;
+            }
+            adminCategoryData.forEach((c) => {
+                const tr = document.createElement('tr');
+                const tdOrder = document.createElement('td');
+                tdOrder.textContent = c.sort_order;
+                const tdIcon = document.createElement('td');
+                if (c.icon_image) {
+                    const im = document.createElement('img');
+                    im.alt = '';
+                    im.src = c.icon_image.startsWith('/') ? c.icon_image : '/' + String(c.icon_image).replace(/^\//, '');
+                    im.style.width = '44px';
+                    im.style.height = '44px';
+                    im.style.objectFit = 'contain';
+                    im.style.borderRadius = '8px';
+                    im.style.background = '#f1f3f5';
+                    tdIcon.appendChild(im);
+                } else {
+                    tdIcon.textContent = '—';
+                    tdIcon.style.color = '#868e96';
+                }
+                const tdVal = document.createElement('td');
+                const code = document.createElement('code');
+                code.textContent = c.value;
+                tdVal.appendChild(code);
+                const tdKo = document.createElement('td');
+                tdKo.textContent = c.label_ko;
+                const tdAct = document.createElement('td');
+                const editBtn = document.createElement('button');
+                editBtn.className = 'action-btn edit-btn';
+                editBtn.textContent = '수정';
+                editBtn.onclick = () => editCategoryRow(c);
+                const delBtn = document.createElement('button');
+                delBtn.className = 'action-btn delete-btn';
+                delBtn.textContent = '삭제';
+                delBtn.onclick = () => deleteCategoryRow(c.id);
+                tdAct.appendChild(editBtn);
+                tdAct.appendChild(delBtn);
+                tr.appendChild(tdOrder);
+                tr.appendChild(tdIcon);
+                tr.appendChild(tdVal);
+                tr.appendChild(tdKo);
+                tr.appendChild(tdAct);
+                tbody.appendChild(tr);
+            });
+        }
+
+        function resetCategoryForm() {
+            document.getElementById('catEditId').value = '';
+            document.getElementById('categoryAdminForm').reset();
+            const cf = document.getElementById('catIconFile');
+            if (cf) cf.value = '';
+            const hid = document.getElementById('catIconImageUrl');
+            if (hid) hid.value = '';
+            const prev = document.getElementById('catIconPreviewImg');
+            const wrap = document.getElementById('catIconPreviewWrap');
+            if (prev) {
+                prev.removeAttribute('src');
+                prev.hidden = true;
+            }
+            if (wrap) wrap.hidden = true;
+            document.getElementById('catFormTitle').innerText = '새 카테고리 추가';
+            document.getElementById('catSubmitBtn').innerText = '카테고리 추가';
+            document.getElementById('catCancelBtn').style.display = 'none';
+        }
+
+        function editCategoryRow(c) {
+            document.getElementById('catFormTitle').innerText = '카테고리 수정';
+            document.getElementById('catSubmitBtn').innerText = '수정 저장';
+            document.getElementById('catCancelBtn').style.display = 'block';
+            document.getElementById('catEditId').value = c.id;
+            document.getElementById('catValue').value = c.value;
+            document.getElementById('catLabelKo').value = c.label_ko;
+            document.getElementById('catLabelEn').value = c.label_en || '';
+            document.getElementById('catSortOrder').value = c.sort_order != null ? c.sort_order : '';
+            const cf = document.getElementById('catIconFile');
+            if (cf) cf.value = '';
+            const hid = document.getElementById('catIconImageUrl');
+            if (hid) hid.value = c.icon_image || '';
+            const prev = document.getElementById('catIconPreviewImg');
+            const wrap = document.getElementById('catIconPreviewWrap');
+            if (c.icon_image && prev && wrap) {
+                prev.src = c.icon_image.startsWith('/') ? c.icon_image : '/' + String(c.icon_image).replace(/^\//, '');
+                prev.hidden = false;
+                wrap.hidden = false;
+            } else if (prev && wrap) {
+                prev.removeAttribute('src');
+                prev.hidden = true;
+                wrap.hidden = true;
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function deleteCategoryRow(id, reassignTo) {
+            if (!reassignTo) {
+                if (!confirm('이 카테고리를 삭제할까요? 사용 중인 식당이 있으면 안내합니다.')) return;
+            } else {
+                if (
+                    !confirm(
+                        '식당을 저장값 「' +
+                            reassignTo +
+                            '」 1차 카테고리로 옮기고, 이 카테고리와 그 아래 2차분류를 삭제합니다. 계속할까요?'
+                    )
+                )
+                    return;
+            }
+            const q =
+                reassignTo && String(reassignTo).trim()
+                    ? '?reassign_to=' + encodeURIComponent(String(reassignTo).trim())
+                    : '';
+            fetchJson('/api/categories/' + id + q, { method: 'DELETE' })
+                .then(({ ok, status, data }) => {
+                    if (!ok || data.error) {
+                        if (
+                            !reassignTo &&
+                            status === 400 &&
+                            data &&
+                            data.error &&
+                            String(data.error).indexOf('사용 중인 식당') !== -1
+                        ) {
+                            const to = prompt(
+                                '이 카테고리를 쓰는 식당이 있습니다.\n\n식당을 옮길 1차 카테고리의 저장값을 입력하세요 (목록의 「저장값」 열과 동일, 예: 한식). 2차분류는 모두 비웁니다.',
+                                ''
+                            );
+                            if (to != null && String(to).trim()) deleteCategoryRow(id, String(to).trim());
+                            return;
+                        }
+                        alert(data.error || '삭제에 실패했습니다.');
+                        return;
+                    }
+                    const prevCat = document.getElementById('category').value;
+                    fetchCategoriesAdmin(prevCat).then(() => fetchSubcategoriesAdmin());
+                    fetchAdminList();
+                })
+                .catch((err) => alert(err.message));
+        }
+
+        function submitCategoryForm(e) {
+            e.preventDefault();
+            const editId = document.getElementById('catEditId').value.trim();
+            const fileEl = document.getElementById('catIconFile');
+            const file = fileEl && fileEl.files && fileEl.files[0];
+            const hiddenUrl = (document.getElementById('catIconImageUrl') || {}).value.trim();
+
+            const body = {
+                value: document.getElementById('catValue').value.trim(),
+                label_ko: document.getElementById('catLabelKo').value.trim(),
+                label_en: document.getElementById('catLabelEn').value.trim(),
+                icon: null,
+                sort_order: document.getElementById('catSortOrder').value.trim()
+            };
+            if (!file) {
+                body.icon_image = hiddenUrl || null;
+            }
+            const url = editId ? '/api/categories/' + editId : '/api/categories';
+            const method = editId ? 'PUT' : 'POST';
+            const prevRestaurantCat = document.getElementById('category').value;
+
+            fetchJson(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            })
+                .then(async ({ ok, data }) => {
+                    if (!ok || data.error) {
+                        alert(data.error || '저장에 실패했습니다.');
+                        return;
+                    }
+                    const catId = editId ? parseInt(editId, 10) : data.id;
+                    let uploadErr = null;
+                    if (file && catId) {
+                        try {
+                            const fd = new FormData();
+                            fd.append('icon_image', file);
+                            const ur = await fetch('/api/categories/' + catId + '/icon', { method: 'POST', body: fd });
+                            const j = await ur.json();
+                            if (!ur.ok || j.error) uploadErr = j.error || String(ur.status);
+                        } catch (e) {
+                            uploadErr = e.message || '네트워크 오류';
+                        }
+                    }
+                    if (uploadErr) alert('카테고리는 저장되었으나 이미지 업로드 실패: ' + uploadErr);
+                    else alert(editId ? '카테고리가 수정되었습니다.' : '카테고리가 추가되었습니다.');
+                    resetCategoryForm();
+                    fetchCategoriesAdmin(prevRestaurantCat || body.value).then(() => fetchSubcategoriesAdmin());
+                    fetchAdminList();
+                })
+                .catch((err) => alert('네트워크 오류: ' + err.message));
+        }
+
+        function setupCategoryIconForm() {
+            const fileEl = document.getElementById('catIconFile');
+            const removeBtn = document.getElementById('catIconRemoveBtn');
+            const editIdEl = document.getElementById('catEditId');
+            if (fileEl) {
+                fileEl.addEventListener('change', () => {
+                    const f = fileEl.files && fileEl.files[0];
+                    const prev = document.getElementById('catIconPreviewImg');
+                    const wrap = document.getElementById('catIconPreviewWrap');
+                    if (!prev || !wrap) return;
+                    if (f && f.type.startsWith('image/')) {
+                        prev.src = URL.createObjectURL(f);
+                        prev.hidden = false;
+                        wrap.hidden = false;
+                    }
+                });
+            }
+            if (removeBtn) {
+                removeBtn.addEventListener('click', () => {
+                    const id = editIdEl && editIdEl.value.trim();
+                    const hid = document.getElementById('catIconImageUrl');
+                    const prev = document.getElementById('catIconPreviewImg');
+                    const wrap = document.getElementById('catIconPreviewWrap');
+                    if (fileEl) fileEl.value = '';
+                    if (hid) hid.value = '';
+                    if (prev) {
+                        prev.removeAttribute('src');
+                        prev.hidden = true;
+                    }
+                    if (wrap) wrap.hidden = true;
+                    if (id) {
+                        fetchJson('/api/categories/' + id + '/icon', { method: 'DELETE' })
+                            .then(() => fetchCategoriesAdmin())
+                            .catch(() => {});
+                    }
+                });
+            }
+        }
+
+        function clearPreviewBlob(inputId) {
+            if (previewBlobUrls[inputId]) {
+                URL.revokeObjectURL(previewBlobUrls[inputId]);
+                previewBlobUrls[inputId] = null;
+            }
+        }
+
+        function heroGalleryUid() {
+            return 'h' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+        }
+
+        function revokeAllHeroGalleryBlobs() {
+            heroGalleryItems.forEach((it) => {
+                if (it.blobUrl) {
+                    URL.revokeObjectURL(it.blobUrl);
+                    it.blobUrl = null;
+                }
+            });
+        }
+
+        function renderHeroGallery() {
+            const ul = document.getElementById('heroGalleryList');
+            const leftEl = document.getElementById('heroGallerySlotsLeft');
+            if (leftEl) leftEl.textContent = String(Math.max(0, HERO_GALLERY_MAX - heroGalleryItems.length));
+            if (!ul) return;
+            ul.innerHTML = '';
+            if (heroGalleryItems.length === 0) {
+                const empty = document.createElement('li');
+                empty.style.cssText = 'padding:12px 14px;color:#868e96;font-size:0.88rem;border:1px dashed #ced4da;border-radius:10px;background:#fff;';
+                empty.textContent =
+                    '「이미지 추가」 버튼 또는 탐색기에서 이 영역으로 이미지를 끌어 넣을 수 있습니다. (0~4장, 순서대로 첫 장이 대표)';
+                ul.appendChild(empty);
+                return;
+            }
+            heroGalleryItems.forEach((item, index) => {
+                const src = item.file
+                    ? item.blobUrl
+                    : item.url
+                      ? item.url.startsWith('/')
+                          ? item.url
+                          : '/' + String(item.url).replace(/^\//, '')
+                      : '';
+                const li = document.createElement('li');
+                li.className = 'hero-gallery-item';
+                li.draggable = true;
+                const badge = index === 0 ? '<span class="hero-gallery-item-badge">대표</span><br>' : '';
+                const hint = index === 0 ? '목록·카드 썸네일' : '추가 사진';
+                li.innerHTML =
+                    '<img class="hero-gallery-item-thumb" alt="">' +
+                    '<div class="hero-gallery-item-meta">' +
+                    badge +
+                    '<span class="hero-gallery-item-hint">' +
+                    hint +
+                    '</span></div>' +
+                    '<div class="hero-gallery-item-actions">' +
+                    '<button type="button" class="hero-gallery-up">위로</button>' +
+                    '<button type="button" class="hero-gallery-down">아래로</button>' +
+                    '<button type="button" class="hero-gallery-remove" style="color:#c92a2a;border-color:#ffc9c9;">삭제</button>' +
+                    '</div>';
+                const img = li.querySelector('.hero-gallery-item-thumb');
+                if (src) img.src = src;
+                else img.removeAttribute('src');
+
+                li.querySelector('.hero-gallery-up').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    moveHeroGallery(index, index - 1);
+                });
+                li.querySelector('.hero-gallery-down').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    moveHeroGallery(index, index + 1);
+                });
+                li.querySelector('.hero-gallery-remove').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    removeHeroGalleryAt(index);
+                });
+
+                li.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', String(index));
+                    e.dataTransfer.effectAllowed = 'move';
+                    li.style.opacity = '0.55';
+                });
+                li.addEventListener('dragend', () => {
+                    li.style.opacity = '';
+                    ul.querySelectorAll('.hero-gallery-item').forEach((x) => x.classList.remove('drag-over'));
+                });
+                li.addEventListener('dragover', (e) => {
+                    if (isFileDragTransfer(e.dataTransfer)) {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'copy';
+                        li.classList.add('drag-over');
+                        return;
+                    }
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    li.classList.add('drag-over');
+                });
+                li.addEventListener('dragleave', (e) => {
+                    if (!li.contains(e.relatedTarget)) li.classList.remove('drag-over');
+                });
+                li.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    li.classList.remove('drag-over');
+                    if (isFileDragTransfer(e.dataTransfer) && e.dataTransfer.files && e.dataTransfer.files.length) {
+                        const z = document.getElementById('heroGalleryDropZone');
+                        if (z) z.classList.remove('is-file-dragover');
+                        e.stopPropagation();
+                        addHeroGalleryFiles(e.dataTransfer.files);
+                        return;
+                    }
+                    const from = parseInt(e.dataTransfer.getData('text/plain'), 10);
+                    if (Number.isNaN(from) || from === index) return;
+                    moveHeroGallery(from, index);
+                });
+
+                ul.appendChild(li);
+            });
+        }
+
+        function moveHeroGallery(from, to) {
+            if (from === to || from < 0 || to < 0) return;
+            if (from >= heroGalleryItems.length || to >= heroGalleryItems.length) return;
+            const row = heroGalleryItems.splice(from, 1)[0];
+            heroGalleryItems.splice(to, 0, row);
+            renderHeroGallery();
+        }
+
+        function removeHeroGalleryAt(index) {
+            const it = heroGalleryItems[index];
+            if (it && it.blobUrl) URL.revokeObjectURL(it.blobUrl);
+            heroGalleryItems.splice(index, 1);
+            renderHeroGallery();
+        }
+
+        function addHeroGalleryFiles(fileList) {
+            const files = Array.from(fileList || []).filter((f) => f.type.startsWith('image/'));
+            const room = HERO_GALLERY_MAX - heroGalleryItems.length;
+            const take = files.slice(0, Math.max(0, room));
+            take.forEach((file) => {
+                const uid = heroGalleryUid();
+                const blobUrl = URL.createObjectURL(file);
+                heroGalleryItems.push({ uid, file, blobUrl });
+            });
+            const inp = document.getElementById('heroGalleryFileInput');
+            if (inp) inp.value = '';
+            renderHeroGallery();
+        }
+
+        function loadHeroGalleryFromItem(item) {
+            revokeAllHeroGalleryBlobs();
+            heroGalleryItems = [];
+            let urls = [];
+            if (item && item.image_gallery) {
+                try {
+                    const p = JSON.parse(item.image_gallery);
+                    if (Array.isArray(p) && p.length) urls = p.map((u) => String(u).trim()).filter(Boolean);
+                } catch (e) {}
+            }
+            if (urls.length === 0 && item && item.image_url) {
+                const u = String(item.image_url).trim();
+                if (u) urls = [u.startsWith('/') ? u : '/' + u.replace(/^\//, '')];
+            }
+            urls.slice(0, HERO_GALLERY_MAX).forEach((u) => {
+                heroGalleryItems.push({ uid: heroGalleryUid(), url: u });
+            });
+            renderHeroGallery();
+        }
+
+        function buildHeroGalleryPayload() {
+            const manifest = [];
+            const files = [];
+            heroGalleryItems.forEach((it) => {
+                if (it.file) {
+                    manifest.push({ t: 'n' });
+                    files.push(it.file);
+                } else if (it.url) {
+                    const u = it.url.startsWith('/') ? it.url : '/' + String(it.url).replace(/^\//, '');
+                    manifest.push({ t: 'u', u });
+                }
+            });
+            return { manifest, files };
+        }
+
+        function setPreviewVisible(inputId, visible) {
+            const wrap = document.getElementById(inputId + 'PreviewWrap');
+            if (wrap) wrap.hidden = !visible;
+        }
+
+        function showPreviewFromUrl(inputId, url) {
+            const img = document.getElementById(inputId + 'Preview');
+            if (!img || !url) return;
+            img.src = url;
+            setPreviewVisible(inputId, true);
+        }
+
+        function hidePreview(inputId) {
+            const img = document.getElementById(inputId + 'Preview');
+            if (img) img.removeAttribute('src');
+            setPreviewVisible(inputId, false);
+        }
+
+        function syncPreviewForInput(inputId) {
+            const input = document.getElementById(inputId);
+            const file = input && input.files && input.files[0];
+            clearPreviewBlob(inputId);
+
+            const assetKey = inputId === 'map_image' ? 'map_url' : 'menu_url';
+
+            if (file) {
+                if (file.type.startsWith('image/')) {
+                    previewBlobUrls[inputId] = URL.createObjectURL(file);
+                    showPreviewFromUrl(inputId, previewBlobUrls[inputId]);
+                } else {
+                    hidePreview(inputId);
+                }
+                return;
+            }
+
+            const serverUrl = editingAssetUrls[assetKey];
+            if (serverUrl) showPreviewFromUrl(inputId, serverUrl);
+            else hidePreview(inputId);
+        }
+
+        function setupImagePreviews() {
+            ['map_image', 'menu_image'].forEach((id) => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('change', () => syncPreviewForInput(id));
+            });
+            const addBtn = document.getElementById('heroGalleryAddBtn');
+            const finput = document.getElementById('heroGalleryFileInput');
+            if (addBtn && finput) {
+                addBtn.addEventListener('click', () => finput.click());
+                finput.addEventListener('change', () => {
+                    if (finput.files && finput.files.length) addHeroGalleryFiles(finput.files);
+                });
+            }
+            const dz = document.getElementById('heroGalleryDropZone');
+            if (dz && dz.dataset.fileDropBound !== '1') {
+                dz.dataset.fileDropBound = '1';
+                dz.addEventListener('dragenter', (e) => {
+                    if (!isFileDragTransfer(e.dataTransfer)) return;
+                    e.preventDefault();
+                });
+                dz.addEventListener('dragover', (e) => {
+                    if (!isFileDragTransfer(e.dataTransfer)) return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'copy';
+                    dz.classList.add('is-file-dragover');
+                });
+                dz.addEventListener('dragleave', (e) => {
+                    if (dz.contains(e.relatedTarget)) return;
+                    dz.classList.remove('is-file-dragover');
+                });
+                dz.addEventListener('drop', (e) => {
+                    if (!isFileDragTransfer(e.dataTransfer) || !e.dataTransfer.files.length) {
+                        dz.classList.remove('is-file-dragover');
+                        return;
+                    }
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dz.classList.remove('is-file-dragover');
+                    addHeroGalleryFiles(e.dataTransfer.files);
+                });
+            }
+        }
+
+        function refreshAllImagePreviews() {
+            ['map_image', 'menu_image'].forEach((id) => syncPreviewForInput(id));
+        }
+
+        function sortAdminDataOldestFirst(list) {
+            return (list || []).slice().sort((a, b) => (Number(a.id) || 0) - (Number(b.id) || 0));
+        }
+
+        function fetchAdminList() {
+            fetchJson('/api/restaurants')
+                .then(({ data }) => {
+                    adminData = sortAdminDataOldestFirst(data.data || []);
+                    renderAdminList(adminData);
+                    const pMap = document.getElementById('adminPanelMap');
+                    if (pMap && !pMap.hidden) {
+                        renderMapSlotRestaurantChecks();
+                        renderMapDragPalette();
+                    }
+                })
+                .catch((err) => {
+                    console.error(err);
+                    const tbody = document.getElementById('adminListBody');
+                    if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="color:#c92a2a;">' + err.message + '</td></tr>';
+                });
+        }
+
+        function renderAdminList(list) {
+            const tbody = document.getElementById('adminListBody');
+            tbody.innerHTML = '';
+            list.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                const kioskCell = Number(item.kiosk_hidden)
+                    ? '<span style="color:#c92a2a;font-weight:800;">숨김</span>'
+                    : '<span style="color:#2b8a3e;">표시</span>';
+                tr.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td><strong>${item.name}</strong></td>
+                    <td>${item.category}</td>
+                    <td><code style="font-size:0.85em;">${item.subcategory || '—'}</code></td>
+                    <td>${kioskCell}</td>
+                    <td>
+                        <button type="button" class="action-btn edit-btn" onclick="editItemById(${item.id})">수정</button>
+                        <button type="button" class="action-btn delete-btn" onclick="deleteItem(${item.id})">삭제</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterAdminList() {
+            const query = document.getElementById('adminSearch').value.toLowerCase();
+            const filtered = adminData.filter(item => 
+                item.name.toLowerCase().includes(query) || 
+                item.category.toLowerCase().includes(query) ||
+                (item.subcategory && String(item.subcategory).toLowerCase().includes(query))
+            );
+            renderAdminList(filtered);
+        }
+
+        function editItemById(id) {
+            const n = Number(id);
+            const item = adminData.find((r) => Number(r.id) === n);
+            if (!item) {
+                alert('목록에서 해당 식당을 찾을 수 없습니다. 새로고침 후 다시 시도해 주세요.');
+                return;
+            }
+            editItem(item);
+        }
+
+        function editItem(item) {
+            document.getElementById('formTitle').innerText = '식당 정보 수정';
+            document.getElementById('submitBtn').innerText = '수정 내용 저장';
+            document.getElementById('cancelBtn').style.display = 'block';
+            
+            document.getElementById('editId').value = item.id;
+            document.getElementById('name').value = item.name;
+            document.getElementById('name_en').value = item.name_en || '';
+            document.getElementById('category').value = item.category;
+            fillSubcategorySelectForRestaurant(item.subcategory || '');
+            document.getElementById('address').value = item.address || '';
+            document.getElementById('phone').value = item.phone || '';
+            document.getElementById('homepage').value = item.homepage || '';
+            document.getElementById('open_time').value = item.open_time || '';
+            document.getElementById('close_time').value = item.close_time || '';
+            document.getElementById('closed_days').value = item.closed_days || '';
+            document.getElementById('walk_time').value = item.walk_time || '';
+            document.getElementById('description').value = item.description || '';
+            document.getElementById('description_en').value = item.description_en || '';
+            const kh = document.getElementById('kiosk_hidden');
+            if (kh) kh.checked = !!Number(item.kiosk_hidden);
+
+            document.getElementById('tags').value = item.tags || '';
+            const mainMenuEl = document.getElementById('main_menu');
+            if (mainMenuEl) mainMenuEl.value = item.main_menu || '';
+            const existingTags = (item.tags || '').split(',').map(t => t.trim());
+            document.querySelectorAll('#facilitiesGrid input').forEach(cb => {
+                cb.checked = existingTags.includes(cb.value);
+            });
+
+            ['map_image', 'menu_image'].forEach((id) => {
+                clearPreviewBlob(id);
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            editingAssetUrls = {
+                image_url: item.image_url || null,
+                map_url: item.map_url || null,
+                menu_url: item.menu_url || null
+            };
+            loadHeroGalleryFromItem(item);
+            refreshAllImagePreviews();
+            
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        function resetForm() {
+            document.getElementById('formTitle').innerText = '새 식당 등록';
+            document.getElementById('submitBtn').innerText = '등록 완료하기';
+            document.getElementById('cancelBtn').style.display = 'none';
+            document.getElementById('editId').value = '';
+            document.getElementById('adminForm').reset();
+            const khEl = document.getElementById('kiosk_hidden');
+            if (khEl) khEl.checked = false;
+            document.querySelectorAll('#facilitiesGrid input').forEach(cb => cb.checked = false);
+            editingAssetUrls = { image_url: null, map_url: null, menu_url: null };
+            revokeAllHeroGalleryBlobs();
+            heroGalleryItems = [];
+            renderHeroGallery();
+            ['map_image', 'menu_image'].forEach((id) => {
+                clearPreviewBlob(id);
+                hidePreview(id);
+            });
+        }
+
+        function submitForm(e) {
+            e.preventDefault();
+            
+            const checkedBoxes = Array.from(document.querySelectorAll('#facilitiesGrid input:checked')).map(cb => cb.value);
+            document.getElementById('tags').value = checkedBoxes.join(',');
+            
+            const form = document.getElementById('adminForm');
+            const formData = new FormData(form);
+            const hg = buildHeroGalleryPayload();
+            formData.append('gallery_manifest', JSON.stringify(hg.manifest));
+            hg.files.forEach((f) => formData.append('images', f));
+            const editId = document.getElementById('editId').value;
+            
+            const url = editId ? '/api/restaurants/' + editId : '/api/restaurants';
+            const method = editId ? 'PUT' : 'POST';
+
+            fetchJson(url, { method: method, body: formData })
+                .then(({ data }) => {
+                    if (data.error) alert('오류 발생: ' + data.error);
+                    else {
+                        alert(editId ? '성공적으로 수정되었습니다.' : '성공적으로 등록되었습니다.');
+                        resetForm();
+                        fetchAdminList();
+                    }
+                }).catch(err => alert(err.message));
+        }
+
+        function deleteItem(id) {
+            if(!confirm('정말로 이 식당을 삭제하시겠습니까? (삭제 후 복구 불가)')) return;
+            fetchJson('/api/restaurants/' + id, { method: 'DELETE' })
+                .then(({ data }) => {
+                    if (data.error) alert('오류 발생: ' + data.error);
+                    else fetchAdminList();
+                })
+                .catch((err) => alert(err.message));
+        }
+
+        function uploadExcelFile() {
+            const input = document.getElementById('excelFile');
+            const statusEl = document.getElementById('excelImportStatus');
+            const btn = document.getElementById('excelUploadBtn');
+            const file = input.files && input.files[0];
+            if (!file) {
+                statusEl.className = 'error';
+                statusEl.textContent = '엑셀 파일을 선택해주세요.';
+                return;
+            }
+            const fd = new FormData();
+            fd.append('excel', file);
+            btn.disabled = true;
+            statusEl.className = '';
+            statusEl.textContent = '업로드 중…';
+
+            fetchJson('/api/restaurants/import-excel', { method: 'POST', body: fd })
+                .then(({ ok, data }) => {
+                    btn.disabled = false;
+                    if (!ok || data.error) {
+                        statusEl.className = 'error';
+                        statusEl.textContent = data.error || '업로드에 실패했습니다.';
+                        return;
+                    }
+                    let summary = '';
+                    if (data.imported > 0) {
+                        summary = data.imported + '건 등록';
+                        if (data.emptySkipped) summary += ', 빈 행 ' + data.emptySkipped + '건 생략';
+                        summary += '했습니다.';
+                    } else if (data.emptySkipped) {
+                        summary = '등록된 행 없음 (빈 행 ' + data.emptySkipped + '건 생략).';
+                    }
+                    if (data.imported > 0) fetchAdminList();
+                    if (data.errors && data.errors.length) {
+                        const lines = data.errors.slice(0, 8).map(e => e.row + '행: ' + e.message);
+                        if (data.errors.length > 8) lines.push('… 외 ' + (data.errors.length - 8) + '건');
+                        statusEl.className = data.imported > 0 ? 'success' : 'error';
+                        statusEl.innerHTML = (summary ? summary + '<br>' : '') +
+                            '<strong style="color:#c92a2a;">문제가 있는 행</strong><br>' + lines.join('<br>');
+                    } else {
+                        statusEl.className = 'success';
+                        statusEl.textContent = summary || '처리할 데이터가 없습니다.';
+                        if (data.imported > 0) input.value = '';
+                    }
+                })
+                .catch(err => {
+                    btn.disabled = false;
+                    statusEl.className = 'error';
+                    statusEl.textContent = '네트워크 오류: ' + err.message;
+                });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ko" class="kiosk-page" data-kiosk-page="home">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>달빛거리먹자골목</title>
+    <link rel="stylesheet" href="css/moon-layout.css?v=202604105000">
+    <link rel="stylesheet" href="css/kiosk-moon-overrides.css?v=202604210000">
+</head>
+<body class="kiosk-page">
+    <div class="kiosk-shell">
+    <div class="kiosk-viewport">
+    <div id="screensaver" class="screensaver" onclick="resetIdleTimer()" ontouchstart="resetIdleTimer()">
+        <video class="screensaver-bg-video" id="screensaverVideo" muted loop playsinline preload="metadata" aria-hidden="true">
+            <source src="img/mv.mp4" type="video/mp4">
+        </video>
+        <div class="screensaver-content">
+            <div class="screensaver-logo"><img src="img/logo.svg" alt=""></div>
+            <div class="screensaver-title" id="ss-title">달빛거리먹자골목</div>
+            <div class="screensaver-subtitle" id="ss-subtitle">화면을 터치해서 맛집을 찾아보세요!</div>
+            <div class="touch-icon"><img src="img/inicon01.png" alt=""></div>
+        </div>
+    </div>
+
+    <article id="kiosk">
+      <header class="k-header">
+        <button type="button" class="header-btn" id="headerBack" aria-label="뒤로가기">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <div class="k-logos">
+          <img src="img/logo.svg" alt="달빛거리 먹자골목">
+        </div>
+        <button type="button" class="header-btn" id="headerHome" aria-label="홈으로">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"></path><polyline points="9 21 9 12 15 12 15 21"></polyline></svg>
+        </button>
+      </header>
+
+      <main class="k-body" style="overflow:hidden">
+        <section class="k-inner mainbg3">
+          <div class="k-hero">
+            <h1 id="kiosk-title" style="touch-action: manipulation; cursor: default;">
+              <em>달빛거리 먹자골목</em><br><span class="k-hero-title-sub">음식점 안내도</span>
+            </h1>
+            <p class="k-hero-desc" id="kiosk-subtitle"></p>
+          </div>
+
+          <div class="k-food-grid category-tabs" id="categoryTabs"></div>
+
+          <video autoplay muted loop playsinline preload="auto" id="myVideo" aria-hidden="true">
+            <source src="img/mv.mp4" type="video/mp4">
+          </video>
+        </section>
+      </main>
+
+      <footer class="k-footer">
+        <button type="button" class="header-btn" id="footerHome" aria-label="맨 위로">
+          <svg viewBox="0 0 24 24" stroke="#fff" width="80" fill="none" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <button type="button" class="k-tab k-tab-search" id="footerSearch" aria-label="검색하기">
+          <span class="k-tab-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg></span>검색하기
+        </button>
+        <button type="button" class="k-tab k-tab-map" id="footerMap" aria-label="지도 검색">
+          <span class="k-tab-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></svg></span>지도 안내
+        </button>
+        <button type="button" class="k-tab k-tab-category active" id="footerCategory" aria-label="종류별 검색">
+          <span class="k-tab-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8"/><path d="M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7"/><path d="m2.1 21.8 6.4-6.3"/><path d="m19 5-7 7"/></svg></span>메뉴별 안내
+        </button>
+      </footer>
+
+      <div id="keyboard-modal-mount" data-kiosk-input-aria-label="검색어"></div>
+    </article>
+
+    <script src="js/hangul.js?v=202604201000"></script>
+    <script src="js/kiosk/kiosk-i18n.js?v=202604206000"></script>
+    <script src="js/app.js?v=202604206100"></script>
+    </div>
+    </div>
+</body>
+</html>

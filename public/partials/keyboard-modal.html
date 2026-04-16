@@ -1,0 +1,51 @@
+<div class="keyboard-modal" id="keyboardModal" aria-hidden="true">
+  <div class="keyboard-wrap" role="dialog" aria-labelledby="keyboardModalTitle">
+    <!-- <h3 class="k-board-title" id="keyboardModalTitle">한글 입력 · <span class="k-board-hint">「영문」누르면 숫자·영문</span></h3> -->
+    <div class="input-wrap">
+      <input type="text" id="kioskInput" readonly autocomplete="off" aria-label="검색어">
+      <button type="button" class="k-btn-clear" aria-label="입력 지우기"></button>
+    </div>
+    <div class="k-keys">
+      <div class="k-layer k-layer-hangul">
+        <div class="k-row k-row-nums">
+          <button type="button" class="k-key k-num" data-char="1">1</button><button type="button" class="k-key k-num" data-char="2">2</button><button type="button" class="k-key k-num" data-char="3">3</button><button type="button" class="k-key k-num" data-char="4">4</button><button type="button" class="k-key k-num" data-char="5">5</button><button type="button" class="k-key k-num" data-char="6">6</button><button type="button" class="k-key k-num" data-char="7">7</button><button type="button" class="k-key k-num" data-char="8">8</button><button type="button" class="k-key k-num" data-char="9">9</button><button type="button" class="k-key k-num" data-char="0">0</button>
+        </div>
+        <div class="k-row">
+          <button type="button" class="k-key">ㅂ</button><button type="button" class="k-key">ㅈ</button><button type="button" class="k-key">ㄷ</button><button type="button" class="k-key">ㄱ</button><button type="button" class="k-key">ㅅ</button><button type="button" class="k-key">ㅛ</button><button type="button" class="k-key">ㅕ</button><button type="button" class="k-key">ㅑ</button><button type="button" class="k-key">ㅐ</button><button type="button" class="k-key">ㅔ</button>
+        </div>
+        <div class="k-row">
+          <button type="button" class="k-key">ㅁ</button><button type="button" class="k-key">ㄴ</button><button type="button" class="k-key">ㅇ</button><button type="button" class="k-key">ㄹ</button><button type="button" class="k-key">ㅎ</button><button type="button" class="k-key">ㅗ</button><button type="button" class="k-key">ㅓ</button><button type="button" class="k-key">ㅏ</button><button type="button" class="k-key">ㅣ</button>
+        </div>
+        <div class="k-row">
+          <button type="button" class="k-key">ㅋ</button><button type="button" class="k-key">ㅌ</button><button type="button" class="k-key">ㅊ</button><button type="button" class="k-key">ㅍ</button><button type="button" class="k-key">ㅠ</button><button type="button" class="k-key">ㅜ</button><button type="button" class="k-key">ㅡ</button>
+        </div>
+      </div>
+      <div class="k-layer k-layer-alt" aria-hidden="true">
+        <div class="k-row k-row-nums">
+          <button type="button" class="k-key k-num" data-char="1">1</button><button type="button" class="k-key k-num" data-char="2">2</button><button type="button" class="k-key k-num" data-char="3">3</button><button type="button" class="k-key k-num" data-char="4">4</button><button type="button" class="k-key k-num" data-char="5">5</button><button type="button" class="k-key k-num" data-char="6">6</button><button type="button" class="k-key k-num" data-char="7">7</button><button type="button" class="k-key k-num" data-char="8">8</button><button type="button" class="k-key k-num" data-char="9">9</button><button type="button" class="k-key k-num" data-char="0">0</button>
+        </div>
+        <div class="k-row k-row-en" aria-label="영문 대문자">
+          <button type="button" class="k-key k-en" data-char="Q">Q</button><button type="button" class="k-key k-en" data-char="W">W</button><button type="button" class="k-key k-en" data-char="E">E</button><button type="button" class="k-key k-en" data-char="R">R</button><button type="button" class="k-key k-en" data-char="T">T</button><button type="button" class="k-key k-en" data-char="Y">Y</button><button type="button" class="k-key k-en" data-char="U">U</button><button type="button" class="k-key k-en" data-char="I">I</button><button type="button" class="k-key k-en" data-char="O">O</button><button type="button" class="k-key k-en" data-char="P">P</button>
+        </div>
+        <div class="k-row k-row-en">
+          <button type="button" class="k-key k-en" data-char="A">A</button><button type="button" class="k-key k-en" data-char="S">S</button><button type="button" class="k-key k-en" data-char="D">D</button><button type="button" class="k-key k-en" data-char="F">F</button><button type="button" class="k-key k-en" data-char="G">G</button><button type="button" class="k-key k-en" data-char="H">H</button><button type="button" class="k-key k-en" data-char="J">J</button><button type="button" class="k-key k-en" data-char="K">K</button><button type="button" class="k-key k-en" data-char="L">L</button>
+        </div>
+        <div class="k-row k-row-en">
+          <button type="button" class="k-key k-en" data-char="Z">Z</button><button type="button" class="k-key k-en" data-char="X">X</button><button type="button" class="k-key k-en" data-char="C">C</button><button type="button" class="k-key k-en" data-char="V">V</button><button type="button" class="k-key k-en" data-char="B">B</button><button type="button" class="k-key k-en" data-char="N">N</button><button type="button" class="k-key k-en" data-char="M">M</button>
+        </div>
+      </div>
+
+      <div class="k-row k-row-tools">
+        <button type="button" class="k-btn-lang-toggle" id="keyboardLangBtn" aria-label="숫자·영문 키보드로 전환" aria-pressed="false">
+          <span class="k-lang-toggle-text" id="keyboardToggleText">영문</span>
+        </button>
+        <button type="button" class="k-key k-space">띄어쓰기</button>
+        <button type="button" class="k-key k-del">지우기</button>
+      </div>
+    </div>
+    <div class="k-actions">
+      <button type="button" class="k-btn-close">닫기</button>
+      <button type="button" class="k-btn-submit">검색</button>
+    </div>
+  </div>
+</div>

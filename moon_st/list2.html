@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>달빛거리 먹자골목 음식점 안내도</title>
+	<link rel="stylesheet" type="text/css" href="css/layout.css" />
+<meta name="viewport" content="user-scalable=no,initial-scale=1.0,maximum-scale=1.0,minimum-scale=1.0,width=device-width"> 
+</head>
+
+<body class="dev-mode">
+
+  <!-- ★ 개발 툴바 — 배포 시 이 블록 삭제 ★ -->
+  <section class="dev-bar" id="devBar">
+    <span class="chip">📐 604 × 1074 — Full HD 세로 키오스크</span>
+    <div class="controls">
+      <label>
+        미리보기 크기
+        <input type="range" id="sl" min="20" max="100" value="40" />
+        <span class="sv" id="sv">40%</span>
+      </label>
+      <button class="btn-full" id="btnFull">⛶ 풀스크린 미리보기</button>
+    </div>
+  </section>
+
+
+
+  <!-- 검정 키오스크 외관 — 배포 시 삭제 -->
+  <section class="shell" id="shell">
+
+    <article id="kiosk">
+
+      <!-- HEADER -->
+      <header class="k-header">
+			<button class="header-btn" aria-label="뒤로가기" onclick="history.back()">
+		  <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
+			</button>
+			<div class="k-logos">
+				 <img src="img/logo.svg">
+			</div>
+		<button class="header-btn" aria-label="홈으로" onclick="location.href='index.html'">
+		  <svg viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"></path><polyline points="9 21 9 12 15 12 15 21"></polyline></svg>
+		</button>
+      </header>
+      <!-- //HEADER -->
+
+      <!-- BODY -->
+      <main class="k-body">
+        <section class="k-inner mainbg">
+
+          <!-- k-hero -->
+<!--           <div class="k-hero">
+            <div class="k-hero-tag">
+              <div class="k-hero-tag-dot"></div>
+              지도 안내
+            </div>
+                   <h2><em>달빛거리 먹자골목</em> 음식점 지도검색</h2>
+          
+          </div>
+          //k-hero -->
+
+
+
+
+<!-- 지도시작 -->
+
+
+
+
+
+ <section class="section-header">
+      <div class="k-hero-tag">
+        <div class="k-hero-tag-dot"></div>
+        건물 선택 결과
+      </div>
+      <h2>3번 음식점 안내</h2>
+      <p>총 4개의 음식점이 있어요</p>
+      <div class="accent-bar"></div>
+    </section>
+
+
+
+
+
+<!-- <h3 class="h3com">3번 건물 음식점 안내</h3>
+ -->
+
+<!-- list-store -->
+<section class="list-store" >
+    <article class="store" onclick="openModal('modal-view')">
+      <div class="thumb"><img src="img/sample.jpg"></div>
+      <div class="info">
+        <div class="name">신신반점</div>
+        <div class="desc">정통 중화요리를 맛볼 수 있는 곳</div>
+        <div class="addr">🗺️ 테크노상업로4길 18-12</div>
+        <div class="tel">📱053-123-4567</div>
+      </div>
+      <div class="right">
+        <span class="cat-badge bd01">중국</span>
+      </div>
+    </article>
+  
+    <article class="store" onclick="openModal('modal-view')">
+      <div class="thumb"><img src="img/sample2.jpg"></div>
+      <div class="info">
+        <div class="name">하노이무드</div>
+        <div class="desc">쌀국수와 분짜 등 베트남 현지식 전문점</div>
+        <div class="addr">🗺️테크노상업로4길 15-12</div>
+        <div class="tel">📱053-123-4576</div>
+      </div>
+      <div class="right">
+        <span class="cat-badge bd02">베트남</span>
+      </div>
+    </article>
+
+    <article class="store" onclick="openModal('modal-view')">
+      <div class="thumb"><img src="img/sample3.jpg"></div>
+      <div class="info">
+        <div class="name">부에노파스타</div>
+        <div class="desc">전통 이탈리안에 퓨전을 더한 레스토랑</div>
+        <div class="addr">🗺️테크노상업로2길 15-12</div>
+        <div class="tel">📱053-523-4325</div>
+      </div>
+      <div class="right">
+        <span class="cat-badge bd03">이탈리아</span>
+      </div>
+    </article>
+    <article class="store" onclick="openModal('modal-view')">
+      <div class="thumb"><img src="img/sample.jpg"></div>
+      <div class="info">
+        <div class="name">사이공비어&쌀국수</div>
+		  <div class="desc">	베트남 현지식 메뉴 제공</div>
+        <div class="addr">🗺️테크노상업로2길 3-12</div>
+        <div class="tel">📱053-512-4325</div>
+      </div>
+      <div class="right">
+        <span class="cat-badge bd02">베트남</span>
+      </div>
+    </article>
+
+    </section>
+<!-- //list-store -->
+
+      </main>
+
+
+<!-- modal-overlay -->
+<section class="modal-overlay" id="modal-view" onclick="handleOverlayClick(event,'modal-view')" style="display:flex;">
+  <article class="modal-box">
+    <article class="modal-header">
+      <button class="modal-close" onclick="location.href='map.html';"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+</svg>
+</button>
+    </article>
+	<!-- modal-body -->
+    <article class="modal-body">
+  
+
+		<!-- view-card -->
+		<section class="view-card">
+
+		  <!-- img-wrap -->
+		  <article class="img-wrap">
+			<div class="img-main">
+				<img src="img/sample.jpg" alt="대표이미지"> 
+			</div>
+			<div class="img-sub">
+			  <div class="sub on">
+				<img src="img/sample.jpg" alt="대표이미지"> 
+			  </div>
+			   <div class="sub">
+				<img src="img/sample2.jpg" alt="대표이미지"> 
+			  </div>
+			  <div class="sub">
+				<img src="img/sample3.jpg" alt="대표이미지"> 
+			  </div>
+			</div>
+		  </article>
+		  <!-- //img-wrap -->
+
+		<!-- view-detail-wrap -->
+		<article class="view-detail-wrap">
+
+
+		  <article class="header-area">
+			<div class="cat-row">
+			  <span class="cat-badge bd01">중국</span>
+			</div>
+			<div class="store-name">신신반점</div>
+			<div class="store-desc">달빛거리 대표 중화요리 맛집, 30년 전통의 깊은 손맛</div>
+		  </article>
+
+
+
+		  <div class="divider"></div>
+
+		  <div class="info-list">
+
+			<div class="info-row">
+			  <div class="info-icon ic-loc">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#5470e0" class="size-6">
+				  <path fill-rule="evenodd" d="m11.54 22.351.07.04.028.016a.76.76 0 0 0 .723 0l.028-.015.071-.041a16.975 16.975 0 0 0 1.144-.742 19.58 19.58 0 0 0 2.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 0 0-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 0 0 2.682 2.282 16.975 16.975 0 0 0 1.145.742ZM12 13.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clip-rule="evenodd" />
+				</svg>
+
+			  </div>
+			  <div class="info-content">
+				<div class="info-label">주소 · 위치</div>
+                    <div class="info-val">대구 달성군 유가읍 테크노상업로 112</div>
+			  </div>
+			</div>
+
+			<div class="info-row">
+			  <div class="info-icon ic-tel">
+		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#2dbe8a"><path d="M7 2H18C18.5523 2 19 2.44772 19 3V21C19 21.5523 18.5523 22 18 22H6C5.44772 22 5 21.5523 5 21V0H7V2ZM7 4V9H17V4H7Z"></path></svg>
+
+			  </div>
+			  <div class="info-content">
+				<div class="info-label">연락처</div>
+				<div class="info-val point">053-123-4567</div>
+			  </div>
+			</div>
+
+			<div class="info-row">
+			  <div class="info-icon ic-time">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#f5a623" class="size-6">
+				  <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 6a.75.75 0 0 0-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 0 0 0-1.5h-3.75V6Z" clip-rule="evenodd" />
+				</svg>
+
+			  </div>
+			  <div class="info-content">
+				<div class="info-label">영업시간</div>
+				<div class="info-val">11:00 - 22:00</div>
+			  </div>
+			</div>
+
+			<div class="info-row">
+			  <div class="info-icon ic-day">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#d985c4"><path d="M7 1V3H3C2.44772 3 2 3.44772 2 4V20C2 20.5523 2.44772 21 3 21H10.7546C9.65672 19.6304 9 17.8919 9 16C9 11.5817 12.5817 8 17 8C18.8919 8 20.6304 8.65672 22 9.75463V4C22 3.44772 21.5523 3 21 3H17V1H15V3H9V1H7ZM23 16C23 19.3137 20.3137 22 17 22C13.6863 22 11 19.3137 11 16C11 12.6863 13.6863 10 17 10C20.3137 10 23 12.6863 23 16ZM16 12V16.4142L18.2929 18.7071L19.7071 17.2929L18 15.5858V12H16Z"></path></svg>
+			  </div>
+			  <div class="info-content">
+				<div class="info-label">휴무일</div>
+				<div class="info-val">매주 월요일</div>
+			  </div>
+			</div>
+
+			<div class="info-row">
+			  <div class="info-icon ic-menu">
+
+		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#5470e0"><path d="M4.22235 3.80753L10.9399 10.525L8.11144 13.3535L4.22235 9.46438C2.66026 7.90229 2.66026 5.36963 4.22235 3.80753ZM14.2683 12.1464L13.4147 12.9999L20.4858 20.071L19.0716 21.4852L12.0005 14.4141L4.92946 21.4852L3.51525 20.071L12.854 10.7322C12.2664 9.27525 12.8738 7.1769 14.4754 5.5753C16.428 3.62268 19.119 3.1478 20.4858 4.51464C21.8526 5.88147 21.3778 8.57242 19.4251 10.525C17.8235 12.1267 15.7252 12.7341 14.2683 12.1464Z"></path></svg>
+
+
+			  </div>
+			  <div class="info-content">
+				<div class="info-label">주요메뉴</div>
+				<div class="menu-chips">
+				  <span class="menu-chip">짜장면</span>
+				  <span class="menu-chip">짬뽕</span>
+				  <span class="menu-chip">탕수육</span>
+				  <span class="menu-chip">마파두부</span>
+				</div>
+			  </div>
+			</div>
+
+		  </div>
+
+		  <!-- QR 섹션 -->
+		  <!-- qr-box 안 img src 에 QR 이미지 경로 넣으세요 -->
+		  <div class="qr-section">
+			<div class="qr-box">
+			  <!-- <img src="img/qr_store01.png" alt="QR코드"> -->
+		<!--       <svg width="48" height="48" viewBox="0 0 52 52" fill="none">
+				<rect x="4" y="4" width="18" height="18" rx="2" stroke="#5470e0" stroke-width="2"></rect>
+				<rect x="8" y="8" width="10" height="10" rx="1" fill="#5470e0"></rect>
+				<rect x="30" y="4" width="18" height="18" rx="2" stroke="#5470e0" stroke-width="2"></rect>
+				<rect x="34" y="8" width="10" height="10" rx="1" fill="#5470e0"></rect>
+				<rect x="4" y="30" width="18" height="18" rx="2" stroke="#5470e0" stroke-width="2"></rect>
+				<rect x="8" y="34" width="10" height="10" rx="1" fill="#5470e0"></rect>
+				<rect x="30" y="30" width="4" height="4" fill="#5470e0"></rect>
+				<rect x="36" y="30" width="4" height="4" fill="#5470e0"></rect>
+				<rect x="42" y="30" width="6" height="4" fill="#5470e0"></rect>
+				<rect x="30" y="36" width="4" height="4" fill="#5470e0"></rect>
+				<rect x="36" y="36" width="4" height="4" fill="#5470e0"></rect>
+				<rect x="30" y="42" width="6" height="6" fill="#5470e0"></rect>
+				<rect x="38" y="42" width="10" height="6" fill="#5470e0"></rect>
+			  </svg> -->
+		<!-- <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5470e0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-qr-code-icon lucide-qr-code"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></svg> -->
+
+			  <img src="img/qr.svg">
+			</div>
+			<div class="qr-info">
+		<div class="qr-title">업소까지 경로 안내</div>
+			<div class="qr-sub">QR을 스캔하면 업소까지<br>가시는 길을 안내해 드립니다.</div>
+
+			</div>
+			<div class="qr-btn">
+			   <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+				<path d="M6 4l4 4-4 4" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+			  </svg> 
+
+
+			</div>
+		  </div>
+
+		</article>
+		<!-- view-detail-wrap -->
+
+
+		</section>
+		<!-- //view-card -->
+
+
+
+    </article>
+	<!-- //modal-body -->
+	</article>
+</section>
+<!-- //modal-overlay -->
+
+
+
+
+
+
+
+
+<!-- modal-overlay -->
+<section class="modal-overlay" id="modal-view2" onclick="handleOverlayClick(event,'modal-view2')">
+  <article class="modal-box">
+    <article class="modal-header">
+      <button class="modal-close" onclick="closeModal('modal-view2')"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+</svg>
+</button>
+    </article>
+	<!-- modal-body -->
+    <article class="modal-body">
+
+		<!-- view-card -->
+		<section class="view-card">
+
+
+		<!-- view-detail-wrap -->
+		<article class="view-detail-wrap building">
+
+		  <article class="header-area">
+			<div class="store-name">3번 건물 층별 안내</div>
+		  </article>
+		<!-- 층별추가 -->
+			<style>
+			  /* 변수 설정 (핑크 주축) */
+			  .building-wrapper {
+				--sub-pink: #FFF5FA;
+				--text-sub: #8B7A83;
+				--border-pink: #F8D7E8;
+				width: 100%;
+			  }
+
+		.view-detail-wrap.building {padding-top:0;} 
+
+			  /* 안내 문구 스타일 */
+			  .building-wrapper .helper-text {
+				display: flex;
+				align-items: center;
+				gap: 1vw;
+				font-size: 3.2vh; 
+				font-weight: 400;
+				color: #666;
+				margin-bottom: 4vh;
+			  }
+
+			  .building-wrapper .helper-icon {
+				color:#666;
+				width: 3.2vh;
+				height: 3.2vh;
+				flex-shrink: 0;
+			  }
+
+			  /* 빌딩 전체 구조 */
+			  .building-wrapper .building-stack {
+				display: flex;
+				flex-direction: column;
+				border: 0.3vh solid var(--border-pink);
+				border-radius: 2.5vh;
+				overflow: hidden;
+				box-shadow: 0 1vh 3vh rgba(222, 91, 158, 0.08);
+			  }
+
+			  /* 각 층의 행 */
+			  .building-wrapper .floor-row {
+				display: flex;
+				border-bottom: 0.3vh solid var(--border-pink);
+			  }
+
+			  .building-wrapper .floor-row:last-child {
+				border-bottom: none;
+			  }
+
+			  /* 왼쪽 층수 영역 */
+			  .building-wrapper .floor-number {
+				width: 9vw;
+				background-color: var(--sub-pink);
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-weight: 800;
+				font-size: 6vh;
+				color: var(--pink);
+				border-right: 0.15vh solid var(--border-pink);
+				flex-shrink: 0;
+			  }
+
+			  .building-wrapper .shop-grid {
+				flex: 1;
+				display: flex;
+				flex-wrap: wrap;
+				padding: 1.5vh;
+				gap: 1.2vh;
+			  }
+
+			  .building-wrapper .shop-unit {
+				flex: 0 0 calc(33.333% - 0.8vh);
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: center;
+				padding: 1.5vh 0.5vw;
+				background-color: var(--bg-white);
+				border-radius: 1.8vh;
+				cursor: pointer;
+				transition: all 0.2s ease;
+			  }
+
+			  .building-wrapper .shop-unit:active {
+				transform: scale(0.95);
+				background-color: var(--sub-pink);
+			  }
+
+			  .building-wrapper .shop-unit .icon {
+			
+				margin-bottom: 0.5vh;
+			  }
+			  .building-wrapper .shop-unit .icon  img {width:19vh;}
+
+			  .building-wrapper .shop-unit .name {
+				font-size: 4vh;
+				font-weight: 700;
+				color: var(--text-main);
+				text-align: center;
+				margin-bottom: 0.3vh;
+				width: 90%;
+			  }
+
+			  .building-wrapper .shop-category {
+				background: #eee;
+			  color: #666;
+			  display: flex;
+			  justify-content: center;
+			  font-size: 2.7vh; margin-top:1vh;
+			  font-weight: 400;
+			  width: 18vh;
+			  text-align: Center;
+			  line-height: 2;
+			  border-radius: 16vh;
+			  }
+			  .building-wrapper .empty-unit {
+				width: 100%;
+				padding: 4vh 0;
+				text-align: center;
+				color: rgba(0,0,0,0.2);
+				font-size: 2.6vh;
+				font-weight: 500;
+			  }
+
+
+
+			</style>
+
+			<section class="building-wrapper">
+			  <div class="helper-text">
+				<svg class="helper-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+				  <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+				  <path d="M12 8V12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+				  <path d="M12 16H12.01" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+				</svg>
+				음식점을 클릭하시면 자세히 보실 수 있습니다.
+			  </div>
+
+			  <div class="building-stack">
+				
+				<div class="floor-row">
+				  <div class="floor-number">3F</div>
+				  <div class="shop-grid">
+					<div class="shop-unit" onclick="location.href='list2.html';">
+					  <span class="icon"><img src="img/inicon03.png"></span>
+					  <span class="name">본죽&비빔밥</span>
+					  <span class="shop-category">한식</span>
+					</div>
+					<div class="shop-unit" onclick="location.href='list2.html';">
+					  <span class="icon"><img src="img/inicon06.png"></span>
+					  <span class="name">홍콩반점</span>
+					  <span class="shop-category">중식</span>
+					</div>
+					<div class="shop-unit" onclick="location.href='list2.html';">
+					  <span class="icon"><img src="img/inicon05.png"></span>
+					  <span class="name">도미노피자</span>
+					  <span class="shop-category">양식</span>
+					</div>
+					<div class="shop-unit" onclick="location.href='list2.html';">
+					  <span class="icon"><img src="img/inicon04.png"></span>
+					  <span class="name">마라공방</span>
+					  <span class="shop-category">중식</span>
+					</div>
+				  </div>
+				</div>
+
+				<div class="floor-row">
+				  <div class="floor-number">2F</div>
+				  <div class="shop-grid">
+					<div class="shop-unit">
+					  <span class="icon"><img src="img/inicon02.png"></span>
+					  <span class="name">샐러디</span>
+					  <span class="shop-category">카페</span>
+					</div>
+				  </div>
+				</div>
+
+				<div class="floor-row">
+				  <div class="floor-number">1F</div>
+				  <div class="shop-grid">
+					<div class="empty-unit">새로운 매장이 들어올 예정입니다.</div>
+				  </div>
+				</div>
+
+			  </div>
+			</section>
+			<!-- 층간안내 -->
+
+
+		</article>
+		<!-- view-detail-wrap -->
+
+
+		</section>
+		<!-- //view-card -->
+
+
+
+    </article>
+	<!-- //modal-body -->
+	</article>
+</section>
+<!-- //modal-overlay -->
+
+
+
+
+
+
+
+
+
+
+  <!-- ==============================
+       JS: 모달 열기/닫기
+  ============================== -->
+  <script>
+    // 모달 열기
+    function openModal(id) {
+      var overlay = document.getElementById(id);
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden'; // 배경 스크롤 막기
+    }
+
+    // 모달 닫기
+    function closeModal(id) {
+      var overlay = document.getElementById(id);
+      overlay.classList.remove('open');
+      document.body.style.overflow = ''; // 배경 스크롤 복구
+    }
+
+    // 검정 배경(오버레이) 클릭 시 닫기
+    // modal-box 클릭은 무시, 바깥 배경만 클릭 시 닫힘
+    function handleOverlayClick(event, id) {
+      if (event.target === document.getElementById(id)) {
+        closeModal(id);
+      }
+    }
+
+    // ESC 키로 열린 모달 전부 닫기
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        var opens = document.querySelectorAll('.modal-overlay.open');
+        opens.forEach(function(el) {
+          el.classList.remove('open');
+        });
+        document.body.style.overflow = '';
+      }
+    });
+  </script>
+
+      <!-- FOOTER: 탭 3개 각자 고유 색 -->
+      <footer class="k-footer">
+
+ <button class="header-btn" aria-label="뒤로가기" onclick="history.back()"> <svg viewBox="0 0 24 24" stroke="#fff" width="80" fill="none">
+      <polyline points="15 18 9 12 15 6"></polyline>
+      </svg></button>
+
+        <button class="k-tab k-tab-search">
+          <span class="k-tab-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search-icon lucide-search"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg></span>검색하기</button>
+        <button class="k-tab k-tab-map"onclick="location.href='map.html';">
+          <span class="k-tab-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-icon lucide-map"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></svg></span>지도 안내</button>
+        <button class="k-tab k-tab-category" onclick="location.href='index.html';">
+          <span class="k-tab-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-utensils-crossed-icon lucide-utensils-crossed"><path d="m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8"/><path d="M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7"/><path d="m2.1 21.8 6.4-6.3"/><path d="m19 5-7 7"/></svg></span> 종류별 안내</button>
+          
+       
+      </footer>
+
+    </article><!-- /#kiosk -->
+
+  </section><!-- /.shell -->
+
+
+
+  <script>
+   /* 슬라이더 */
+const sl    = document.getElementById('sl');
+const sv    = document.getElementById('sv');
+const shell = document.getElementById('shell');
+
+const applyScale = v => {
+  shell.style.transform = `scale(${v/100})`;
+  shell.style.transformOrigin = 'top center';
+  sv.textContent = v + '%';
+};
+applyScale(sl.value);
+sl.addEventListener('input', e => applyScale(+e.target.value));
+
+/* 풀스크린 */
+const btnFull = document.getElementById('btnFull');
+const devBar  = document.getElementById('devBar');
+let isFull = false;
+
+function enterFull() {
+  document.documentElement.requestFullscreen?.()
+    .then(() => {
+      document.body.classList.replace('dev-mode', 'full-mode');
+      devBar.style.display = 'none';
+
+      // shell 외관 제거
+      shell.style.padding      = '0';
+      shell.style.border       = 'none';
+      shell.style.borderRadius = '0';
+      shell.style.background   = 'transparent';
+      shell.style.boxShadow    = 'none';
+
+      // 뷰포트에 1712×3043이 꽉 차도록 scale 계산
+      const scaleX = window.innerWidth  / 1712;
+      const scaleY = window.innerHeight / 3043;
+      const scale  = Math.min(scaleX, scaleY);
+
+      shell.style.transform       = `scale(${scale})`;
+      shell.style.transformOrigin = 'top left';
+
+      btnFull.textContent = '✕ 개발 모드로 돌아가기';
+      isFull = true;
+    })
+    .catch(() => {});
+}
+
+function exitFull() {
+  isFull = false;
+  btnFull.textContent = '⛶ 풀스크린 미리보기';
+
+  // shell 스타일 원복
+  shell.style.padding = '';
+  shell.style.border = '';
+  shell.style.borderRadius = '';
+  shell.style.background = '';
+  shell.style.boxShadow = '';
+
+  document.body.classList.replace('full-mode', 'dev-mode');
+  devBar.style.display = '';
+
+  // 클래스/display 복구 후 다음 프레임에 scale 적용
+  requestAnimationFrame(() => applyScale(+sl.value));
+
+  if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+}
+
+btnFull.addEventListener('click', () => isFull ? exitFull() : enterFull());
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement && isFull) exitFull();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && isFull) exitFull();
+});
+
+  </script>
+
+</body>
+</html>

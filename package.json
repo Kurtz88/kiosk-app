@@ -1,0 +1,29 @@
+{
+  "name": "kiosk-restaurant-app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "backend/db.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prestart": "node scripts/write-import-template.js",
+    "start": "node backend/server.js",
+    "template": "node scripts/write-import-template.js",
+    "usb-update": "node scripts/usb-update.js",
+    "migrate": "node scripts/migrate.js",
+    "seed-categories": "node scripts/seed-12-categories.js",
+    "seed-subcategories": "node scripts/seed-subcategories.js",
+    "import-data-txt": "node scripts/import-data-txt.js",
+    "import-data-txt-replace": "node scripts/import-data-txt.js --replace"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^5.2.1",
+    "multer": "^2.1.1",
+    "qrcode": "^1.5.4",
+    "sqlite3": "^6.0.1",
+    "xlsx": "^0.18.5"
+  }
+}

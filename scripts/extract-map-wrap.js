@@ -1,0 +1,11 @@
+const fs = require('fs');
+const path = require('path');
+const s = fs.readFileSync(path.join(__dirname, '../moon_st/map.html'), 'utf8');
+const start = s.indexOf('<div class="map-wrap2"');
+const end = s.indexOf('</div><!-- //map-wrap -->');
+let block = s.slice(start, end) + '\n</div>';
+block = block.replace(/id="map"/, 'id="map-wrap2"');
+block = block.replace(/onclick="selectAndOpen\((\d+)\)"/g, 'data-slot="$1"');
+block = block.replace(/class="bldg sel"/, 'class="bldg"');
+fs.writeFileSync(path.join(__dirname, '../tmp-map-wrap.html'), block, 'utf8');
+console.log('ok', block.length);

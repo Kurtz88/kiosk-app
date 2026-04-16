@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>달빛거리먹자골목 음식점 안내도</title>
+<link rel="stylesheet" type="text/css" href="css/layout.css" />
+<meta name="viewport" content="user-scalable=no,initial-scale=1.0,maximum-scale=1.0,minimum-scale=1.0,width=device-width">
+</head>
+
+<body class="dev-mode">
+
+<section class="dev-bar" id="devBar"> <span class="chip">📐 604 × 1074 — Full HD 세로 키오스크</span>
+  <div class="controls">
+    <label> 미리보기 크기
+      <input type="range" id="sl" min="20" max="100" value="40" />
+      <span class="sv" id="sv">40%</span> </label>
+    <button class="btn-full" id="btnFull">⛶ 풀스크린 미리보기</button>
+  </div>
+</section>
+
+<section class="shell" id="shell">
+  <article id="kiosk"> 
+    
+    <header class="k-header">
+      <button class="header-btn" aria-label="뒤로가기" onclick="history.back()"> <svg viewBox="0 0 24 24">
+      <polyline points="15 18 9 12 15 6"></polyline>
+      </svg> </button>
+      <div class="k-logos"> <img src="img/logo.svg"> </div>
+      <button class="header-btn" aria-label="홈으로" onclick="location.href='index.html'"> <svg viewBox="0 0 24 24">
+      <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"></path>
+      <polyline points="9 21 9 12 15 12 15 21"></polyline>
+      </svg> </button>
+    </header>
+    <main class="k-body" style=" overflow:hidden">
+      <section class="k-inner mainbg3"> 
+        
+        <div class="k-hero"> 
+          <h1><em>달빛거리먹자골목</em> <br>
+            음식점 안내도</h1>
+          <p class="k-hero-desc"> 달빛거리먹자골목에서 맛있는 음식을 찾으시나요?<br>
+            원하는 음식 종류를 선택하시고 
+            업소 위치 확인 후 바로 GO GO! </p>
+        </div>
+        <div class="k-food-grid">
+          <div class="k-food-card bg01"  onclick="location.href='list.html';">
+            <div class="k-food-icon"><img src="img/inicon01.png"></div>
+            <div class="k-food-name">카페&디저트</div>
+            <div class="k-food-pill">43개소</div>
+          </div>
+          <div class="k-food-card bg02" onclick="location.href='list.html';">
+            <div class="k-food-icon"><img src="img/inicon02.png"></div>
+            <div class="k-food-name">고기구이</div>
+            <div class="k-food-pill">30개소</div>
+          </div>
+          <div class="k-food-card bg03" onclick="location.href='list.html';">
+            <div class="k-food-icon"><img src="img/inicon03.png"></div>
+            <div class="k-food-name">술집</div>
+            <div class="k-food-pill">28개소</div>
+          </div>
+          <div class="k-food-card bg04" onclick="location.href='list.html';">
+            <div class="k-food-icon"><img src="img/inicon04.png"></div>
+            <div class="k-food-name line2">다국적음식</div>
+            <div class="k-food-pill">23개소</div>
+          </div>
+          <div class="k-food-card bg05" onclick="location.href='list.html';">
+            <div class="k-food-icon"><img src="img/inicon05.png"></div>
+            <div class="k-food-name line2">분식&패스트푸드<br>
+              &샐러드</div>
+            <div class="k-food-pill">20개소</div>
+          </div>
+          <div class="k-food-card bg06" onclick="location.href='list.html';">
+            <div class="k-food-icon"><img src="img/inicon06.png"></div>
+            <div class="k-food-name line2">치킨&찜닭</div>
+            <div class="k-food-pill">13개소</div>
+          </div>
+          <div class="k-food-card bg07" onclick="location.href='list.html';">
+            <div class="k-food-icon"><img src="img/inicon07.png"></div>
+            <div class="k-food-name">회&해산물</div>
+            <div class="k-food-pill">12개소</div>
+          </div>
+          <div class="k-food-card bg08" onclick="location.href='list.html';">
+            <div class="k-food-icon"><img src="img/inicon08.png"></div>
+            <div class="k-food-name">한식</div>
+            <div class="k-food-pill">9개소</div>
+          </div>
+          <div class="k-food-card bg09" onclick="location.href='list.html';">
+            <div class="k-food-icon"><img src="img/inicon09.png"></div>
+            <div class="k-food-name">막창&곱창</div>
+            <div class="k-food-pill">7개소</div>
+          </div>
+          <div class="k-food-card bg10" onclick="location.href='list.html';">
+            <div class="k-food-icon"><img src="img/inicon10.png"></div>
+            <div class="k-food-name">국밥</div>
+            <div class="k-food-pill">6개소</div>
+          </div>
+          <div class="k-food-card bg11" onclick="location.href='list.html';">
+            <div class="k-food-icon"><img src="img/inicon11.png"></div>
+            <div class="k-food-name">족발&보쌈</div>
+            <div class="k-food-pill">5개소</div>
+          </div>
+          <div class="k-food-card bg12" onclick="location.href='list.html';">
+            <div class="k-food-icon"><img src="img/inicon12.png"></div>
+            <div class="k-food-name">국수</div>
+            <div class="k-food-pill">5개소</div>
+          </div>
+        </div>
+        <video autoplay loop muted="" playsinline="" id="myVideo">
+          <source src="img/mv.mp4" type="video/mp4">
+        </video>
+      </section>
+    </main>
+    
+    <footer class="k-footer"> 
+    
+     <button class="header-btn" aria-label="뒤로가기" onclick="history.back()"> <svg viewBox="0 0 24 24" stroke="#fff" width="80" fill="none">
+      <polyline points="15 18 9 12 15 6"></polyline>
+      </svg></button>
+    
+      <button class="k-tab k-tab-search"> <span class="k-tab-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search-icon lucide-search">
+      <path d="m21 21-4.34-4.34"/>
+      <circle cx="11" cy="11" r="8"/>
+      </svg></span>검색하기</button>
+      <button class="k-tab k-tab-map" onclick="location.href='map.html';"> <span class="k-tab-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-icon lucide-map">
+      <path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/>
+      <path d="M15 5.764v15"/>
+      <path d="M9 3.236v15"/>
+      </svg></span>지도 안내</button>
+      <button class="k-tab active k-tab-category" onclick="location.href='index.html';"> <span class="k-tab-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-utensils-crossed-icon lucide-utensils-crossed">
+      <path d="m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8"/>
+      <path d="M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7"/>
+      <path d="m2.1 21.8 6.4-6.3"/>
+      <path d="m19 5-7 7"/>
+      </svg></span>메뉴별 안내</button>
+      
+    
+    </footer>
+
+    <div class="keyboard-modal" id="keyboardModal">
+      <div class="keyboard-wrap">
+      <h3 class="k-board-title">음식이나 업소명을 검색해 보세요~</h3>
+        <div class="input-wrap">
+          <input type="text" id="kioskInput" readonly>
+          <button class="k-btn-clear"></button>
+        </div>
+        <div class="k-keys">
+          <div class="k-row">
+            <button class="k-key">ㅂ</button><button class="k-key">ㅈ</button><button class="k-key">ㄷ</button><button class="k-key">ㄱ</button><button class="k-key">ㅅ</button><button class="k-key">ㅛ</button><button class="k-key">ㅕ</button><button class="k-key">ㅑ</button><button class="k-key">ㅐ</button><button class="k-key">ㅔ</button>
+          </div>
+          <div class="k-row">
+            <button class="k-key">ㅁ</button><button class="k-key">ㄴ</button><button class="k-key">ㅇ</button><button class="k-key">ㄹ</button><button class="k-key">ㅎ</button><button class="k-key">ㅗ</button><button class="k-key">ㅓ</button><button class="k-key">ㅏ</button><button class="k-key">ㅣ</button>
+          </div>
+          <div class="k-row">
+            <button class="k-key">ㅋ</button><button class="k-key">ㅌ</button><button class="k-key">ㅊ</button><button class="k-key">ㅍ</button><button class="k-key">ㅠ</button><button class="k-key">ㅜ</button><button class="k-key">ㅡ</button>
+          </div>
+          <div class="k-row">
+            <button class="k-key k-space">띄어쓰기</button>
+            <button class="k-key k-del">지우기</button>
+          </div>
+        </div>
+        <div class="k-actions">
+          <button class="k-btn-close">닫기</button>
+          <button class="k-btn-submit">검색</button>
+        </div>
+      </div>
+    </div>
+    
+    
+    </article>
+  </section>
+<script>
+/* 슬라이더 */
+const sl    = document.getElementById('sl');
+const sv    = document.getElementById('sv');
+const shell = document.getElementById('shell');
+
+const applyScale = v => {
+  shell.style.transform = `scale(${v/100})`;
+  shell.style.transformOrigin = 'top center';
+  sv.textContent = v + '%';
+};
+applyScale(sl.value);
+sl.addEventListener('input', e => applyScale(+e.target.value));
+
+/* 풀스크린 */
+const btnFull = document.getElementById('btnFull');
+const devBar  = document.getElementById('devBar');
+let isFull = false;
+
+function enterFull() {
+  document.documentElement.requestFullscreen?.()
+    .then(() => {
+      document.body.classList.replace('dev-mode', 'full-mode');
+      devBar.style.display = 'none';
+
+      shell.style.padding      = '0';
+      shell.style.border       = 'none';
+      shell.style.borderRadius = '0';
+      shell.style.background   = 'transparent';
+      shell.style.boxShadow    = 'none';
+
+      const scaleX = window.innerWidth  / 1712;
+      const scaleY = window.innerHeight / 3043;
+      const scale  = Math.min(scaleX, scaleY);
+
+      shell.style.transform       = `scale(${scale})`;
+      shell.style.transformOrigin = 'top left';
+
+      btnFull.textContent = '✕ 개발 모드로 돌아가기';
+      isFull = true;
+    })
+    .catch(() => {});
+}
+
+function exitFull() {
+  isFull = false;
+  btnFull.textContent = '⛶ 풀스크린 미리보기';
+
+  shell.style.padding = '';
+  shell.style.border = '';
+  shell.style.borderRadius = '';
+  shell.style.background = '';
+  shell.style.boxShadow = '';
+
+  document.body.classList.replace('full-mode', 'dev-mode');
+  devBar.style.display = '';
+
+  requestAnimationFrame(() => applyScale(+sl.value));
+
+  if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+}
+
+btnFull.addEventListener('click', () => isFull ? exitFull() : enterFull());
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement && isFull) exitFull();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && isFull) exitFull();
+});
+
+
+
+/* === 키보드 모달 동작 스크립트 === */
+const keyboardModal = document.getElementById('keyboardModal');
+const kioskInput = document.getElementById('kioskInput');
+
+// 검색하기 탭 클릭 시 모달 열기
+document.querySelector('.k-tab-search').onclick = () => {
+  keyboardModal.classList.add('show');
+};
+
+// 하단 [닫기] 버튼 클릭 시 모달 닫기 (오류 수정)
+document.querySelector('.k-btn-close').onclick = () => {
+  keyboardModal.classList.remove('show');
+};
+
+// 입력창 옆 [✕] 버튼 클릭 시 글자 초기화
+document.querySelector('.k-btn-clear').onclick = () => {
+  kioskInput.value = '';
+};
+
+// 모달 바깥(검정색 반투명 배경)을 클릭해도 닫히도록 추가 (편의성)
+keyboardModal.onclick = (e) => {
+  if (e.target === keyboardModal) {
+    keyboardModal.classList.remove('show');
+  }
+};
+
+// 키보드 글자 버튼 입력
+document.querySelectorAll('.k-key').forEach(key => {
+  key.onclick = () => {
+    if (key.classList.contains('k-space')) {
+      kioskInput.value += ' ';
+    } else if (key.classList.contains('k-del')) {
+      kioskInput.value = kioskInput.value.slice(0, -1);
+    } else {
+      kioskInput.value += key.textContent;
+    }
+  };
+});
+
+// 하단 [검색] 버튼 클릭
+document.querySelector('.k-btn-submit').onclick = () => {
+  const keyword = kioskInput.value;
+  if(keyword.trim() !== '') {
+    // 인터넷이 안되는 환경이므로 list.html에 자바스크립트로 필터링 기능이 있어야 합니다.
+    location.href = 'list.html?search=' + encodeURIComponent(keyword);
+  }
+};
+</script>
+  
+</body>
+</html>

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ko" class="kiosk-page" data-kiosk-page="map">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>지도 검색 — 달빛거리먹자골목</title>
+    <link rel="stylesheet" href="css/moon-layout.css?v=202604105000">
+    <link rel="stylesheet" href="css/kiosk-moon-overrides.css?v=202604210000">
+</head>
+<body class="kiosk-page">
+    <div class="kiosk-shell">
+    <div class="kiosk-viewport">
+    <div id="screensaver" class="screensaver" onclick="resetIdleTimer()" ontouchstart="resetIdleTimer()">
+        <video class="screensaver-bg-video" id="screensaverVideo" muted loop playsinline preload="metadata" aria-hidden="true">
+            <source src="img/mv.mp4" type="video/mp4">
+        </video>
+        <div class="screensaver-content">
+            <div class="screensaver-logo"><img src="img/logo.svg" alt=""></div>
+            <div class="screensaver-title" id="ss-title">달빛거리먹자골목</div>
+            <div class="screensaver-subtitle" id="ss-subtitle">화면을 터치해서 맛집을 찾아보세요!</div>
+            <div class="touch-icon"><img src="img/inicon01.png" alt=""></div>
+        </div>
+    </div>
+
+    <article id="kiosk">
+      <header class="k-header">
+        <button type="button" class="header-btn" id="headerBack" aria-label="뒤로가기">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <div class="k-logos">
+          <a href="/" style="display:flex;align-items:center;"><img src="img/logo.svg" alt="달빛거리 먹자골목"></a>
+        </div>
+        <button type="button" class="header-btn" id="headerHome" aria-label="홈으로">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"></path><polyline points="9 21 9 12 15 12 15 21"></polyline></svg>
+        </button>
+      </header>
+
+      <main class="k-body">
+        <section class="k-inner mainbg map-page-inner">
+
+<p class="map-click-txt">👆 건물 번호를 눌러 건물별 음식점 정보를 확인하세요.</p>
+
+<section class="map-stage" id="map-stage">
+<div id="screen-fit">
+<div id="map-app2">
+
+<div class="map-wrap2" id="map-wrap2">
+
+  <!-- TOP (moon_st/map.html 기준) -->
+  <div class="top-block top-gray" style="left:6px;top:6px;width:254px;height:68px;"></div>
+  <div class="top-block top-park" style="left:278px;top:6px;width:316px;height:68px;">
+    <div style="font-size:16px;">🌳</div>
+    <div class="park-name">테크노폴리스중앙공원</div>
+  </div>
+
+  <!-- GROUP WRAPPERS -->
+  <div class="grp" style="left:129px;top:95px;width:106px;height:130px;"></div>
+  <div class="grp" style="left:260px;top:95px;width:152px;height:130px;"></div>
+  <div class="grp" style="left:420px;top:95px;width:103px;height:130px;"></div>
+  <div class="grp" style="right:0;top:95px;width:50px;height:298px;"></div>
+
+  <div class="grp" style="left:83px;top:263px;width:152px;height:130px;"></div>
+  <div class="grp" style="left:260px;top:263px;width:152px;height:130px;"></div>
+  <div class="grp" style="left:420px;top:263px;width:103px;height:130px;"></div>
+
+  <div class="grp" style="left:83px;top:415px;width:152px;height:130px;"></div>
+  <div class="grp" style="left:260px;top:415px;width:152px;height:130px;"></div>
+  <div class="grp" style="left:420px;top:415px;width:103px;height:130px;"></div>
+  <div class="grp" style="right:0px;top:419px;width:50px;height:294px;"></div>
+
+  <div class="grp" style="left:83px;top:583px;width:152px;height:130px;"></div>
+  <div class="grp" style="left:260px;top:583px;width:152px;height:130px;"></div>
+  <div class="grp" style="left:420px;top:583px;width:103px;height:130px;"></div>
+
+  <!-- BUILDINGS -->
+  <div class="bldg lm" id="bldg-1-lm" style="left:0px;top:100px;width:50px;height:298px;" data-slot="1">
+    <div class="lm-inner">
+      <span style="font-size:16px;">🏬</span>
+      <div class="lm-lbl">달성<br>농수산물<br>유통센터</div>
+    </div>
+  </div>
+  <div class="bldg" id="bldg-1" style="left:136px;top:100px;width:45px;height:120px;" data-slot="1">
+    <div class="bldg-num">1</div>
+  </div>
+  <div class="bldg" id="bldg-2" style="left:184px;top:100px;width:45px;height:120px;" data-slot="2">
+    <div class="bldg-num">2</div>
+  </div>
+  <div class="bldg" id="bldg-3" style="left:266px;top:100px;width:45px;height:120px;" data-slot="3">
+    <div class="bldg-num">3</div>
+  </div>
+  <div class="bldg" id="bldg-4" style="left:314px;top:100px;width:45px;height:120px;" data-slot="4">
+    <div class="bldg-num">4</div>
+  </div>
+  <div class="bldg" id="bldg-5" style="left:361px;top:100px;width:45px;height:120px;" data-slot="5">
+    <div class="bldg-num">5</div>
+  </div>
+  <div class="bldg" id="bldg-6" style="left:425px;top:100px;width:45px;height:120px;" data-slot="6">
+    <div class="bldg-num">6</div>
+  </div>
+  <div class="bldg" id="bldg-7" style="left:473px;top:100px;width:45px;height:120px;" data-slot="7">
+    <div class="bldg-num">7</div>
+  </div>
+  <div class="bldg" id="bldg-8" style="left:558px;top:117px;width:42px;height:254px;" data-slot="8">
+    <div class="bldg-num">8</div>
+  </div>
+
+  <div class="bldg" id="bldg-9" style="left:88px;top:268px;width:45px;height:120px;" data-slot="9">
+    <div class="bldg-num">9</div>
+  </div>
+  <div class="bldg" id="bldg-10" style="left:136px;top:268px;width:45px;height:120px;" data-slot="10">
+    <div class="bldg-num">10</div>
+  </div>
+  <div class="bldg" id="bldg-11" style="left:184px;top:268px;width:45px;height:120px;" data-slot="11">
+    <div class="bldg-num">11</div>
+  </div>
+  <div class="bldg" id="bldg-12" style="left:266px;top:268px;width:45px;height:120px;" data-slot="12">
+    <div class="bldg-num">12</div>
+  </div>
+  <div class="bldg" id="bldg-13" style="left:314px;top:268px;width:45px;height:120px;" data-slot="13">
+    <div class="bldg-num">13</div>
+  </div>
+  <div class="bldg" id="bldg-14" style="left:361px;top:268px;width:45px;height:120px;" data-slot="14">
+    <div class="bldg-num">14</div>
+  </div>
+  <div class="bldg" id="bldg-15" style="left:425px;top:268px;width:45px;height:120px;" data-slot="15">
+    <div class="bldg-num">15</div>
+  </div>
+  <div class="bldg" id="bldg-16" style="left:473px;top:268px;width:45px;height:120px;" data-slot="16">
+    <div class="bldg-num">16</div>
+  </div>
+
+  <div class="bldg b24" id="bldg-23" style="left:0px;top:424px;width:55px;height:284px;background:var(--card);border:5px solid var(--grp)" data-slot="23">
+    <div class="bldg-num">23</div>
+  </div>
+
+  <div class="lot" style="left:4px;top:420px;width:45px;height:120px;">
+    <span style="font-size:17px">🏦</span>
+    <div class="lot-lbl">IM뱅크</div>
+  </div>
+  <div class="lot" style="left:86px;top:420px;width:45px;height:120px;">
+    <span style="font-size:17px">🏦</span>
+    <div class="lot-lbl">농협</div>
+  </div>
+  <div class="lot" style="z-index:10;left:556px;top:630px;width:45px;height:120px;">
+    <span style="font-size:17px">🏦</span>
+    <div class="lot-lbl">새마을금고</div>
+  </div>
+  <div class="lot" style="z-index:10;left:183px;top:630px;width:45px;height:120px;">
+    <span style="font-size:17px">🏦</span>
+    <div class="lot-lbl">우리은행</div>
+  </div>
+  <div class="lot" style="z-index:10;left:556px;top:120px;width:45px;height:120px;">
+    <span style="font-size:17px">🏬</span>
+    <div class="lot-lbl">한라하우젠<br>센트럴파크</div>
+  </div>
+  <div class="lot" style="z-index:10;left:360px;top:60px;width:45px;height:120px;">
+    <span style="font-size:17px">🎳</span>
+    <div class="lot-lbl">볼링장</div>
+  </div>
+  <div class="lot" style="z-index:10;left:476px;top:470px;width:45px;">
+    <span style="font-size:17px">🅿️</span>
+  </div>
+
+  <div class="bldg" id="bldg-17" style="left:136px;top:420px;width:45px;height:120px;" data-slot="17">
+    <div class="bldg-num">17</div>
+  </div>
+  <div class="bldg" id="bldg-18" style="left:184px;top:420px;width:45px;height:120px;" data-slot="18">
+    <div class="bldg-num">18</div>
+  </div>
+  <div class="bldg" id="bldg-19" style="left:266px;top:420px;width:45px;height:120px;" data-slot="19">
+    <div class="bldg-num">19</div>
+  </div>
+  <div class="bldg" id="bldg-20" style="left:314px;top:420px;width:45px;height:120px;" data-slot="20">
+    <div class="bldg-num">20</div>
+  </div>
+  <div class="bldg" id="bldg-21" style="left:361px;top:420px;width:45px;height:120px;" data-slot="21">
+    <div class="bldg-num">21</div>
+  </div>
+  <div class="bldg" id="bldg-22" style="left:426px;top:420px;width:45px;height:120px;" data-slot="22">
+    <div class="bldg-num">22</div>
+  </div>
+  <div class="bldg" id="bldg-32" style="left:558px;top:468px;width:42px;height:240px;" data-slot="32">
+    <div class="bldg-num">32</div>
+  </div>
+
+  <div class="bldg" id="bldg-24" style="left:88px;top:588px;width:45px;height:120px;" data-slot="24">
+    <div class="bldg-num">24</div>
+  </div>
+  <div class="bldg" id="bldg-25" style="left:136px;top:588px;width:45px;height:120px;" data-slot="25">
+    <div class="bldg-num">25</div>
+  </div>
+  <div class="bldg" id="bldg-26" style="left:184px;top:588px;width:45px;height:120px;" data-slot="26">
+    <div class="bldg-num">26</div>
+  </div>
+  <div class="bldg" id="bldg-27" style="left:266px;top:588px;width:45px;height:120px;" data-slot="27">
+    <div class="bldg-num">27</div>
+  </div>
+  <div class="bldg" id="bldg-28" style="left:314px;top:588px;width:45px;height:120px;" data-slot="28">
+    <div class="bldg-num">28</div>
+  </div>
+  <div class="bldg" id="bldg-29" style="left:361px;top:588px;width:45px;height:120px;" data-slot="29">
+    <div class="bldg-num">29</div>
+  </div>
+  <div class="bldg" id="bldg-30" style="left:425px;top:588px;width:45px;height:120px;" data-slot="30">
+    <div class="bldg-num">30</div>
+  </div>
+  <div class="bldg" id="bldg-31" style="left:473px;top:588px;width:45px;height:120px;" data-slot="31">
+    <div class="bldg-num">31</div>
+  </div>
+
+  <div class="currLoc" style="left:247px;top:704px;transform:translateX(-50%);">
+    <div class="loc-ring"><div class="loc-mid"><div class="loc-dot"></div></div></div>
+    <div class="loc-lbl">현위치</div>
+  </div>
+
+  <div class="btm-grp" style="left:6px;top:800px;width:136px;height:80px;"></div>
+  <div class="btm-grp" style="left:150px;top:800px;width:82px;height:80px;"></div>
+  <div class="btm-grp" style="left:240px;top:800px;width:192px;height:80px;">
+    <span style="font-size:16px;">🏬</span>
+    <div class="btm-lbl">유가읍 행정복지센터</div>
+  </div>
+  <div class="btm-grp" style="left:440px;top:800px;width:158px;height:80px;"></div>
+
+</div>
+
+</div>
+</div>
+</section>
+
+<p id="map-load-error" class="map-load-error" hidden role="alert"></p>
+
+        </section>
+      </main>
+
+      <footer class="k-footer">
+        <button type="button" class="header-btn" id="footerHome" aria-label="홈으로">
+          <svg viewBox="0 0 24 24" stroke="#fff" width="80" fill="none" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <button type="button" class="k-tab k-tab-search" id="footerSearch" aria-label="검색·목록">
+          <span class="k-tab-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg></span>검색·목록
+        </button>
+        <button type="button" class="k-tab k-tab-map active" id="footerMap" aria-label="지도 맨 위로">
+          <span class="k-tab-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></svg></span>지도 안내
+        </button>
+        <button type="button" class="k-tab k-tab-category" id="footerCategory" aria-label="종류별 검색">
+          <span class="k-tab-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8"/><path d="M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7"/><path d="m2.1 21.8 6.4-6.3"/><path d="m19 5-7 7"/></svg></span>메뉴별 안내
+        </button>
+      </footer>
+    </article>
+
+    <div id="modal-overlay" class="modal-overlay">
+        <article class="modal modal-box" id="modal-body"></article>
+    </div>
+
+    <div id="map-overlay" class="modal-overlay modal-overlay-dark" style="z-index: 2000;">
+        <div class="moon-overlay-panel">
+            <button type="button" class="moon-overlay-close" onclick="closeMap()" aria-label="닫기"><img src="/img/inicon11.png" alt=""></button>
+            <img id="full-map-img" src="" alt="지도">
+        </div>
+    </div>
+
+    <div id="menu-overlay" class="modal-overlay modal-overlay-dark" style="z-index: 2000;">
+        <div class="moon-overlay-panel moon-overlay-panel-scroll">
+            <button type="button" class="moon-overlay-close" onclick="closeMenuInfo()" aria-label="닫기"><img src="/img/inicon11.png" alt=""></button>
+            <img id="full-menu-img" src="" alt="메뉴">
+        </div>
+    </div>
+
+    <div id="modal-building-floors" class="modal-overlay" aria-hidden="true" style="z-index: 1050;">
+        <article class="modal modal-box map-building-modal-box">
+            <article class="modal-header">
+                <button type="button" class="modal-close" onclick="closeBuildingFloorModal()" aria-label="닫기">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="modal-close-svg" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+                </button>
+            </article>
+            <article class="modal-body map-building-modal-body">
+                <div class="header-area map-building-header-area">
+                    <div id="building-floor-title" class="store-name"></div>
+                </div>
+                <p id="building-floor-hint" class="map-building-floor-hint"></p>
+                <div id="building-floor-body" class="map-building-floor-body"></div>
+            </article>
+        </article>
+    </div>
+
+    <script src="js/kiosk/kiosk-i18n.js?v=202604206000"></script>
+    <script src="js/app.js?v=202604206100"></script>
+    </div>
+    </div>
+</body>
+</html>

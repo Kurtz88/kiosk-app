@@ -1,0 +1,11 @@
+const fs = require('fs');
+const path = require('path');
+let s = fs.readFileSync(path.join(__dirname, '../moon_st/map.html'), 'utf8');
+const a = s.indexOf('<style>');
+const b = s.indexOf('</style>', a);
+let css = s.slice(a + 7, b).trim();
+css = css.replace(/#app2/g, '#map-app2');
+css = css.replace(/\.map_click_txt/g, '.map-click-txt');
+css = css.replace(/margin-top:\s*30px/, 'margin-top: clamp(4px, 1.2cqh, 16px)');
+fs.writeFileSync(path.join(__dirname, '../tmp-map-stage.css'), css, 'utf8');
+console.log('ok', css.length);
