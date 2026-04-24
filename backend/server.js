@@ -429,6 +429,13 @@ app.put('/api/restaurants/:id', cpUpload, (req, res) => {
 });
 
 // 네이버지도 앱 열기 리다이렉트 (QR용)
+// 출발지 고정: 대구광역시 달성군 유가읍 테크노상업로 100
+const FIXED_START = {
+    lat: 35.8507,
+    lng: 128.4178,
+    name: '테크노상업로 100'
+};
+
 app.get('/naver-route', (req, res) => {
     const { lat, lng, name } = req.query;
     if (!lat || !lng) {
@@ -440,14 +447,16 @@ app.get('/naver-route', (req, res) => {
         return res.status(400).send('잘못된 좌표');
     }
     const dname = encodeURIComponent((name || '목적지').trim() || '목적지');
+    const sname = encodeURIComponent(FIXED_START.name);
     const appname = encodeURIComponent('kiosk-naver-route');
 
-    // nmap:// 딥링크 (iOS/Android 앱)
-    const nmapUrl = `nmap://route/walk?dlat=${dlat}&dlng=${dlng}&dname=${dname}&appname=${appname}`;
+    // nmap:// 딥링크 (iOS/Android 앱) - 출발지 고정
+    const nmapUrl = `nmap://route/walk?slat=${FIXED_START.lat}&slng=${FIXED_START.lng}&sname=${sname}&dlat=${dlat}&dlng=${dlng}&dname=${dname}&appname=${appname}`;
     // Android intent (앱 없으면 Play Store)
-    const intentUrl = `intent://route/walk?dlat=${dlat}&dlng=${dlng}&dname=${dname}&appname=${appname}#Intent;scheme=nmap;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;package=com.nhn.android.nmap;end`;
+    const intentUrl = `intent://route/walk?slat=${FIXED_START.lat}&slng=${FIXED_START.lng}&sname=${sname}&dlat=${dlat}&dlng=${dlng}&dname=${dname}&appname=${appname}#Intent;scheme=nmap;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;package=com.nhn.android.nmap;end`;
     // 웹 폴백
-    const webUrl = `https://m.map.naver.com/route.nhn?menu=route&ename=${dname}&ex=${dlng}&ey=${dlat}&pathType=3&showMap=true`;
+    // 웹 폴백 - 출발지 고정
+    const webUrl = `https://m.map.naver.com/route.nhn?menu=route&sname=${sname}&sx=${FIXED_START.lng}&sy=${FIXED_START.lat}&ename=${dname}&ex=${dlng}&ey=${dlat}&pathType=3&showMap=true`;
 
     // HTML: 딥링크 시도 → 실패 시 웹으로 폴백
     const html = `<!DOCTYPE html>
