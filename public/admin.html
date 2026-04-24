@@ -320,9 +320,114 @@
             pointer-events: none;
             box-shadow: 0 1px 3px rgba(0,0,0,0.2);
         }
+        /* 외부 접속 시 관리자 비밀번호 (30분 쿠키) */
+        #adminAccessGate {
+            position: fixed;
+            inset: 0;
+            z-index: 999999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(160deg, #1b1b2e 0%, #2d1b2e 100%);
+            padding: 24px;
+            box-sizing: border-box;
+        }
+        html.admin-unlocked #adminAccessGate { display: none !important; }
+        html:not(.admin-unlocked) #adminDashboard { display: none !important; }
+        .admin-gate-box {
+            width: 100%;
+            max-width: 400px;
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+            padding: 36px 32px 32px;
+            box-sizing: border-box;
+        }
+        .admin-gate-box h1 {
+            margin: 0 0 8px 0;
+            font-size: 1.4rem;
+            color: #1b1b1b;
+        }
+        .admin-gate-box p.hint { margin: 0 0 20px; font-size: 0.9rem; color: #6c757d; line-height: 1.5; }
+        .admin-gate-box input[type="password"] {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        .admin-gate-box input[type="password"]:focus { outline: none; border-color: var(--pink, #DE5B9E); }
+        .admin-gate-box .admin-gate-submit {
+            width: 100%;
+            margin-top: 16px;
+            padding: 14px;
+            border: none;
+            background: var(--pink, #DE5B9E);
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: 800;
+            border-radius: 10px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .admin-gate-box .admin-gate-submit:hover { background: var(--pink-deep, #B8447E); }
+        #adminAccessError { min-height: 1.2em; margin-top: 12px; font-size: 0.9rem; color: #c92a2a; }
     </style>
+    <script>
+        (function () {
+            var COOKIE_NAME = 'kiosk_admin_session';
+            var COOKIE_MAX_AGE = 1800; /* 30분 */
+            function getCookie(name) {
+                var parts = ('; ' + document.cookie).split('; ' + name + '=');
+                if (parts.length < 2) return '';
+                return decodeURIComponent(parts.pop().split(';').shift() || '') || '';
+            }
+            if (getCookie(COOKIE_NAME) === '1') {
+                document.documentElement.classList.add('admin-unlocked');
+            }
+        })();
+    </script>
 </head>
 <body>
+    <div id="adminAccessGate" role="dialog" aria-modal="true" aria-labelledby="adminAccessTitle">
+        <div class="admin-gate-box">
+            <h1 id="adminAccessTitle">관리자 접속</h1>
+            <p class="hint">키오스크에서 사용하는 관리자 비밀번호를 입력하세요. 한 번 맞으면 30분 동안 이 브라우저에 저장됩니다.</p>
+            <form id="adminAccessForm" autocomplete="on">
+                <label for="adminAccessPassword" class="visually-hidden" style="position:absolute;left:-9999px;">비밀번호</label>
+                <input type="password" id="adminAccessPassword" name="password" required placeholder="비밀번호" autocomplete="current-password" autofocus>
+                <button type="submit" class="admin-gate-submit">접속</button>
+            </form>
+            <p id="adminAccessError" role="alert" aria-live="polite"></p>
+        </div>
+    </div>
+    <script>
+        (function () {
+            var PWD = 'iknowi0701';
+            var COOKIE_NAME = 'kiosk_admin_session';
+            var COOKIE_MAX_AGE = 1800;
+            function wire() {
+                var f = document.getElementById('adminAccessForm');
+                if (!f) return;
+                f.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    var input = document.getElementById('adminAccessPassword');
+                    var err = document.getElementById('adminAccessError');
+                    if (err) err.textContent = '';
+                    if (input && input.value === PWD) {
+                        document.cookie = COOKIE_NAME + '=1; path=/; max-age=' + COOKIE_MAX_AGE + '; SameSite=Lax';
+                        document.documentElement.classList.add('admin-unlocked');
+                        input.value = '';
+                    } else if (err) {
+                        err.textContent = '비밀번호가 올바르지 않습니다.';
+                    }
+                });
+            }
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);
+            else wire();
+        })();
+    </script>
     <div class="dashboard" id="adminDashboard">
         <!-- List Section -->
         <div class="list-section">
