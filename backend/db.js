@@ -129,6 +129,12 @@ function bootstrapSchema(db) {
                 if (!rNames.has('main_menu')) {
                     db.run('ALTER TABLE restaurants ADD COLUMN main_menu TEXT;', () => {});
                 }
+                if (!rNames.has('dest_lat')) {
+                    db.run('ALTER TABLE restaurants ADD COLUMN dest_lat REAL;', () => {});
+                }
+                if (!rNames.has('dest_lng')) {
+                    db.run('ALTER TABLE restaurants ADD COLUMN dest_lng REAL;', () => {});
+                }
             });
 
             db.all('PRAGMA table_info(categories)', [], (pragmaErr, cols) => {

@@ -201,7 +201,7 @@ const categoryIconUpload = multer({
 });
 
 const RESTAURANT_COLUMNS =
-    'id, name, name_en, category, subcategory, image_url, image_gallery, map_url, description, description_en, address, phone, homepage, menu_url, open_time, close_time, closed_days, tags, main_menu, walk_time, kiosk_hidden';
+    'id, name, name_en, category, subcategory, image_url, image_gallery, map_url, description, description_en, address, phone, homepage, menu_url, open_time, close_time, closed_days, tags, main_menu, walk_time, kiosk_hidden, dest_lat, dest_lng';
 
 function isSafeRestaurantImageUrl(u) {
     if (!u || typeof u !== 'string') return false;
@@ -248,6 +248,15 @@ function buildGalleryUrlsFromManifest(body, files, restaurantName) {
     return { urls };
 }
 
+/** 관리자 폼/엑셀: 목적지 WGS84 — 비우면 null */
+function parseOptionalWgsNumber(v) {
+    if (v == null) return null;
+    const s = String(v).trim();
+    if (s === '' || s.toLowerCase() === 'null') return null;
+    const n = parseFloat(s.replace(/,/g, '.'));
+    return Number.isFinite(n) ? n : null;
+}
+
 function parseKioskHidden(v) {
     if (v === true || v === 1 || v === '1' || v === 'on' || v === 'true') return 1;
     if (v === false || v === 0 || v === '0' || v === 'off' || v === 'false' || v === '' || v == null) return 0;
@@ -292,8 +301,12 @@ app.post('/api/restaurants', cpUpload, (req, res) => {
         tags,
         main_menu,
         walk_time,
-        kiosk_hidden
+        kiosk_hidden,
+        dest_lat,
+        dest_lng
     } = req.body;
+    const dLat = parseOptionalWgsNumber(dest_lat);
+    const dLng = parseOptionalWgsNumber(dest_lng);
     const kh = parseKioskHidden(kiosk_hidden);
     const mm = main_menu != null && String(main_menu).trim() !== '' ? String(main_menu).trim() : null;
     const files = req.files || {};
@@ -326,9 +339,9 @@ app.post('/api/restaurants', cpUpload, (req, res) => {
     const sub = subcategory != null && String(subcategory).trim() !== '' ? String(subcategory).trim() : null;
     const cd =
         closed_days != null && String(closed_days).trim() !== '' ? String(closed_days).trim() : null;
-    db.run(`INSERT INTO restaurants (name, name_en, category, subcategory, image_url, image_gallery, map_url, description, description_en, address, phone, homepage, menu_url, open_time, close_time, closed_days, tags, main_menu, walk_time, kiosk_hidden) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [name, name_en, category, sub, image_url, image_gallery, map_url, description, description_en, address, phone, homepage, menu_url, open_time, close_time, cd, tags, mm, walk_time || null, kh],
+    db.run(`INSERT INTO restaurants (name, name_en, category, subcategory, image_url, image_gallery, map_url, description, description_en, address, phone, homepage, menu_url, open_time, close_time, closed_days, tags, main_menu, walk_time, kiosk_hidden, dest_lat, dest_lng) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [name, name_en, category, sub, image_url, image_gallery, map_url, description, description_en, address, phone, homepage, menu_url, open_time, close_time, cd, tags, mm, walk_time || null, kh, dLat, dLng],
         function(err) {
             if (err) res.status(500).json({ error: err.message });
             else res.json({ id: this.lastID });
@@ -353,8 +366,12 @@ app.put('/api/restaurants/:id', cpUpload, (req, res) => {
         tags,
         main_menu,
         walk_time,
-        kiosk_hidden
+        kiosk_hidden,
+        dest_lat,
+        dest_lng
     } = req.body;
+    const dLatU = parseOptionalWgsNumber(dest_lat);
+    const dLngU = parseOptionalWgsNumber(dest_lng);
     const files = req.files || {};
     const sub = subcategory != null && String(subcategory).trim() !== '' ? String(subcategory).trim() : null;
     const kh = parseKioskHidden(kiosk_hidden);
@@ -378,9 +395,11 @@ app.put('/api/restaurants/:id', cpUpload, (req, res) => {
         'tags = ?',
         'main_menu = ?',
         'walk_time = ?',
-        'kiosk_hidden = ?'
+        'kiosk_hidden = ?',
+        'dest_lat = ?',
+        'dest_lng = ?'
     ];
-    let params = [name, name_en, category, sub, description, description_en, address, phone, homepage, open_time, close_time, cd, tags, mm, walk_time || null, kh];
+    let params = [name, name_en, category, sub, description, description_en, address, phone, homepage, open_time, close_time, cd, tags, mm, walk_time || null, kh, dLatU, dLngU];
 
     const g = buildGalleryUrlsFromManifest(req.body, files, name);
     if (g.error) return res.status(400).json({ error: g.error });

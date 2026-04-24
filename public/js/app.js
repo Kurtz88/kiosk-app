@@ -14,6 +14,37 @@
 const SECRET_TAP_TIMES = 10;
 /** 제목 연타 후 관리자(/admin.html) 진입 비밀번호 */
 const ADMIN_KIOSK_PASSWORD = 'iknowi0701';
+/** QR → 네이버지도앱 nmap: 길찾기에 필요한 appname(문서 권장) */
+const NAVER_MAP_QR_APPNAME = 'kiosk-naver-route';
+
+// =============================================================================
+// 네이버지도앱: 내 위치(출발 기본) → 식당 목적지(도보)
+// - 식당에 dest_lat, dest_lng(WGS84)가 있을 때만 nmap:// 사용, 없으면 모바일 웹 검색 URL
+// =============================================================================
+
+function hasDestCoordsForNaver(item) {
+    if (!item) return false;
+    if (item.dest_lat == null || item.dest_lng == null) return false;
+    const la = Number(item.dest_lat);
+    const ln = Number(item.dest_lng);
+    return Number.isFinite(la) && Number.isFinite(ln);
+}
+
+function buildNaverMapWalkFromHereUrl(item) {
+    const dlat = Number(item.dest_lat);
+    const dlng = Number(item.dest_lng);
+    const dname = encodeURIComponent((item.name || '목적지').trim() || '목적지');
+    return (
+        'nmap://route/walk?dlat=' +
+        dlat +
+        '&dlng=' +
+        dlng +
+        '&dname=' +
+        dname +
+        '&appname=' +
+        encodeURIComponent(NAVER_MAP_QR_APPNAME)
+    );
+}
 
 // =============================================================================
 // 페이지 구분 · 전역 상태
@@ -1429,7 +1460,9 @@ function openModal(item, opts) {
     }
 
     const searchQuery = encodeURIComponent((item.name || '').trim());
-    const nMapUrl = 'https://m.map.naver.com/search2/search.naver?query=' + searchQuery;
+    const nMapUrl = hasDestCoordsForNaver(item)
+        ? buildNaverMapWalkFromHereUrl(item)
+        : 'https://m.map.naver.com/search2/search.naver?query=' + searchQuery;
     fetchJson('/api/qrcode?text=' + encodeURIComponent(nMapUrl))
         .then((data) => {
             const container = document.getElementById('qr-container');

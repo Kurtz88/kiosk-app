@@ -26,7 +26,7 @@
         listCategoryAllChip: '전체',
         allSubCat: '세부 전체',
         qrTitle: '업소까지 경로 안내',
-        qrSubHtml: 'QR을 스캔하면 업소까지<br>가시는 길을 안내해 드립니다.',
+        qrSubHtml: '스캔 시 네이버지도 앱에서<br>내 위치 → 업소 도보 길찾기(목적지 좌표 등록 시)',
         modalAddrLabel: '주소 · 위치',
         modalPhoneLabel: '연락처',
         modalMenuLabel: '주요메뉴',
