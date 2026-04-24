@@ -30,13 +30,16 @@ function hasDestCoordsForNaver(item) {
     return Number.isFinite(la) && Number.isFinite(ln);
 }
 
-function buildNaverMapWalkFromHereUrl(item) {
-    const dlat = Number(item.dest_lat);
-    const dlng = Number(item.dest_lng);
+function buildNaverRouteUrl(item) {
     const dname = encodeURIComponent((item.name || '목적지').trim() || '목적지');
-    // 서버 리다이렉트 페이지: iOS/Android 분기 → 앱 딥링크 시도 → 웹 폴백
-    // QR 스캔 시 절대 URL 필요
-    return window.location.origin + '/naver-route?lat=' + dlat + '&lng=' + dlng + '&name=' + dname;
+    // 좌표가 있으면 좌표도 전달, 없으면 이름만
+    if (hasDestCoordsForNaver(item)) {
+        const dlat = Number(item.dest_lat);
+        const dlng = Number(item.dest_lng);
+        return window.location.origin + '/naver-route?lat=' + dlat + '&lng=' + dlng + '&name=' + dname;
+    }
+    // 좌표 없으면 이름만 전달
+    return window.location.origin + '/naver-route?name=' + dname;
 }
 
 // =============================================================================
@@ -1452,16 +1455,13 @@ function openModal(item, opts) {
         });
     }
 
-    const searchQuery = encodeURIComponent((item.name || '').trim());
-    const hasCoords = hasDestCoordsForNaver(item);
-    const nMapUrl = hasCoords
-        ? buildNaverMapWalkFromHereUrl(item)
-        : 'https://m.map.naver.com/search2/search.naver?query=' + searchQuery;
+    // 항상 네이버 빠른길찾기 URL 사용 (출발지 고정, 도착지는 이름 또는 좌표)
+    const nMapUrl = buildNaverRouteUrl(item);
     console.log('[QR 디버그]', {
         name: item.name,
         dest_lat: item.dest_lat,
         dest_lng: item.dest_lng,
-        hasCoords,
+        hasCoords: hasDestCoordsForNaver(item),
         qrUrl: nMapUrl
     });
     fetchJson('/api/qrcode?text=' + encodeURIComponent(nMapUrl))

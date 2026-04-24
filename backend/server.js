@@ -439,22 +439,35 @@ const FIXED_START = {
 
 app.get('/naver-route', (req, res) => {
     const { lat, lng, name } = req.query;
-    if (!lat || !lng) {
-        return res.status(400).send('lat, lng 파라미터 필요');
-    }
-    const dlat = parseFloat(lat);
-    const dlng = parseFloat(lng);
-    if (!Number.isFinite(dlat) || !Number.isFinite(dlng)) {
-        return res.status(400).send('잘못된 좌표');
-    }
     const destName = (name || '목적지').trim() || '목적지';
+
+    // 좌표가 있으면 좌표 사용, 없으면 이름만
+    const hasCoords = lat && lng;
+    let dlat, dlng;
+    if (hasCoords) {
+        dlat = parseFloat(lat);
+        dlng = parseFloat(lng);
+        if (!Number.isFinite(dlat) || !Number.isFinite(dlng)) {
+            return res.status(400).send('잘못된 좌표');
+        }
+    }
 
     // 네이버 검색 빠른길찾기 URL 형식
     // nso_path: 출발지|도착지|옵션 (도보=walk)
-    const nsoPath =
-        `placeType^place;name^${FIXED_START.name};address^${FIXED_START.address};code^;longitude^${FIXED_START.lng};latitude^${FIXED_START.lat}` +
-        `|type^place;name^${destName};address^;code^;longitude^${dlng};latitude^${dlat}` +
-        `|objtype^path;by^walk`;
+    let nsoPath;
+    if (hasCoords) {
+        // 좌표 있음: 출발지(고정) → 도착지(이름+좌표)
+        nsoPath =
+            `placeType^place;name^${FIXED_START.name};address^${FIXED_START.address};code^;longitude^${FIXED_START.lng};latitude^${FIXED_START.lat}` +
+            `|type^place;name^${destName};address^;code^;longitude^${dlng};latitude^${dlat}` +
+            `|objtype^path;by^walk`;
+    } else {
+        // 좌표 없음: 출발지(고정) → 도착지(이름만)
+        nsoPath =
+            `placeType^place;name^${FIXED_START.name};address^${FIXED_START.address};code^;longitude^${FIXED_START.lng};latitude^${FIXED_START.lat}` +
+            `|type^place;name^${destName};address^;code^;longitude^;latitude^` +
+            `|objtype^path;by^walk`;
+    }
 
     // 이중 URL 인코딩 필요
     const encodedPath = encodeURIComponent(encodeURIComponent(nsoPath));
