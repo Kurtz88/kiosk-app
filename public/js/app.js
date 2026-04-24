@@ -1453,9 +1453,17 @@ function openModal(item, opts) {
     }
 
     const searchQuery = encodeURIComponent((item.name || '').trim());
-    const nMapUrl = hasDestCoordsForNaver(item)
+    const hasCoords = hasDestCoordsForNaver(item);
+    const nMapUrl = hasCoords
         ? buildNaverMapWalkFromHereUrl(item)
         : 'https://m.map.naver.com/search2/search.naver?query=' + searchQuery;
+    console.log('[QR 디버그]', {
+        name: item.name,
+        dest_lat: item.dest_lat,
+        dest_lng: item.dest_lng,
+        hasCoords,
+        qrUrl: nMapUrl
+    });
     fetchJson('/api/qrcode?text=' + encodeURIComponent(nMapUrl))
         .then((data) => {
             const container = document.getElementById('qr-container');
