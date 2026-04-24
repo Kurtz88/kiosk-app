@@ -428,12 +428,13 @@ app.put('/api/restaurants/:id', cpUpload, (req, res) => {
     });
 });
 
-// 네이버지도 앱 열기 리다이렉트 (QR용)
-// 출발지 고정: 대구광역시 달성군 유가읍 테크노상업로 100
+// 네이버 빠른길찾기 QR용 - 출발지 고정
+// 출발지: 대구광역시 달성군 유가읍 테크노상업로 100
 const FIXED_START = {
     lat: 35.8507,
     lng: 128.4178,
-    name: '테크노상업로 100'
+    name: '테크노상업로 100',
+    address: '대구광역시 달성군 유가읍 테크노상업로 100'
 };
 
 app.get('/naver-route', (req, res) => {
@@ -446,65 +447,21 @@ app.get('/naver-route', (req, res) => {
     if (!Number.isFinite(dlat) || !Number.isFinite(dlng)) {
         return res.status(400).send('잘못된 좌표');
     }
-    const dname = encodeURIComponent((name || '목적지').trim() || '목적지');
-    const sname = encodeURIComponent(FIXED_START.name);
-    const appname = encodeURIComponent('kiosk-naver-route');
+    const destName = (name || '목적지').trim() || '목적지';
 
-    // nmap:// 딥링크 (iOS/Android 앱) - 출발지 고정
-    const nmapUrl = `nmap://route/walk?slat=${FIXED_START.lat}&slng=${FIXED_START.lng}&sname=${sname}&dlat=${dlat}&dlng=${dlng}&dname=${dname}&appname=${appname}`;
-    // Android intent (앱 없으면 Play Store)
-    const intentUrl = `intent://route/walk?slat=${FIXED_START.lat}&slng=${FIXED_START.lng}&sname=${sname}&dlat=${dlat}&dlng=${dlng}&dname=${dname}&appname=${appname}#Intent;scheme=nmap;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;package=com.nhn.android.nmap;end`;
-    // 웹 폴백
-    // 웹 폴백 - 출발지 고정
-    const webUrl = `https://m.map.naver.com/route.nhn?menu=route&sname=${sname}&sx=${FIXED_START.lng}&sy=${FIXED_START.lat}&ename=${dname}&ex=${dlng}&ey=${dlat}&pathType=3&showMap=true`;
+    // 네이버 검색 빠른길찾기 URL 형식
+    // nso_path: 출발지|도착지|옵션 (도보=walk)
+    const nsoPath =
+        `placeType^place;name^${FIXED_START.name};address^${FIXED_START.address};code^;longitude^${FIXED_START.lng};latitude^${FIXED_START.lat}` +
+        `|type^place;name^${destName};address^;code^;longitude^${dlng};latitude^${dlat}` +
+        `|objtype^path;by^walk`;
 
-    // HTML: 딥링크 시도 → 실패 시 웹으로 폴백
-    const html = `<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>네이버지도 길찾기</title>
-<style>
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f5f5f5;text-align:center;padding:20px;box-sizing:border-box;}
-.box{background:#fff;padding:30px 24px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.1);max-width:340px;}
-h1{font-size:1.2rem;margin:0 0 12px;color:#1b1b1b;}
-p{font-size:0.95rem;color:#666;margin:0 0 20px;line-height:1.5;}
-a{display:block;padding:14px 20px;background:#03c75a;color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:1rem;}
-a:active{background:#02a34b;}
-.sub{margin-top:16px;font-size:0.85rem;color:#999;}
-.sub a{display:inline;background:none;color:#03c75a;padding:0;}
-</style>
-</head>
-<body>
-<div class="box">
-<h1>네이버지도 앱 열기</h1>
-<p>길찾기 화면으로 이동합니다.<br>앱이 열리지 않으면 아래 버튼을 눌러주세요.</p>
-<a href="${webUrl}">웹에서 길찾기 열기</a>
-<p class="sub">앱 설치: <a href="https://play.google.com/store/apps/details?id=com.nhn.android.nmap">Android</a> · <a href="https://apps.apple.com/kr/app/id311867728">iOS</a></p>
-</div>
-<script>
-(function(){
-var ua=navigator.userAgent||'';
-var isAndroid=/android/i.test(ua);
-var isIOS=/iphone|ipad|ipod/i.test(ua);
-var appUrl=isAndroid?${JSON.stringify(intentUrl)}:${JSON.stringify(nmapUrl)};
-var launched=false;
-function tryApp(){
-if(launched)return;
-launched=true;
-var start=Date.now();
-window.location.href=appUrl;
-setTimeout(function(){
-if(document.hidden||Date.now()-start>2500)return;
-},1500);
-}
-if(isAndroid||isIOS){tryApp();}
-})();
-</script>
-</body>
-</html>`;
-    res.type('html').send(html);
+    // 이중 URL 인코딩 필요
+    const encodedPath = encodeURIComponent(encodeURIComponent(nsoPath));
+    const naverUrl = `https://m.search.naver.com/search.naver?query=${encodeURIComponent('빠른길찾기')}&nso_path=${encodedPath}`;
+
+    // QR 스캔 시 바로 네이버 검색 페이지로 리다이렉트
+    res.redirect(naverUrl);
 });
 
 // DELETE
