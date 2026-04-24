@@ -34,16 +34,9 @@ function buildNaverMapWalkFromHereUrl(item) {
     const dlat = Number(item.dest_lat);
     const dlng = Number(item.dest_lng);
     const dname = encodeURIComponent((item.name || '목적지').trim() || '목적지');
-    return (
-        'nmap://route/walk?dlat=' +
-        dlat +
-        '&dlng=' +
-        dlng +
-        '&dname=' +
-        dname +
-        '&appname=' +
-        encodeURIComponent(NAVER_MAP_QR_APPNAME)
-    );
+    // 서버 리다이렉트 페이지: iOS/Android 분기 → 앱 딥링크 시도 → 웹 폴백
+    // QR 스캔 시 절대 URL 필요
+    return window.location.origin + '/naver-route?lat=' + dlat + '&lng=' + dlng + '&name=' + dname;
 }
 
 // =============================================================================

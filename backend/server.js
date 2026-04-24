@@ -428,6 +428,76 @@ app.put('/api/restaurants/:id', cpUpload, (req, res) => {
     });
 });
 
+// 네이버지도 앱 열기 리다이렉트 (QR용)
+app.get('/naver-route', (req, res) => {
+    const { lat, lng, name } = req.query;
+    if (!lat || !lng) {
+        return res.status(400).send('lat, lng 파라미터 필요');
+    }
+    const dlat = parseFloat(lat);
+    const dlng = parseFloat(lng);
+    if (!Number.isFinite(dlat) || !Number.isFinite(dlng)) {
+        return res.status(400).send('잘못된 좌표');
+    }
+    const dname = encodeURIComponent((name || '목적지').trim() || '목적지');
+    const appname = encodeURIComponent('kiosk-naver-route');
+
+    // nmap:// 딥링크 (iOS/Android 앱)
+    const nmapUrl = `nmap://route/walk?dlat=${dlat}&dlng=${dlng}&dname=${dname}&appname=${appname}`;
+    // Android intent (앱 없으면 Play Store)
+    const intentUrl = `intent://route/walk?dlat=${dlat}&dlng=${dlng}&dname=${dname}&appname=${appname}#Intent;scheme=nmap;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;package=com.nhn.android.nmap;end`;
+    // 웹 폴백
+    const webUrl = `https://m.map.naver.com/route.nhn?menu=route&ename=${dname}&ex=${dlng}&ey=${dlat}&pathType=3&showMap=true`;
+
+    // HTML: 딥링크 시도 → 실패 시 웹으로 폴백
+    const html = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>네이버지도 길찾기</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f5f5f5;text-align:center;padding:20px;box-sizing:border-box;}
+.box{background:#fff;padding:30px 24px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.1);max-width:340px;}
+h1{font-size:1.2rem;margin:0 0 12px;color:#1b1b1b;}
+p{font-size:0.95rem;color:#666;margin:0 0 20px;line-height:1.5;}
+a{display:block;padding:14px 20px;background:#03c75a;color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:1rem;}
+a:active{background:#02a34b;}
+.sub{margin-top:16px;font-size:0.85rem;color:#999;}
+.sub a{display:inline;background:none;color:#03c75a;padding:0;}
+</style>
+</head>
+<body>
+<div class="box">
+<h1>네이버지도 앱 열기</h1>
+<p>길찾기 화면으로 이동합니다.<br>앱이 열리지 않으면 아래 버튼을 눌러주세요.</p>
+<a href="${webUrl}">웹에서 길찾기 열기</a>
+<p class="sub">앱 설치: <a href="https://play.google.com/store/apps/details?id=com.nhn.android.nmap">Android</a> · <a href="https://apps.apple.com/kr/app/id311867728">iOS</a></p>
+</div>
+<script>
+(function(){
+var ua=navigator.userAgent||'';
+var isAndroid=/android/i.test(ua);
+var isIOS=/iphone|ipad|ipod/i.test(ua);
+var appUrl=isAndroid?${JSON.stringify(intentUrl)}:${JSON.stringify(nmapUrl)};
+var launched=false;
+function tryApp(){
+if(launched)return;
+launched=true;
+var start=Date.now();
+window.location.href=appUrl;
+setTimeout(function(){
+if(document.hidden||Date.now()-start>2500)return;
+},1500);
+}
+if(isAndroid||isIOS){tryApp();}
+})();
+</script>
+</body>
+</html>`;
+    res.type('html').send(html);
+});
+
 // DELETE
 app.delete('/api/restaurants/:id', (req, res) => {
     db.run("DELETE FROM restaurants WHERE id = ?", req.params.id, function(err) {
