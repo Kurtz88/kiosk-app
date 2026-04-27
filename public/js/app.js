@@ -18,6 +18,52 @@ const ADMIN_KIOSK_PASSWORD = 'iknowi0701';
 const NAVER_MAP_QR_APPNAME = 'kiosk-naver-route';
 
 // =============================================================================
+// 터치 민감도 조절 (스크롤 중 실수 클릭 방지)
+// =============================================================================
+/** 터치 이동 거리가 이 픽셀 이상이면 클릭으로 인식하지 않음 (스크롤로 간주) */
+const TOUCH_MOVE_THRESHOLD = 15;
+/** 터치 시작 후 이 시간(ms) 이상 지나야 클릭으로 인식 (0이면 비활성화) */
+const TOUCH_HOLD_MIN_MS = 0;
+
+let _touchStartX = 0;
+let _touchStartY = 0;
+let _touchStartTime = 0;
+let _touchMoved = false;
+
+function initTouchSensitivity() {
+    document.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+            _touchStartX = e.touches[0].clientX;
+            _touchStartY = e.touches[0].clientY;
+            _touchStartTime = Date.now();
+            _touchMoved = false;
+        }
+    }, { passive: true });
+
+    document.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 1) {
+            const dx = Math.abs(e.touches[0].clientX - _touchStartX);
+            const dy = Math.abs(e.touches[0].clientY - _touchStartY);
+            if (dx > TOUCH_MOVE_THRESHOLD || dy > TOUCH_MOVE_THRESHOLD) {
+                _touchMoved = true;
+            }
+        }
+    }, { passive: true });
+}
+
+/** 클릭/탭 이벤트가 스크롤 동작이었는지 확인 (true면 무시해야 함) */
+function wasTouchScroll() {
+    if (_touchMoved) return true;
+    if (TOUCH_HOLD_MIN_MS > 0 && (Date.now() - _touchStartTime) < TOUCH_HOLD_MIN_MS) return true;
+    return false;
+}
+
+// 페이지 로드 시 터치 민감도 초기화
+if ('ontouchstart' in window) {
+    initTouchSensitivity();
+}
+
+// =============================================================================
 // 네이버지도앱: 내 위치(출발 기본) → 식당 목적지(도보)
 // - 식당에 dest_lat, dest_lng(WGS84)가 있을 때만 nmap:// 사용, 없으면 모바일 웹 검색 URL
 // =============================================================================
@@ -30,15 +76,29 @@ function hasDestCoordsForNaver(item) {
     return Number.isFinite(la) && Number.isFinite(ln);
 }
 
+function hasNaverPlaceId(item) {
+    if (!item) return false;
+    const pid = (item.naver_place_id || '').replace(/\D/g, '');
+    return pid.length > 0;
+}
+
 function buildNaverRouteUrl(item) {
     const dname = encodeURIComponent((item.name || '목적지').trim() || '목적지');
-    // 좌표가 있으면 좌표도 전달, 없으면 이름만
+
+    // 1순위: 네이버 장소 ID(did)가 있으면 플레이스로 바로 연결
+    if (hasNaverPlaceId(item)) {
+        const did = (item.naver_place_id || '').replace(/\D/g, '');
+        return window.location.origin + '/naver-route?did=' + did + '&name=' + dname;
+    }
+
+    // 2순위: 좌표가 있으면 좌표 기반 길찾기
     if (hasDestCoordsForNaver(item)) {
         const dlat = Number(item.dest_lat);
         const dlng = Number(item.dest_lng);
         return window.location.origin + '/naver-route?lat=' + dlat + '&lng=' + dlng + '&name=' + dname;
     }
-    // 좌표 없으면 이름만 전달
+
+    // 3순위: 이름만으로 검색
     return window.location.origin + '/naver-route?name=' + dname;
 }
 
@@ -619,7 +679,7 @@ function appendMapFloorShopRows(sectionEl, items) {
                 <span class="map-building-floor-name">${nm}</span>
                 <span class="map-building-floor-tel">${tel}</span>
             `;
-        btn.addEventListener('pointerdown', (ev) => {
+        btn.addEventListener('click', (ev) => {
             ev.stopPropagation();
             openModal(item, { nested: true });
         });
@@ -713,12 +773,11 @@ function setupMapGrid() {
     const wrap = document.getElementById('map-wrap2');
     if (!wrap || wrap.dataset.mapBound) return;
     wrap.dataset.mapBound = '1';
-    wrap.addEventListener('pointerdown', (e) => {
+    wrap.addEventListener('click', (e) => {
         const slotEl = e.target.closest('.bldg[data-slot]');
         if (!slotEl || !wrap.contains(slotEl)) return;
         const slotKey = String(slotEl.getAttribute('data-slot') || '').trim();
         if (!slotKey) return;
-        e.preventDefault();
         mapSelectedSlot = slotKey;
         wrap.querySelectorAll('.bldg.sel').forEach((el) => el.classList.remove('sel'));
         slotEl.classList.add('sel');
@@ -834,7 +893,7 @@ function renderList(list, containerOverride, emptyMessage) {
         const row = document.createElement('article');
         row.className = 'store';
         row.setAttribute('role', 'listitem');
-        row.addEventListener('pointerdown', () => openModal(item));
+        row.addEventListener('click', () => openModal(item));
 
         const imgSrc = item.image_url
             ? item.image_url
@@ -1455,12 +1514,14 @@ function openModal(item, opts) {
         });
     }
 
-    // 항상 네이버 빠른길찾기 URL 사용 (출발지 고정, 도착지는 이름 또는 좌표)
+    // 네이버 지도 QR URL 생성 (우선순위: 장소ID > 좌표 > 이름)
     const nMapUrl = buildNaverRouteUrl(item);
     console.log('[QR 디버그]', {
         name: item.name,
+        naver_place_id: item.naver_place_id,
         dest_lat: item.dest_lat,
         dest_lng: item.dest_lng,
+        hasPlaceId: hasNaverPlaceId(item),
         hasCoords: hasDestCoordsForNaver(item),
         qrUrl: nMapUrl
     });

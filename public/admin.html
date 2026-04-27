@@ -447,7 +447,7 @@
 
             <div class="excel-import">
                 <h3>엑셀 일괄 등록</h3>
-                <p>첫 행은 열 이름, 둘째 행부터 데이터입니다. <strong>상호명·카테고리·주소</strong>는 필수입니다. <strong>2차분류</strong>는 선택이며, 관리자에서 등록한 2차 저장값과 같아야 합니다. <strong>키오스크숨김</strong>은 0(표시)·1(숨김)·예/아니오 등으로 넣을 수 있습니다. <strong>목적지위도·목적지경도</strong>(또는 열 이름 <code>dest_lat</code>, <code>dest_lng</code>, <code>위도</code>, <code>경도</code> 등)를 넣으면 QR이 네이버지도 도보 길찾기로 연결됩니다. 이미지는 URL 열에 웹 경로(예: <code>/uploads/...</code>)를 넣거나 비워 두면 됩니다.</p>
+                <p>첫 행은 열 이름, 둘째 행부터 데이터입니다. <strong>상호명·카테고리·주소</strong>는 필수입니다. <strong>2차분류</strong>는 선택이며, 관리자에서 등록한 2차 저장값과 같아야 합니다. <strong>키오스크숨김</strong>은 0(표시)·1(숨김)·예/아니오 등으로 넣을 수 있습니다. <strong>네이버장소ID</strong>(또는 <code>naver_place_id</code>, <code>did</code>)가 있으면 QR 스캔 시 네이버지도 앱에서 해당 업소 페이지가 바로 열립니다. 없으면 <strong>목적지위도·목적지경도</strong>로 길찾기, 그것도 없으면 상호명 검색으로 연결됩니다. 이미지는 URL 열에 웹 경로(예: <code>/uploads/...</code>)를 넣거나 비워 두면 됩니다.</p>
                 <div class="excel-import-actions">
                     <a class="btn-template" href="/templates/restaurant-import-template.xlsx" download="restaurant-import-template.xlsx">양식 다운로드 (.xlsx)</a>
                     <input type="file" id="excelFile" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel">
@@ -648,15 +648,27 @@
 
                 <div style="display:flex; gap:15px; flex-wrap:wrap;" class="form-group">
                     <div style="flex:1; min-width:200px;">
-                        <label>목적지 위도 (선택, QR 네이버 길찾기, WGS84)</label>
+                        <label>네이버 장소 ID (선택, QR용)</label>
+                        <input type="text" id="naver_place_id" name="naver_place_id" inputmode="numeric" placeholder="예: 1234567890 (숫자만)">
+                    </div>
+                    <div style="flex:2; min-width:300px;">
+                        <label>네이버 마이플레이스 URL (선택, 참고용)</label>
+                        <input type="text" id="naver_place_url" name="naver_place_url" placeholder="예: https://m.place.naver.com/restaurant/1234567890">
+                    </div>
+                </div>
+                <p class="hint" style="margin-top:-8px;"><strong>장소 ID</strong>가 있으면 QR 스캔 시 네이버지도 앱에서 해당 업소 페이지가 바로 열립니다. 네이버 지도에서 업소 검색 → URL의 <code>/restaurant/1234567890/</code> 숫자가 장소 ID입니다. <strong>마이플레이스 URL</strong>은 전체 주소를 저장해 두는 용도입니다.</p>
+
+                <div style="display:flex; gap:15px; flex-wrap:wrap;" class="form-group">
+                    <div style="flex:1; min-width:200px;">
+                        <label>목적지 위도 (선택, 장소ID 없을 때 사용)</label>
                         <input type="text" id="dest_lat" name="dest_lat" inputmode="decimal" placeholder="예: 37.498095">
                     </div>
                     <div style="flex:1; min-width:200px;">
-                        <label>목적지 경도 (선택, QR 네이버 길찾기, WGS84)</label>
+                        <label>목적지 경도 (선택, 장소ID 없을 때 사용)</label>
                         <input type="text" id="dest_lng" name="dest_lng" inputmode="decimal" placeholder="예: 127.027621">
                     </div>
                 </div>
-                <p class="hint" style="margin-top:-8px;">위·경도를 둘 다 넣으면 QR 스캔 시 <strong>네이버지도 앱</strong>에서 <strong>현재 위치 → 해당 업소</strong> 도보 길찾기로 열립니다. 비우면 이전과 같이 상호명 검색 URL만 사용합니다. 네이버 지도에서 핀 찍기 → 공유/좌표로 WGS84를 복사해 넣을 수 있습니다.</p>
+                <p class="hint" style="margin-top:-8px;">네이버 장소 ID가 없고 위·경도가 있으면 좌표 기반 길찾기로 연결됩니다. 둘 다 없으면 상호명으로 검색합니다.</p>
                 
                 <div style="display:flex; gap:15px;" class="form-group">
                     <div style="flex:1;">
@@ -2077,6 +2089,10 @@
             document.getElementById('category').value = item.category;
             fillSubcategorySelectForRestaurant(item.subcategory || '');
             document.getElementById('address').value = item.address || '';
+            const npid = document.getElementById('naver_place_id');
+            if (npid) npid.value = item.naver_place_id || '';
+            const npurl = document.getElementById('naver_place_url');
+            if (npurl) npurl.value = item.naver_place_url || '';
             const dlat = document.getElementById('dest_lat');
             const dlng = document.getElementById('dest_lng');
             if (dlat) dlat.value = item.dest_lat != null && item.dest_lat !== '' ? String(item.dest_lat) : '';

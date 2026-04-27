@@ -201,7 +201,7 @@ const categoryIconUpload = multer({
 });
 
 const RESTAURANT_COLUMNS =
-    'id, name, name_en, category, subcategory, image_url, image_gallery, map_url, description, description_en, address, phone, homepage, menu_url, open_time, close_time, closed_days, tags, main_menu, walk_time, kiosk_hidden, dest_lat, dest_lng';
+    'id, name, name_en, category, subcategory, image_url, image_gallery, map_url, description, description_en, address, phone, homepage, menu_url, open_time, close_time, closed_days, tags, main_menu, walk_time, kiosk_hidden, dest_lat, dest_lng, naver_place_id, naver_place_url';
 
 function isSafeRestaurantImageUrl(u) {
     if (!u || typeof u !== 'string') return false;
@@ -303,10 +303,14 @@ app.post('/api/restaurants', cpUpload, (req, res) => {
         walk_time,
         kiosk_hidden,
         dest_lat,
-        dest_lng
+        dest_lng,
+        naver_place_id,
+        naver_place_url
     } = req.body;
     const dLat = parseOptionalWgsNumber(dest_lat);
     const dLng = parseOptionalWgsNumber(dest_lng);
+    const npid = naver_place_id != null && String(naver_place_id).trim() !== '' ? String(naver_place_id).trim().replace(/\D/g, '') : null;
+    const npurl = naver_place_url != null && String(naver_place_url).trim() !== '' ? String(naver_place_url).trim() : null;
     const kh = parseKioskHidden(kiosk_hidden);
     const mm = main_menu != null && String(main_menu).trim() !== '' ? String(main_menu).trim() : null;
     const files = req.files || {};
@@ -339,9 +343,9 @@ app.post('/api/restaurants', cpUpload, (req, res) => {
     const sub = subcategory != null && String(subcategory).trim() !== '' ? String(subcategory).trim() : null;
     const cd =
         closed_days != null && String(closed_days).trim() !== '' ? String(closed_days).trim() : null;
-    db.run(`INSERT INTO restaurants (name, name_en, category, subcategory, image_url, image_gallery, map_url, description, description_en, address, phone, homepage, menu_url, open_time, close_time, closed_days, tags, main_menu, walk_time, kiosk_hidden, dest_lat, dest_lng) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [name, name_en, category, sub, image_url, image_gallery, map_url, description, description_en, address, phone, homepage, menu_url, open_time, close_time, cd, tags, mm, walk_time || null, kh, dLat, dLng],
+    db.run(`INSERT INTO restaurants (name, name_en, category, subcategory, image_url, image_gallery, map_url, description, description_en, address, phone, homepage, menu_url, open_time, close_time, closed_days, tags, main_menu, walk_time, kiosk_hidden, dest_lat, dest_lng, naver_place_id, naver_place_url) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [name, name_en, category, sub, image_url, image_gallery, map_url, description, description_en, address, phone, homepage, menu_url, open_time, close_time, cd, tags, mm, walk_time || null, kh, dLat, dLng, npid, npurl],
         function(err) {
             if (err) res.status(500).json({ error: err.message });
             else res.json({ id: this.lastID });
@@ -368,10 +372,14 @@ app.put('/api/restaurants/:id', cpUpload, (req, res) => {
         walk_time,
         kiosk_hidden,
         dest_lat,
-        dest_lng
+        dest_lng,
+        naver_place_id,
+        naver_place_url
     } = req.body;
     const dLatU = parseOptionalWgsNumber(dest_lat);
     const dLngU = parseOptionalWgsNumber(dest_lng);
+    const npidU = naver_place_id != null && String(naver_place_id).trim() !== '' ? String(naver_place_id).trim().replace(/\D/g, '') : null;
+    const npurlU = naver_place_url != null && String(naver_place_url).trim() !== '' ? String(naver_place_url).trim() : null;
     const files = req.files || {};
     const sub = subcategory != null && String(subcategory).trim() !== '' ? String(subcategory).trim() : null;
     const kh = parseKioskHidden(kiosk_hidden);
@@ -397,9 +405,11 @@ app.put('/api/restaurants/:id', cpUpload, (req, res) => {
         'walk_time = ?',
         'kiosk_hidden = ?',
         'dest_lat = ?',
-        'dest_lng = ?'
+        'dest_lng = ?',
+        'naver_place_id = ?',
+        'naver_place_url = ?'
     ];
-    let params = [name, name_en, category, sub, description, description_en, address, phone, homepage, open_time, close_time, cd, tags, mm, walk_time || null, kh, dLatU, dLngU];
+    let params = [name, name_en, category, sub, description, description_en, address, phone, homepage, open_time, close_time, cd, tags, mm, walk_time || null, kh, dLatU, dLngU, npidU, npurlU];
 
     const g = buildGalleryUrlsFromManifest(req.body, files, name);
     if (g.error) return res.status(400).json({ error: g.error });
@@ -438,10 +448,59 @@ const FIXED_START = {
 };
 
 app.get('/naver-route', (req, res) => {
-    const { lat, lng, name } = req.query;
+    const { lat, lng, name, did } = req.query;
     const destName = (name || '목적지').trim() || '목적지';
+    const navDid = (did || '').replace(/\D/g, '');
+    const appname = req.get('host') || 'kiosk-naver-route';
 
-    // 좌표가 있으면 좌표 사용, 없으면 이름만
+    // did(네이버 장소 ID)가 있으면 → 앱 딥링크로 플레이스 열기
+    if (navDid) {
+        const nmapUrl = `nmap://place?id=${navDid}&appname=${encodeURIComponent(appname)}`;
+        const webFallback = `https://m.place.naver.com/restaurant/${navDid}/home`;
+        const intentUrl = `intent://place?id=${navDid}&appname=${encodeURIComponent(appname)}#Intent;scheme=nmap;package=com.nhn.android.nmap;S.browser_fallback_url=${encodeURIComponent(webFallback)};end`;
+
+        const html = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>네이버 지도 열기…</title>
+<style>
+html,body{margin:0;padding:0;background:#fff;color:#666;font:14px/1.6 -apple-system,BlinkMacSystemFont,sans-serif}
+.wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:6px;text-align:center;padding:24px}
+.t{color:#03c75a;font-weight:600;font-size:15px}
+.s{color:#999;font-size:12px}
+a{color:#03c75a;text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="t">네이버 지도 앱을 여는 중…</div>
+<div class="s">앱이 자동으로 열리지 않으면 <a href="${webFallback}">여기를 눌러 주세요</a></div>
+</div>
+<script>
+(function(){
+var nmap=${JSON.stringify(nmapUrl)};
+var web=${JSON.stringify(webFallback)};
+var intent=${JSON.stringify(intentUrl)};
+var ua=navigator.userAgent||"";
+var isAndroid=/Android/i.test(ua);
+var isIOS=/iPhone|iPad|iPod/i.test(ua);
+if(!isAndroid&&!isIOS){location.replace(web);return;}
+var t=setTimeout(function(){location.replace(web);},1500);
+function cancel(){clearTimeout(t);}
+document.addEventListener("visibilitychange",function(){if(document.hidden)cancel();});
+window.addEventListener("pagehide",cancel);
+window.addEventListener("blur",cancel);
+if(isAndroid){location.href=intent;}else{location.href=nmap;}
+})();
+</script>
+</body>
+</html>`;
+        return res.type('html').send(html);
+    }
+
+    // did 없음 → 좌표/이름 기반 길찾기 (launchApp/route 또는 빠른길찾기)
     const hasCoords = lat && lng;
     let dlat, dlng;
     if (hasCoords) {
@@ -456,24 +515,19 @@ app.get('/naver-route', (req, res) => {
     // nso_path: 출발지|도착지|옵션 (도보=walk)
     let nsoPath;
     if (hasCoords) {
-        // 좌표 있음: 출발지(고정) → 도착지(이름+좌표)
         nsoPath =
             `placeType^place;name^${FIXED_START.name};address^${FIXED_START.address};code^;longitude^${FIXED_START.lng};latitude^${FIXED_START.lat}` +
             `|type^place;name^${destName};address^;code^;longitude^${dlng};latitude^${dlat}` +
             `|objtype^path;by^walk`;
     } else {
-        // 좌표 없음: 출발지(고정) → 도착지(이름만)
         nsoPath =
             `placeType^place;name^${FIXED_START.name};address^${FIXED_START.address};code^;longitude^${FIXED_START.lng};latitude^${FIXED_START.lat}` +
             `|type^place;name^${destName};address^;code^;longitude^;latitude^` +
             `|objtype^path;by^walk`;
     }
 
-    // 이중 URL 인코딩 필요
     const encodedPath = encodeURIComponent(encodeURIComponent(nsoPath));
     const naverUrl = `https://m.search.naver.com/search.naver?query=${encodeURIComponent('빠른길찾기')}&nso_path=${encodedPath}`;
-
-    // QR 스캔 시 바로 네이버 검색 페이지로 리다이렉트
     res.redirect(naverUrl);
 });
 

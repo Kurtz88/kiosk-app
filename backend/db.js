@@ -135,6 +135,12 @@ function bootstrapSchema(db) {
                 if (!rNames.has('dest_lng')) {
                     db.run('ALTER TABLE restaurants ADD COLUMN dest_lng REAL;', () => {});
                 }
+                if (!rNames.has('naver_place_id')) {
+                    db.run('ALTER TABLE restaurants ADD COLUMN naver_place_id TEXT;', () => {});
+                }
+                if (!rNames.has('naver_place_url')) {
+                    db.run('ALTER TABLE restaurants ADD COLUMN naver_place_url TEXT;', () => {});
+                }
             });
 
             db.all('PRAGMA table_info(categories)', [], (pragmaErr, cols) => {
