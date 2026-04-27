@@ -500,7 +500,7 @@ if(isAndroid){location.href=intent;}else{location.href=nmap;}
         return res.type('html').send(html);
     }
 
-    // did 없음 → 좌표/이름 기반 길찾기 (launchApp/route 또는 빠른길찾기)
+    // did 없음 → 좌표/이름 기반 길찾기 (네이버 공식 launchApp/route 런처)
     const hasCoords = lat && lng;
     let dlat, dlng;
     if (hasCoords) {
@@ -511,23 +511,14 @@ if(isAndroid){location.href=intent;}else{location.href=nmap;}
         }
     }
 
-    // 네이버 검색 빠른길찾기 URL 형식
-    // nso_path: 출발지|도착지|옵션 (도보=walk)
-    let nsoPath;
-    if (hasCoords) {
-        nsoPath =
-            `placeType^place;name^${FIXED_START.name};address^${FIXED_START.address};code^;longitude^${FIXED_START.lng};latitude^${FIXED_START.lat}` +
-            `|type^place;name^${destName};address^;code^;longitude^${dlng};latitude^${dlat}` +
-            `|objtype^path;by^walk`;
-    } else {
-        nsoPath =
-            `placeType^place;name^${FIXED_START.name};address^${FIXED_START.address};code^;longitude^${FIXED_START.lng};latitude^${FIXED_START.lat}` +
-            `|type^place;name^${destName};address^;code^;longitude^;latitude^` +
-            `|objtype^path;by^walk`;
+    // 좌표도 없으면 에러
+    if (!hasCoords) {
+        return res.status(400).send('네이버 장소 ID(did) 또는 좌표(lat, lng)가 필요합니다.');
     }
 
-    const encodedPath = encodeURIComponent(encodeURIComponent(nsoPath));
-    const naverUrl = `https://m.search.naver.com/search.naver?query=${encodeURIComponent('빠른길찾기')}&nso_path=${encodedPath}`;
+    // 네이버 공식 런처 URL (앱으로 자동 연결)
+    // https://nmap.place.naver.com/launchApp/route?path=route&type=place&dlat=...&dlng=...&dname=...&appname=...
+    const naverUrl = `https://nmap.place.naver.com/launchApp/route?path=route&type=place&dlat=${dlat}&dlng=${dlng}&dname=${encodeURIComponent(destName)}&appname=${encodeURIComponent(appname)}`;
     res.redirect(naverUrl);
 });
 
