@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>지도 검색 — 달빛거리먹자골목</title>
     <link rel="stylesheet" href="css/moon-layout.css?v=202604105000">
-    <link rel="stylesheet" href="css/kiosk-moon-overrides.css?v=202604210000">
+    <link rel="stylesheet" href="css/kiosk-moon-overrides.css?v=202605061200">
 </head>
 <body class="kiosk-page">
     <div class="kiosk-shell">
@@ -38,7 +38,7 @@
       <main class="k-body">
         <section class="k-inner mainbg map-page-inner">
 
-<p class="map-click-txt">👆 건물 번호를 눌러 건물별 음식점 정보를 확인하세요.</p>
+<p class="map_click_txt map-click-txt">👆 건물 번호를 눌러 건물별 음식점 정보를 확인하세요.</p>
 
 <section class="map-stage" id="map-stage">
 <div id="screen-fit">
@@ -46,18 +46,43 @@
 
 <div class="map-wrap2" id="map-wrap2">
 
-  <!-- TOP (moon_st/map.html 기준) -->
+  <!-- TOP -->
   <div class="top-block top-gray" style="left:6px;top:6px;width:254px;height:68px;"></div>
   <div class="top-block top-park" style="left:278px;top:6px;width:316px;height:68px;">
-    <div style="font-size:16px;">🌳</div>
     <div class="park-name">테크노폴리스중앙공원</div>
   </div>
+
+  <!-- 장식 아이콘 (moon_st/map.html) -->
+  <div class="mapicon" style="left:310px;top:9px;"><img src="img/mapicon01.png" alt="" style="width:54px;"></div>
+  <div class="mapicon" style="left:518px;top:0px;"><img src="img/tree01.png" alt="" style="width:32px;"></div>
+  <div class="mapicon" style="left:314px;bottom:74px;"><img src="img/mapicon10.png" alt="" style="width:46px;"></div>
+  <div class="mapicon" style="left:216px;top:203px;"><img src="img/personicon01.png" alt="" style="width:49px;"></div>
+  <div class="mapicon" style="left:376px;top:513px;"><img src="img/personicon02.png" alt="" style="width:31px;"></div>
+  <div class="mapicon" style="left:276px;top:683px;"><img src="img/personicon03.png" alt="" style="width:52px;"></div>
+  <div class="mapicon" style="left:80px;top:343px;"><img src="img/personicon04.png" alt="" style="width:38px;"></div>
+  <div class="mapicon" style="right:86px;bottom:133px;"><img src="img/caricon01.png" alt="" style="width:60px;"></div>
+  <div class="mapicon" style="left:390px;top:359px;"><img src="img/caricon02.png" alt="" style="width:55px;"></div>
+  <div class="mapicon" style="right:16px;top:313px;"><img src="img/tree01.png" alt="" style="width:36px;"></div>
+  <div class="mapicon" style="left:16px;top:633px;"><img src="img/tree02.png" alt="" style="width:40px;"></div>
+  <div class="mapicon" style="left:46px;top:23px;"><img src="img/tree01.png" alt="" style="width:32px;"></div>
+  <div class="mapicon" style="left:66px;bottom:63px;"><img src="img/tree01.png" alt="" style="width:35px;"></div>
+  <div class="mapicon" style="right:66px;bottom:63px;"><img src="img/tree02.png" alt="" style="width:48px;"></div>
+
+  <!-- 도로선 -->
+  <div class="roadline st01" style="left:-19px;top:84px;width:620px;"></div>
+  <div class="roadline st01" style="left:-19px;top:244px;width:620px;"></div>
+  <div class="roadline st01" style="left:-19px;top:402px;width:620px;"></div>
+  <div class="roadline st01" style="left:-19px;top:562px;width:620px;"></div>
+  <div class="roadline st01" style="left:-19px;top:762px;width:620px;"></div>
+  <div class="roadline st02" style="top:100px;left:73px;height:600px;"></div>
+  <div class="roadline st02" style="top:100px;left:243px;height:600px;"></div>
+  <div class="roadline st02" style="top:100px;right:61px;height:600px;"></div>
 
   <!-- GROUP WRAPPERS -->
   <div class="grp" style="left:129px;top:95px;width:106px;height:130px;"></div>
   <div class="grp" style="left:260px;top:95px;width:152px;height:130px;"></div>
   <div class="grp" style="left:420px;top:95px;width:103px;height:130px;"></div>
-  <div class="grp" style="right:0;top:95px;width:50px;height:298px;"></div>
+  <div class="grp" style="right:10px;top:95px;width:50px;height:298px;"></div>
 
   <div class="grp" style="left:83px;top:263px;width:152px;height:130px;"></div>
   <div class="grp" style="left:260px;top:263px;width:152px;height:130px;"></div>
@@ -66,16 +91,16 @@
   <div class="grp" style="left:83px;top:415px;width:152px;height:130px;"></div>
   <div class="grp" style="left:260px;top:415px;width:152px;height:130px;"></div>
   <div class="grp" style="left:420px;top:415px;width:103px;height:130px;"></div>
-  <div class="grp" style="right:0px;top:419px;width:50px;height:294px;"></div>
+  <div class="grp" style="right:10px;top:419px;width:50px;height:294px;"></div>
 
   <div class="grp" style="left:83px;top:583px;width:152px;height:130px;"></div>
   <div class="grp" style="left:260px;top:583px;width:152px;height:130px;"></div>
   <div class="grp" style="left:420px;top:583px;width:103px;height:130px;"></div>
 
   <!-- BUILDINGS -->
-  <div class="bldg lm" id="bldg-1-lm" style="left:0px;top:100px;width:50px;height:298px;" data-slot="1">
+  <div class="bldg lm" id="bldg-1-lm" style="left:10px;top:100px;width:50px;height:298px;" data-slot="1">
     <div class="lm-inner">
-      <span style="font-size:16px;">🏬</span>
+      <span><img src="img/mapicon06.png" alt="" style="width:53px;margin-left:-10px"></span>
       <div class="lm-lbl">달성<br>농수산물<br>유통센터</div>
     </div>
   </div>
@@ -100,7 +125,7 @@
   <div class="bldg" id="bldg-7" style="left:473px;top:100px;width:45px;height:120px;" data-slot="7">
     <div class="bldg-num">7</div>
   </div>
-  <div class="bldg" id="bldg-8" style="left:558px;top:117px;width:42px;height:254px;" data-slot="8">
+  <div class="bldg" id="bldg-8" style="left:548px;top:117px;width:42px;height:254px;" data-slot="8">
     <div class="bldg-num">8</div>
   </div>
 
@@ -129,36 +154,37 @@
     <div class="bldg-num">16</div>
   </div>
 
-  <div class="bldg b24" id="bldg-23" style="left:0px;top:424px;width:55px;height:284px;background:var(--card);border:5px solid var(--grp)" data-slot="23">
+  <div class="bldg b24" id="bldg-23" style="left:10px;top:424px;width:55px;height:284px;background:var(--card);border:5px solid var(--grp)" data-slot="23">
     <div class="bldg-num">23</div>
   </div>
 
-  <div class="lot" style="left:4px;top:420px;width:45px;height:120px;">
-    <span style="font-size:17px">🏦</span>
+  <div class="lot" style="left:14px;top:420px;width:45px;height:120px;">
+    <span><img src="img/mapicon07.png" alt="" style="width:50px;margin-left:0"></span>
     <div class="lot-lbl">IM뱅크</div>
   </div>
   <div class="lot" style="left:86px;top:420px;width:45px;height:120px;">
-    <span style="font-size:17px">🏦</span>
+    <span><img src="img/mapicon08.png" alt="" style="width:48px;margin-left:0"></span>
     <div class="lot-lbl">농협</div>
   </div>
-  <div class="lot" style="z-index:10;left:556px;top:630px;width:45px;height:120px;">
-    <span style="font-size:17px">🏦</span>
+  <div class="lot" style="z-index:10;left:546px;top:590px;width:45px;height:120px;">
+    <span><img src="img/mapicon09.png" alt="" style="width:48px;margin-left:0"></span>
     <div class="lot-lbl">새마을금고</div>
   </div>
   <div class="lot" style="z-index:10;left:183px;top:630px;width:45px;height:120px;">
-    <span style="font-size:17px">🏦</span>
-    <div class="lot-lbl">우리은행</div>
+    <span style="margin-top:15px"><img src="img/mapicon11.png" alt="" style="width:56px;margin-left:-3px"></span>
+    <div class="lot-lbl" style="color:#fff">우리은행</div>
   </div>
-  <div class="lot" style="z-index:10;left:556px;top:120px;width:45px;height:120px;">
-    <span style="font-size:17px">🏬</span>
+
+  <div class="lot" style="z-index:10;left:546px;top:90px;width:45px;height:120px;">
+    <span><img src="img/mapicon03.png" alt="" style="width:42px;"></span>
     <div class="lot-lbl">한라하우젠<br>센트럴파크</div>
   </div>
-  <div class="lot" style="z-index:10;left:360px;top:60px;width:45px;height:120px;">
-    <span style="font-size:17px">🎳</span>
+  <div class="lot" style="z-index:10;left:360px;top:50px;width:45px;height:120px;">
+    <span><img src="img/mapicon04.png" alt="" style="width:48px;"></span>
     <div class="lot-lbl">볼링장</div>
   </div>
   <div class="lot" style="z-index:10;left:476px;top:470px;width:45px;">
-    <span style="font-size:17px">🅿️</span>
+    <span><img src="img/mapicon05.png" alt="" style="width:24px;"></span>
   </div>
 
   <div class="bldg" id="bldg-17" style="left:136px;top:420px;width:45px;height:120px;" data-slot="17">
@@ -179,7 +205,7 @@
   <div class="bldg" id="bldg-22" style="left:426px;top:420px;width:45px;height:120px;" data-slot="22">
     <div class="bldg-num">22</div>
   </div>
-  <div class="bldg" id="bldg-32" style="left:558px;top:468px;width:42px;height:240px;" data-slot="32">
+  <div class="bldg" id="bldg-32" style="left:548px;top:468px;width:42px;height:240px;" data-slot="32">
     <div class="bldg-num">32</div>
   </div>
 
@@ -208,18 +234,17 @@
     <div class="bldg-num">31</div>
   </div>
 
-  <div class="currLoc" style="left:247px;top:704px;transform:translateX(-50%);">
+  <div class="currLoc" style="left:247px;top:710px;transform:translateX(-50%);">
     <div class="loc-ring"><div class="loc-mid"><div class="loc-dot"></div></div></div>
     <div class="loc-lbl">현위치</div>
   </div>
 
-  <div class="btm-grp" style="left:6px;top:800px;width:136px;height:80px;"></div>
+  <div class="btm-grp" style="left:15px;top:800px;width:126px;height:80px;"></div>
   <div class="btm-grp" style="left:150px;top:800px;width:82px;height:80px;"></div>
-  <div class="btm-grp" style="left:240px;top:800px;width:192px;height:80px;">
-    <span style="font-size:16px;">🏬</span>
-    <div class="btm-lbl">유가읍 행정복지센터</div>
+  <div class="btm-grp" style="left:240px;top:800px;width:182px;height:80px;">
+    <div class="btm-lbl" style="margin-top:34px">유가읍 행정복지센터</div>
   </div>
-  <div class="btm-grp" style="left:440px;top:800px;width:158px;height:80px;"></div>
+  <div class="btm-grp" style="left:430px;top:800px;width:158px;height:80px;"></div>
 
 </div>
 
