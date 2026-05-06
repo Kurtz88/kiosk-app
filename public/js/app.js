@@ -664,45 +664,82 @@ function mapFloorHeadingFromLevel(level) {
     return `${level}F`;
 }
 
-function appendMapFloorShopRows(sectionEl, items) {
+/** 건물 층별 모달 안내 줄 — moon_st/map.html 과 동일 SVG */
+function buildMapBuildingHelperEl() {
+    const div = document.createElement('div');
+    div.className = 'helper-text';
+    div.innerHTML =
+        '<svg class="helper-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+        '<path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>' +
+        '<path d="M12 8V12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>' +
+        '<path d="M12 16H12.01" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
+    div.appendChild(document.createTextNode(' ' + dict.mapBuildingFloorHint));
+    return div;
+}
+
+function appendMapFloorShopUnits(shopGrid, items) {
     const sorted = items.slice().sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'ko'));
     sorted.forEach((item) => {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'map-building-floor-row';
+        btn.className = 'shop-unit';
         const cat = escapeHtml(categoryDisplayLabel(item));
         const nm = escapeHtml(item.name || '');
         const telRaw = item.phone && String(item.phone).trim();
         const tel = telRaw ? `📱${escapeHtml(telRaw)}` : `📱${escapeHtml(dict.listPlaceholder)}`;
-        btn.innerHTML = `
-                <span class="map-building-floor-cat">${cat}</span>
-                <span class="map-building-floor-name">${nm}</span>
-                <span class="map-building-floor-tel">${tel}</span>
-            `;
+        btn.innerHTML =
+            '<span class="icon" aria-hidden="true"><img src="img/inicon06.png" alt=""></span>' +
+            `<span class="shop-category">${cat}</span>` +
+            `<span class="name">${nm}</span>` +
+            `<p class="tel">${tel}</p>`;
         btn.addEventListener('click', (ev) => {
             ev.stopPropagation();
             openModal(item, { nested: true });
         });
-        sectionEl.appendChild(btn);
+        shopGrid.appendChild(btn);
     });
+}
+
+/** moon_st building-stack / floor-row 구조 */
+function appendMapBuildingFloorRow(stack, floorLabelText, restaurants, emptyMessage) {
+    const row = document.createElement('div');
+    row.className = 'floor-row';
+    const floorNum = document.createElement('div');
+    floorNum.className = 'floor-number';
+    floorNum.textContent = floorLabelText;
+    const shopGrid = document.createElement('div');
+    shopGrid.className = 'shop-grid';
+    if (!restaurants || restaurants.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-unit';
+        empty.textContent = emptyMessage != null ? emptyMessage : dict.mapFloorEmpty;
+        shopGrid.appendChild(empty);
+    } else {
+        appendMapFloorShopUnits(shopGrid, restaurants);
+    }
+    row.appendChild(floorNum);
+    row.appendChild(shopGrid);
+    stack.appendChild(row);
 }
 
 function openBuildingFloorModal(slotKey, restaurants) {
     const el = document.getElementById('modal-building-floors');
     const titleEl = document.getElementById('building-floor-title');
-    const hintEl = document.getElementById('building-floor-hint');
     const bodyEl = document.getElementById('building-floor-body');
     if (!el || !titleEl || !bodyEl) return;
 
     titleEl.textContent = dict.mapBuildingFloorTitle(slotKey);
-    if (hintEl) hintEl.textContent = dict.mapBuildingFloorHint;
-
     bodyEl.innerHTML = '';
+
+    const wrapper = document.createElement('section');
+    wrapper.className = 'building-wrapper';
+    wrapper.appendChild(buildMapBuildingHelperEl());
+
+    const stack = document.createElement('div');
+    stack.className = 'building-stack';
+
     if (!restaurants || restaurants.length === 0) {
-        const div = document.createElement('div');
-        div.className = 'empty-state map-building-empty';
-        div.textContent = dict.mapEmptySlot;
-        bodyEl.appendChild(div);
+        appendMapBuildingFloorRow(stack, '—', [], dict.mapEmptySlot);
     } else {
         const byLevel = new Map();
         const orphans = [];
@@ -716,54 +753,24 @@ function openBuildingFloorModal(slotKey, restaurants) {
             }
         });
 
-        const root = document.createElement('div');
-        root.className = 'map-building-by-floor';
-
         const levelKeys = [...byLevel.keys()];
         const maxLevel = levelKeys.length > 0 ? Math.max(1, ...levelKeys) : 0;
 
         if (maxLevel === 0) {
-            const section = document.createElement('section');
-            section.className = 'map-building-floor-section';
-            const h = document.createElement('h3');
-            h.className = 'map-building-floor-head';
-            h.textContent = dict.mapFloorOther;
-            section.appendChild(h);
-            appendMapFloorShopRows(section, orphans);
-            root.appendChild(section);
+            appendMapBuildingFloorRow(stack, dict.mapFloorOther, orphans);
         } else {
             for (let level = maxLevel; level >= 1; level--) {
-                const section = document.createElement('section');
-                section.className = 'map-building-floor-section';
-                const h = document.createElement('h3');
-                h.className = 'map-building-floor-head';
-                h.textContent = mapFloorHeadingFromLevel(level);
-                section.appendChild(h);
                 const list = byLevel.get(level) || [];
-                if (list.length === 0) {
-                    const empty = document.createElement('p');
-                    empty.className = 'map-building-floor-empty';
-                    empty.textContent = dict.mapFloorEmpty;
-                    section.appendChild(empty);
-                } else {
-                    appendMapFloorShopRows(section, list);
-                }
-                root.appendChild(section);
+                appendMapBuildingFloorRow(stack, mapFloorHeadingFromLevel(level), list);
             }
             if (orphans.length > 0) {
-                const section = document.createElement('section');
-                section.className = 'map-building-floor-section';
-                const h = document.createElement('h3');
-                h.className = 'map-building-floor-head';
-                h.textContent = dict.mapFloorOther;
-                section.appendChild(h);
-                appendMapFloorShopRows(section, orphans);
-                root.appendChild(section);
+                appendMapBuildingFloorRow(stack, dict.mapFloorOther, orphans);
             }
         }
-
-        bodyEl.appendChild(root);
     }
+
+    wrapper.appendChild(stack);
+    bodyEl.appendChild(wrapper);
 
     el.classList.add('active');
     el.setAttribute('aria-hidden', 'false');

@@ -2189,23 +2189,19 @@ html[data-kiosk-page="map"] .map-building-modal-body {
     padding: 0 clamp(12px, 3cqw, 20px) clamp(14px, 3.5cqh, 22px);
 }
 
+html[data-kiosk-page="map"] .map-building-modal-body--moon {
+    padding-top: clamp(4px, 1cqh, 10px);
+}
+
 html[data-kiosk-page="map"] .map-building-header-area {
     text-align: center;
-    padding: 0 8px 8px;
+    padding: 0 8px clamp(10px, 2.5cqh, 14px);
 }
 
 html[data-kiosk-page="map"] .map-building-header-area .store-name {
     font-size: clamp(1.05rem, 3.2cqh, 1.35rem);
     font-weight: 800;
     color: var(--text-900, #1a1a1a);
-}
-
-html[data-kiosk-page="map"] .map-building-floor-hint {
-    margin: 0 0 clamp(10px, 2.5cqh, 16px);
-    text-align: center;
-    font-size: clamp(0.82rem, 2.4cqh, 0.95rem);
-    color: var(--text-600, #5c5c5c);
-    line-height: 1.45;
 }
 
 html[data-kiosk-page="map"] .map-building-floor-body {
@@ -2215,90 +2211,155 @@ html[data-kiosk-page="map"] .map-building-floor-body {
     -webkit-overflow-scrolling: touch;
 }
 
-html[data-kiosk-page="map"] .map-building-by-floor {
+/* moon_st/map.html 층별 안내 팝업 — .building-wrapper */
+html[data-kiosk-page="map"] #modal-building-floors .building-wrapper {
+    --sub-pink: #fff5fa;
+    --text-sub: #8b7a83;
+    --border-pink: #f8d7e8;
+    --pink: #ff3d8b;
+    --bg-white: #fff;
+    --text-main: #1a1a1a;
+    width: 100%;
+}
+
+html[data-kiosk-page="map"] #modal-building-floors .building-wrapper .helper-text {
+    display: flex;
+    align-items: center;
+    gap: clamp(8px, 2.4cqw, 14px);
+    font-size: clamp(0.82rem, 2.7cqh, 0.98rem);
+    font-weight: 400;
+    color: #666;
+    margin: 0 0 clamp(12px, 3cqh, 20px);
+    line-height: 1.4;
+}
+
+html[data-kiosk-page="map"] #modal-building-floors .building-wrapper .helper-icon {
+    color: #666;
+    width: clamp(18px, 3.6cqh, 26px);
+    height: clamp(18px, 3.6cqh, 26px);
+    flex-shrink: 0;
+}
+
+html[data-kiosk-page="map"] #modal-building-floors .building-wrapper .building-stack {
     display: flex;
     flex-direction: column;
-    gap: clamp(14px, 3cqh, 22px);
+    border: clamp(2px, 0.35cqh, 3px) solid var(--border-pink);
+    border-radius: clamp(12px, 2.8cqh, 22px);
+    overflow: hidden;
+    box-shadow: 0 clamp(6px, 1.2cqh, 14px) clamp(22px, 4cqh, 36px) rgba(222, 91, 158, 0.08);
 }
 
-html[data-kiosk-page="map"] .map-building-floor-section {
-    border-bottom: 1px solid #eef0f4;
-    padding-bottom: clamp(12px, 2.5cqh, 18px);
+html[data-kiosk-page="map"] #modal-building-floors .building-wrapper .floor-row {
+    display: flex;
+    border-bottom: clamp(2px, 0.35cqh, 3px) solid var(--border-pink);
 }
 
-html[data-kiosk-page="map"] .map-building-floor-section:last-child {
+html[data-kiosk-page="map"] #modal-building-floors .building-wrapper .floor-row:last-child {
     border-bottom: none;
-    padding-bottom: 0;
 }
 
-html[data-kiosk-page="map"] .map-building-floor-head {
-    margin: 0 0 clamp(10px, 2cqh, 14px);
-    font-size: clamp(1rem, 3.2cqh, 1.2rem);
+html[data-kiosk-page="map"] #modal-building-floors .building-wrapper .floor-number {
+    width: clamp(52px, 11cqw, 88px);
+    background-color: var(--sub-pink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-weight: 800;
-    color: var(--text-900, #1a1a1a);
-    letter-spacing: -0.03em;
+    font-size: clamp(1.35rem, 5cqh, 2rem);
+    color: var(--pink);
+    border-right: clamp(1px, 0.18cqh, 2px) solid var(--border-pink);
+    flex-shrink: 0;
+    line-height: 1;
+    padding: clamp(8px, 1.8cqh, 14px) 4px;
 }
 
-html[data-kiosk-page="map"] .map-building-floor-empty {
-    margin: 0;
-    padding: clamp(10px, 2cqh, 14px) clamp(4px, 1cqw, 8px);
-    font-size: clamp(0.82rem, 2.35cqh, 0.95rem);
-    font-weight: 600;
-    color: var(--text-400, #868e96);
-    line-height: 1.45;
+html[data-kiosk-page="map"] #modal-building-floors .building-wrapper .shop-grid {
+    flex: 1;
+    display: flex;
+    flex-wrap: wrap;
+    padding: clamp(12px, 4.5cqh, 28px) clamp(8px, 2cqw, 16px);
+    gap: clamp(6px, 1.4cqh, 12px);
+    min-width: 0;
+    background: #fff;
 }
 
-html[data-kiosk-page="map"] .map-building-floor-row {
+html[data-kiosk-page="map"] #modal-building-floors .building-wrapper .shop-unit {
     width: 100%;
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: clamp(4px, 0.9cqh, 8px);
-    text-align: left;
-    border: 1.5px solid #e8e8e8;
-    border-radius: clamp(10px, 2cqh, 14px);
-    padding: clamp(10px, 2.2cqh, 14px) clamp(12px, 3cqw, 16px);
-    margin-bottom: clamp(8px, 1.8cqh, 12px);
-    background: #fff;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(6px, 1.2cqh, 10px) clamp(12px, 3cqw, 28px);
+    padding: clamp(10px, 2cqh, 14px) clamp(8px, 2cqw, 14px);
+    background-color: var(--bg-white);
+    border-radius: clamp(12px, 2.2cqh, 18px);
+    border: none;
     cursor: pointer;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
     font-family: inherit;
-    box-shadow: var(--sh-card, 0 1px 6px rgba(0, 0, 0, 0.05));
-    transition: border-color 0.12s ease, transform 0.1s ease;
+    transition: transform 0.15s ease, background-color 0.15s ease;
+    box-sizing: border-box;
 }
 
-html[data-kiosk-page="map"] .map-building-floor-row:last-child {
-    margin-bottom: 0;
+html[data-kiosk-page="map"] #modal-building-floors .building-wrapper .shop-unit:active {
+    transform: scale(0.97);
+    background-color: var(--sub-pink);
 }
 
-html[data-kiosk-page="map"] .map-building-floor-row:active {
-    transform: scale(0.99);
-    border-color: var(--pink, #ff3d8b);
+html[data-kiosk-page="map"] #modal-building-floors .building-wrapper .shop-unit .icon {
+    display: none;
+    margin-bottom: 0.5vh;
 }
 
-html[data-kiosk-page="map"] .map-building-floor-cat {
-    font-size: clamp(0.78rem, 2.25cqh, 0.9rem);
+html[data-kiosk-page="map"] #modal-building-floors .building-wrapper .shop-unit .icon img {
+    width: clamp(48px, 15cqh, 88px);
+}
+
+html[data-kiosk-page="map"] #modal-building-floors .building-wrapper .shop-unit .name {
+    flex: 1;
+    font-size: clamp(0.92rem, 3.8cqh, 1.12rem);
     font-weight: 700;
-    color: var(--text-500, #6b7280);
-}
-
-html[data-kiosk-page="map"] .map-building-floor-name {
-    font-size: clamp(0.92rem, 2.75cqh, 1.05rem);
-    font-weight: 800;
-    color: var(--text-900, #1a1a1a);
-    line-height: 1.35;
+    color: var(--text-main);
+    margin: 0;
+    text-align: left;
+    min-width: 0;
     word-break: keep-all;
 }
 
-html[data-kiosk-page="map"] .map-building-floor-tel {
-    font-size: clamp(0.8rem, 2.35cqh, 0.92rem);
-    font-weight: 600;
+html[data-kiosk-page="map"] #modal-building-floors .building-wrapper .shop-unit .tel {
+    margin: 0;
+    font-size: clamp(0.78rem, 3cqh, 0.98rem);
+    font-weight: 300;
     color: var(--text-600, #495057);
+    white-space: nowrap;
 }
 
-html[data-kiosk-page="map"] .map-building-empty {
-    padding: 12px 8px;
+html[data-kiosk-page="map"] #modal-building-floors .building-wrapper .shop-category {
+    background: #eee;
+    color: #666;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: clamp(0.65rem, 2.2cqh, 0.82rem);
+    font-weight: 400;
+    min-width: clamp(58px, 14cqw, 96px);
+    max-width: 100%;
+    text-align: center;
+    line-height: 1.5;
+    border-radius: 999px;
+    padding: clamp(4px, 0.9cqh, 8px) clamp(8px, 2cqw, 14px);
+    flex-shrink: 0;
+}
+
+html[data-kiosk-page="map"] #modal-building-floors .building-wrapper .empty-unit {
+    width: 100%;
+    padding: clamp(14px, 3.8cqh, 26px) 8px;
+    text-align: center;
+    color: rgba(0, 0, 0, 0.22);
+    font-size: clamp(0.8rem, 2.8cqh, 0.95rem);
+    font-weight: 500;
+    line-height: 1.45;
 }
 
 /* 이전 카드형 타일 — 유지(다른 경로에서 쓸 경우) */
