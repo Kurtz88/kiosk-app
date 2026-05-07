@@ -174,10 +174,6 @@ function enrichRestaurantWithUploadFolder(row) {
         const hit = pickUploadFileForRestaurant(files, base, 'photo');
         if (hit) out.image_url = '/uploads/' + hit;
     }
-    if (isBlankUrl(out.map_url)) {
-        const hit = pickUploadFileForRestaurant(files, base, 'map');
-        if (hit) out.map_url = '/uploads/' + hit;
-    }
     if (isBlankUrl(out.menu_url)) {
         const hit = pickUploadFileForRestaurant(files, base, 'menu');
         if (hit) out.menu_url = '/uploads/' + hit;
@@ -191,7 +187,6 @@ const upload = multer({
 });
 const cpUpload = upload.fields([
     { name: 'images', maxCount: 4 },
-    { name: 'map_image', maxCount: 1 },
     { name: 'menu_image', maxCount: 1 }
 ]);
 
@@ -246,6 +241,24 @@ function buildGalleryUrlsFromManifest(body, files, restaurantName) {
     }
     if (fi !== imageFiles.length) return { error: '업로드 파일 개수와 순서가 맞지 않습니다.' };
     return { urls };
+}
+
+/** 관리자·엑셀: 카테고리 복수는 쉼표로 저장(중복 제거, 순서 유지) */
+function normalizeRestaurantCategories(v) {
+    if (v == null) return '';
+    const parts = String(v)
+        .split(',')
+        .map((x) => x.trim())
+        .filter(Boolean);
+    const seen = new Set();
+    const out = [];
+    for (const p of parts) {
+        if (!seen.has(p)) {
+            seen.add(p);
+            out.push(p);
+        }
+    }
+    return out.join(',');
 }
 
 /** 관리자 폼/엑셀: 목적지 WGS84 — 비우면 null */
@@ -304,13 +317,13 @@ app.post('/api/restaurants', cpUpload, (req, res) => {
         kiosk_hidden,
         dest_lat,
         dest_lng,
-        naver_place_id,
-        naver_place_url
+        naver_place_id
     } = req.body;
     const dLat = parseOptionalWgsNumber(dest_lat);
     const dLng = parseOptionalWgsNumber(dest_lng);
     const npid = naver_place_id != null && String(naver_place_id).trim() !== '' ? String(naver_place_id).trim().replace(/\D/g, '') : null;
-    const npurl = naver_place_url != null && String(naver_place_url).trim() !== '' ? String(naver_place_url).trim() : null;
+    const catN = normalizeRestaurantCategories(category);
+    if (!catN) return res.status(400).json({ error: '카테고리(1차)를 하나 이상 선택해야 합니다.' });
     const kh = parseKioskHidden(kiosk_hidden);
     const mm = main_menu != null && String(main_menu).trim() !== '' ? String(main_menu).trim() : null;
     const files = req.files || {};
@@ -322,7 +335,7 @@ app.post('/api/restaurants', cpUpload, (req, res) => {
         image_url = g.urls[0] || null;
         image_gallery = g.urls.length > 0 ? JSON.stringify(g.urls) : null;
     }
-    let map_url = files['map_image'] ? saveRestaurantUploadFile(name, 'map_image', files['map_image'][0]) : null;
+    let map_url = null;
     let menu_url = files['menu_image'] ? saveRestaurantUploadFile(name, 'menu_image', files['menu_image'][0]) : null;
 
     const nb = sanitizeRestaurantFileBase(name);
@@ -331,21 +344,17 @@ app.post('/api/restaurants', cpUpload, (req, res) => {
         const h = pickUploadFileForRestaurant(fl, nb, 'photo');
         if (h) image_url = '/uploads/' + h;
     }
-    if (!map_url) {
-        const h = pickUploadFileForRestaurant(fl, nb, 'map');
-        if (h) map_url = '/uploads/' + h;
-    }
     if (!menu_url) {
         const h = pickUploadFileForRestaurant(fl, nb, 'menu');
         if (h) menu_url = '/uploads/' + h;
     }
 
-    const sub = subcategory != null && String(subcategory).trim() !== '' ? String(subcategory).trim() : null;
+    const sub = null;
     const cd =
         closed_days != null && String(closed_days).trim() !== '' ? String(closed_days).trim() : null;
     db.run(`INSERT INTO restaurants (name, name_en, category, subcategory, image_url, image_gallery, map_url, description, description_en, address, phone, homepage, menu_url, open_time, close_time, closed_days, tags, main_menu, walk_time, kiosk_hidden, dest_lat, dest_lng, naver_place_id, naver_place_url) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [name, name_en, category, sub, image_url, image_gallery, map_url, description, description_en, address, phone, homepage, menu_url, open_time, close_time, cd, tags, mm, walk_time || null, kh, dLat, dLng, npid, npurl],
+        [name, name_en, catN, sub, image_url, image_gallery, map_url, description, description_en, address, phone, homepage, menu_url, open_time, close_time, cd, tags, mm, walk_time || null, kh, dLat, dLng, npid, null],
         function(err) {
             if (err) res.status(500).json({ error: err.message });
             else res.json({ id: this.lastID });
@@ -373,15 +382,15 @@ app.put('/api/restaurants/:id', cpUpload, (req, res) => {
         kiosk_hidden,
         dest_lat,
         dest_lng,
-        naver_place_id,
-        naver_place_url
+        naver_place_id
     } = req.body;
     const dLatU = parseOptionalWgsNumber(dest_lat);
     const dLngU = parseOptionalWgsNumber(dest_lng);
     const npidU = naver_place_id != null && String(naver_place_id).trim() !== '' ? String(naver_place_id).trim().replace(/\D/g, '') : null;
-    const npurlU = naver_place_url != null && String(naver_place_url).trim() !== '' ? String(naver_place_url).trim() : null;
     const files = req.files || {};
-    const sub = subcategory != null && String(subcategory).trim() !== '' ? String(subcategory).trim() : null;
+    const catU = normalizeRestaurantCategories(category);
+    if (!catU) return res.status(400).json({ error: '카테고리(1차)를 하나 이상 선택해야 합니다.' });
+    const sub = null;
     const kh = parseKioskHidden(kiosk_hidden);
     const cd =
         closed_days != null && String(closed_days).trim() !== '' ? String(closed_days).trim() : null;
@@ -409,7 +418,7 @@ app.put('/api/restaurants/:id', cpUpload, (req, res) => {
         'naver_place_id = ?',
         'naver_place_url = ?'
     ];
-    let params = [name, name_en, category, sub, description, description_en, address, phone, homepage, open_time, close_time, cd, tags, mm, walk_time || null, kh, dLatU, dLngU, npidU, npurlU];
+    let params = [name, name_en, catU, sub, description, description_en, address, phone, homepage, open_time, close_time, cd, tags, mm, walk_time || null, kh, dLatU, dLngU, npidU, null];
 
     const g = buildGalleryUrlsFromManifest(req.body, files, name);
     if (g.error) return res.status(400).json({ error: g.error });
@@ -421,9 +430,9 @@ app.put('/api/restaurants/:id', cpUpload, (req, res) => {
         updates.push('image_gallery = ?');
         params.push(image_gallery);
     }
-    if (files['map_image']) {
-        const u = saveRestaurantUploadFile(name, 'map_image', files['map_image'][0]);
-        if (u) { updates.push("map_url = ?"); params.push(u); }
+    if (String(req.body.clear_map_url || '') === '1') {
+        updates.push('map_url = ?');
+        params.push(null);
     }
     if (files['menu_image']) {
         const u = saveRestaurantUploadFile(name, 'menu_image', files['menu_image'][0]);

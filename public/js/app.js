@@ -1,6 +1,6 @@
 /**
  * 키오스크 프론트 (index.html 홈 / list.html 목록·상세 / map.html 지도)
- * - API: /api/restaurants, /api/categories, /api/subcategories, /api/qrcode
+ * - API: /api/restaurants, /api/categories, /api/qrcode
  * - 홈: 종류 카드 그리드 → list.html 로 이동
  * - 목록: 필터·검색(결과 전체 한 번에 표시), 행 클릭 시 상세 모달
  * - UI 문구·모달 SVG: js/kiosk/kiosk-i18n.js (window.KIOSK_I18N) — 반드시 이 파일보다 먼저 로드
@@ -288,7 +288,6 @@ function syncUrlToState() {
     if (IS_HOME || IS_MAP) return;
     const p = new URLSearchParams();
     if (currentCategory !== 'all') p.set('cat', currentCategory);
-    if (currentSubcategory !== 'all') p.set('sub', currentSubcategory);
     const qEl = document.getElementById('searchInput');
     const q = qEl ? qEl.value.trim() : searchQueryFromUrl;
     if (q) p.set('q', q);
@@ -308,8 +307,18 @@ const restaurantListEl = document.getElementById('restaurant-list');
 // 카테고리 카드 · 목록 뱃지 · 아이콘 경로
 // =============================================================================
 
+/** 식당 category 컬럼 — 쉼표로 저장된 다중 1차 분류(또는 예전 단일 문자열). */
+function restaurantCategoryValues(item) {
+    return parseCommaSeparatedList(item && item.category);
+}
+
+function restaurantHasPrimaryCategory(item, catValue) {
+    if (!catValue || catValue === 'all') return true;
+    return restaurantCategoryValues(item).includes(catValue);
+}
+
 function countRestaurantsInCategory(value) {
-    return allRestaurants.filter((r) => r.category === value).length;
+    return allRestaurants.filter((r) => restaurantHasPrimaryCategory(r, value)).length;
 }
 
 /** 쉼표 구분 문자열 → 트림된 항목 배열 */
@@ -321,10 +330,16 @@ function parseCommaSeparatedList(raw) {
         .filter((x) => x.length > 0);
 }
 
+function primaryCategorySlug(raw) {
+    const list = parseCommaSeparatedList(raw);
+    if (list.length) return list[0];
+    return String(raw || '');
+}
+
 /** 식당 category 값으로 목록 우측 cat-badge 색상 클래스 결정 */
 function badgeClassForCategory(catValue) {
     const keys = ['bd01', 'bd02', 'bd03', 'bd04', 'bd05'];
-    const s = String(catValue || '');
+    const s = String(primaryCategorySlug(catValue) || '');
     let h = 0;
     for (let i = 0; i < s.length; i++) h += s.charCodeAt(i);
     return keys[h % keys.length];
@@ -431,9 +446,13 @@ function tabLabelFor(cat) {
 }
 
 function categoryDisplayLabel(item) {
-    const row = categoriesCache.find((c) => c.value === item.category);
-    if (!row) return item.category;
-    return row.label_ko || item.category;
+    const vals = restaurantCategoryValues(item);
+    if (vals.length === 0) return item.category || '';
+    const labels = vals.map((v) => {
+        const row = categoriesCache.find((c) => c.value === v);
+        return row ? row.label_ko || v : v;
+    });
+    return labels.join(', ');
 }
 
 /** list.html 상단 히어로(moon_st): 카테고리 대표 아이콘 + 「OOO 음식점 안내」 */
@@ -541,42 +560,9 @@ function renderCategoryTabs() {
 function renderSubcategoryTabs() {
     const el = document.getElementById('subcategoryTabs');
     if (!el) return;
-    if (currentCategory === 'all') {
-        el.hidden = true;
-        el.innerHTML = '';
-        currentSubcategory = 'all';
-        return;
-    }
-    const subs = subcategoriesCache
-        .filter((s) => s.category_value === currentCategory)
-        .slice()
-        .sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0));
-    if (subs.length === 0) {
-        el.hidden = true;
-        el.innerHTML = '';
-        currentSubcategory = 'all';
-        return;
-    }
-    if (currentSubcategory !== 'all' && !subs.some((s) => s.value === currentSubcategory)) {
-        currentSubcategory = 'all';
-    }
-    el.hidden = false;
+    el.hidden = true;
     el.innerHTML = '';
-    const allBtn = document.createElement('button');
-    allBtn.type = 'button';
-    allBtn.className = 'chip' + (currentSubcategory === 'all' ? ' on' : '');
-    allBtn.setAttribute('data-sub', 'all');
-    allBtn.textContent = dict.allSubCat;
-    el.appendChild(allBtn);
-    subs.forEach((s) => {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'chip' + (currentSubcategory === s.value ? ' on' : '');
-        b.setAttribute('data-sub', s.value);
-        const text = s.label_ko || s.value;
-        b.textContent = text;
-        el.appendChild(b);
-    });
+    currentSubcategory = 'all';
 }
 
 // =============================================================================
@@ -587,11 +573,10 @@ function loadKioskData() {
     if (IS_MAP) return;
     const restP = fetchJson('/api/restaurants');
     const catP = fetchJson('/api/categories').catch(() => ({ data: [] }));
-    const subP = fetchJson('/api/subcategories').catch(() => ({ data: [] }));
-    Promise.all([restP, catP, subP])
-        .then(([restData, catData, subData]) => {
+    Promise.all([restP, catP])
+        .then(([restData, catData]) => {
             categoriesCache = catData.data || [];
-            subcategoriesCache = subData.data || [];
+            subcategoriesCache = [];
             const rawList = Array.isArray(restData.data) ? restData.data : [];
             allRestaurants = rawList.filter((r) => !Number(r.kiosk_hidden));
             if (!IS_HOME) readListUrlState();
@@ -819,13 +804,12 @@ function loadMapPage() {
 
     const restP = fetchJson('/api/restaurants');
     const catP = fetchJson('/api/categories').catch(() => ({ data: [] }));
-    const subP = fetchJson('/api/subcategories').catch(() => ({ data: [] }));
     const mapP = fetchJson('/api/map-slot-assignments').catch(() => ({ assignments: {} }));
 
-    Promise.all([restP, catP, subP, mapP])
-        .then(([restData, catData, subData, mapData]) => {
+    Promise.all([restP, catP, mapP])
+        .then(([restData, catData, mapData]) => {
             categoriesCache = catData.data || [];
-            subcategoriesCache = subData.data || [];
+            subcategoriesCache = [];
             const rawList = Array.isArray(restData.data) ? restData.data : [];
             allRestaurants = rawList.filter((r) => !Number(r.kiosk_hidden));
             const a = mapData.assignments;
@@ -1035,21 +1019,22 @@ function applyFilters() {
         ? queryEl.value.toLowerCase().trim()
         : (searchQueryFromUrl || '').toLowerCase().trim();
     let filtered = allRestaurants;
-    if (currentCategory !== 'all') filtered = filtered.filter((item) => item.category === currentCategory);
-    if (currentCategory !== 'all' && currentSubcategory !== 'all') {
-        filtered = filtered.filter((item) => (item.subcategory || '') === currentSubcategory);
-    }
+    if (currentCategory !== 'all') filtered = filtered.filter((item) => restaurantHasPrimaryCategory(item, currentCategory));
 
     if (query.length > 0)
         filtered = filtered.filter((item) => {
             const nameKo = String(item.name || '').toLowerCase();
-            const catVal = String(item.category || '').toLowerCase();
-            const catRow = categoriesCache.find((c) => c.value === item.category);
-            const catLabelKo = catRow ? String(catRow.label_ko || '').toLowerCase() : '';
+            const vals = restaurantCategoryValues(item);
+            const catConcat = vals.join(' ').toLowerCase();
             return (
                 nameKo.includes(query) ||
-                catLabelKo.includes(query) ||
-                catVal.includes(query)
+                catConcat.includes(query) ||
+                vals.some((v) => {
+                    const catRow = categoriesCache.find((c) => c.value === v);
+                    const catLabelKo = catRow ? String(catRow.label_ko || '').toLowerCase() : '';
+                    const vv = String(v || '').toLowerCase();
+                    return catLabelKo.includes(query) || vv.includes(query);
+                })
             );
         });
     const shuffled = [...filtered];
@@ -1348,25 +1333,18 @@ function openModal(item, opts) {
     const heroSrc = imgList[0] ? escapeHtml(imgList[0]) : PLACEHOLDER_IMG;
     const subA = imgList[1] ? escapeHtml(imgList[1]) : heroSrc;
     const subB = imgList[2] ? escapeHtml(imgList[2]) : heroSrc;
-    const bd = badgeClassForCategory(item.category);
+    const bd = badgeClassForCategory(primaryCategorySlug(item.category));
     const displayName = escapeHtml(item.name);
     const displayCategory = escapeHtml(categoryDisplayLabel(item));
     const displayDesc = item.description ? escapeHtml(item.description).replace(/\n/g, '<br>') : '';
 
-    let mapBtnHtml = item.map_url
-        ? `<button type="button" class="map-btn js-open-map"><img src="${iniconSrcFromTabIndex(3)}" alt="" class="btn-inicon"><span>${escapeHtml(t.mapBtn)}</span></button>`
-        : '';
     let menuBtnHtml = item.menu_url
         ? `<button type="button" class="map-btn menu-accent js-open-menu"><img src="${iniconSrcFromTabIndex(4)}" alt="" class="btn-inicon"><span>${escapeHtml(t.menuBtn)}</span></button>`
         : '';
     const actionsHtml =
-        mapBtnHtml || menuBtnHtml
-            ? `<div class="modal-actions">${mapBtnHtml}${menuBtnHtml}</div>`
+        menuBtnHtml
+            ? `<div class="modal-actions">${menuBtnHtml}</div>`
             : '';
-
-    let walkHtml = item.walk_time
-        ? `<div class="walk-badge modal-walk"><img src="${iniconSrcFromTabIndex(11)}" alt="" class="walk-inicon"><span>도보 약 ${escapeHtml(String(item.walk_time))}분 소요</span></div>`
-        : '';
 
     let mainMenuChipsHtml = '';
     const mainMenuParts = parseCommaSeparatedList(item.main_menu);
@@ -1466,7 +1444,6 @@ function openModal(item, opts) {
             </div>
             <div class="store-name">${displayName}</div>
             ${displayDesc ? `<div class="store-desc">${displayDesc}</div>` : ''}
-            ${walkHtml}
           </article>
           <div class="divider"></div>
           <div class="info-list">${infoBlocks}</div>
@@ -1491,8 +1468,6 @@ function openModal(item, opts) {
         else overlay.classList.remove('modal-overlay--stack-above-building');
     }
 
-    const mapEl = modalBody.querySelector('.js-open-map');
-    if (mapEl && item.map_url) mapEl.addEventListener('click', () => openMap(item.map_url));
     const menuEl = modalBody.querySelector('.js-open-menu');
     if (menuEl && item.menu_url) menuEl.addEventListener('click', () => openMenuInfo(item.menu_url));
 
@@ -1552,13 +1527,6 @@ function closeModal() {
         overlay.classList.remove('modal-overlay--stack-above-building');
         overlay.setAttribute('aria-hidden', 'true');
     }
-}
-
-function openMap(mapUrl) {
-    const img = document.getElementById('full-map-img');
-    const ov = document.getElementById('map-overlay');
-    if (img) img.src = mapUrl;
-    if (ov) ov.classList.add('active');
 }
 
 function closeMap() {

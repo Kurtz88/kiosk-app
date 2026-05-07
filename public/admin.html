@@ -438,7 +438,7 @@
 
             <div class="admin-tab-bar" role="tablist">
                 <button type="button" class="admin-tab active" role="tab" aria-selected="true" data-admin-tab="restaurants" id="tabBtnRestaurants">음식점 목록</button>
-                <button type="button" class="admin-tab" role="tab" aria-selected="false" data-admin-tab="categories" id="tabBtnCategories">카테고리·2차 분류</button>
+                <button type="button" class="admin-tab" role="tab" aria-selected="false" data-admin-tab="categories" id="tabBtnCategories">카테고리</button>
                 <button type="button" class="admin-tab" role="tab" aria-selected="false" data-admin-tab="map" id="tabBtnMap">지도 구역</button>
             </div>
 
@@ -447,7 +447,7 @@
 
             <div class="excel-import">
                 <h3>엑셀 일괄 등록</h3>
-                <p>첫 행은 열 이름, 둘째 행부터 데이터입니다. <strong>상호명·카테고리·주소</strong>는 필수입니다. <strong>2차분류</strong>는 선택이며, 관리자에서 등록한 2차 저장값과 같아야 합니다. <strong>키오스크숨김</strong>은 0(표시)·1(숨김)·예/아니오 등으로 넣을 수 있습니다. <strong>네이버장소ID</strong>(또는 <code>naver_place_id</code>, <code>did</code>)가 있으면 QR 스캔 시 네이버지도 앱에서 해당 업소 페이지가 바로 열립니다. 없으면 <strong>목적지위도·목적지경도</strong>로 길찾기, 그것도 없으면 상호명 검색으로 연결됩니다. 이미지는 URL 열에 웹 경로(예: <code>/uploads/...</code>)를 넣거나 비워 두면 됩니다.</p>
+                <p>첫 행은 열 이름, 둘째 행부터 데이터입니다. <strong>상호명·카테고리·주소</strong>는 필수입니다. <strong>카테고리</strong> 칸에는 1차 저장값 하나만 넣거나, 여러 개는 <strong>영문 쉼표</strong>(예: <code>korean,chicken</code>)로 넣을 수 있습니다. <strong>키오스크숨김</strong>은 0(표시)·1(숨김)·예/아니오 등으로 넣을 수 있습니다. <strong>네이버장소ID</strong>(또는 <code>naver_place_id</code>, <code>did</code>)가 있으면 QR 스캔 시 네이버지도 앱에서 해당 업소 페이지가 바로 열립니다. 없으면 <strong>목적지위도·목적지경도</strong>로 길찾기, 그것도 없으면 상호명 검색으로 연결됩니다. 대표 이미지는 URL 열에 웹 경로(예: <code>/uploads/...</code>)를 넣거나 비워 두면 됩니다.</p>
                 <div class="excel-import-actions">
                     <a class="btn-template" href="/templates/restaurant-import-template.xlsx" download="restaurant-import-template.xlsx">양식 다운로드 (.xlsx)</a>
                     <input type="file" id="excelFile" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel">
@@ -462,7 +462,6 @@
                         <th>번호</th>
                         <th>상호명</th>
                         <th>카테고리</th>
-                        <th>2차</th>
                         <th>키오스크</th>
                         <th>관리</th>
                     </tr>
@@ -474,7 +473,7 @@
             <div id="adminPanelCategories" class="admin-panel" role="tabpanel" hidden>
             <div class="category-admin-box">
                 <h3>카테고리 관리</h3>
-                <p class="hint">키오스크 상단 탭과 식당 등록 시 선택 목록에 사용됩니다. <strong>저장값</strong>은 DB·엑셀에 들어가는 고유 문자열이며, 탭 필터는 이 값과 식당의 카테고리가 일치할 때 동작합니다. 저장값을 바꾸면 해당 문자열을 쓰는 식당 행이 함께 갱신됩니다.</p>
+                <p class="hint">키오스크 상단 탭과 식당 등록 시 선택 목록에 사용됩니다. <strong>저장값</strong>은 DB·엑셀에 들어가는 고유 문자열이며, 식당에 <strong>여러 개</strong> 선택하면 DB에는 쉼표로 이어져 저장되고 해당 탭을 눌렀을 때 모두 나옵니다. 저장값을 바꾸면 예전 문자열 <strong>그대로</strong> 들어 있는 행 위주로 갱신합니다(복수 카테고리 문자열에는 수동 수정이 필요할 수 있습니다).</p>
                 <div id="categoryTableWrap">
                     <table id="categoryAdminTable">
                         <thead>
@@ -521,49 +520,6 @@
                     </div>
                     <button type="submit" class="submit-btn" id="catSubmitBtn" style="margin-top:16px;">카테고리 추가</button>
                     <button type="button" class="cancel-btn" id="catCancelBtn" onclick="resetCategoryForm()" style="display:none;">취소</button>
-                </form>
-            </div>
-
-            <div class="category-admin-box" style="background:#e7f5ff;border-color:#74c0fc;">
-                <h3>2차 분류 관리</h3>
-                <p class="hint">선택한 <strong>1차 카테고리</strong> 아래에 키오스크 2차 탭으로 쓸 항목을 등록합니다. <strong>저장값</strong>은 식당·엑셀의 2차분류 열과 동일해야 합니다. 삭제 시 해당 값을 쓰는 식당이 있으면 한 번 더 물은 뒤, 식당의 2차분류만 비우고 삭제할 수 있습니다.</p>
-                <div class="form-group" style="margin-bottom:16px;">
-                    <label>상위 카테고리</label>
-                    <select id="subCatParentPick" onchange="renderSubcategoryAdminTable()"></select>
-                </div>
-                <div id="subcategoryTableWrap" style="overflow-x:auto;margin-bottom:16px;">
-                    <table id="subcategoryAdminTable">
-                        <thead>
-                            <tr>
-                                <th>순서</th>
-                                <th>저장값</th>
-                                <th>한글</th>
-                                <th>관리</th>
-                            </tr>
-                        </thead>
-                        <tbody id="subcategoryListBody"></tbody>
-                    </table>
-                </div>
-                <h4 id="subCatFormTitle" style="margin:0 0 12px 0; font-size:1.05rem; color:#495057;">새 2차 분류 추가</h4>
-                <form id="subcategoryAdminForm" onsubmit="submitSubcategoryForm(event)">
-                    <input type="hidden" id="subCatEditId" value="">
-                    <div class="cat-form-grid">
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label>저장값 (필수, 영문·숫자·_ 권장)</label>
-                            <input type="text" id="subCatValue" required placeholder="예: coffee">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label>표시 순서</label>
-                            <input type="number" id="subCatSortOrder" placeholder="비우면 자동">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label>한글 표시 (필수)</label>
-                            <input type="text" id="subCatLabelKo" required placeholder="예: 커피전문점">
-                        </div>
-                        <input type="hidden" id="subCatLabelEn" value="">
-                    </div>
-                    <button type="submit" class="submit-btn" id="subCatSubmitBtn" style="margin-top:16px;background:#339af0;">2차 분류 추가</button>
-                    <button type="button" class="cancel-btn" id="subCatCancelBtn" onclick="resetSubcategoryForm()" style="display:none;">취소</button>
                 </form>
             </div>
             </div>
@@ -618,20 +574,10 @@
             <form id="adminForm" onsubmit="submitForm(event)">
                 <input type="hidden" id="editId" name="editId">
                 
-                <div class="form-group admin-cat-sub-row">
-                    <div>
-                        <label>카테고리 (1차)</label>
-                        <select id="category" name="category" required>
-                            <option value="">목록 불러오는 중…</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label>2차 분류 (선택)</label>
-                        <select id="subcategory" name="subcategory">
-                            <option value="">없음 (1차만)</option>
-                        </select>
-                    </div>
+                <div class="form-group">
+                    <label>카테고리 (1차 · 복수 선택)</label>
+                    <div class="checkbox-grid" id="restaurantCategoryCheckboxes" aria-live="polite"></div>
+                    <p class="hint" style="margin-top:8px;margin-bottom:0;">하나 이상 체크해야 합니다. DB에는 선택한 저장값들이 영문 쉼표로 합쳐져 들어갑니다.</p>
                 </div>
 
                 <div class="form-group">
@@ -646,17 +592,11 @@
                     <input type="text" id="address" name="address" required placeholder="예: 지하 1층 푸드코트 안쪽">
                 </div>
 
-                <div style="display:flex; gap:15px; flex-wrap:wrap;" class="form-group">
-                    <div style="flex:1; min-width:200px;">
-                        <label>네이버 장소 ID (선택, QR용)</label>
-                        <input type="text" id="naver_place_id" name="naver_place_id" inputmode="numeric" placeholder="예: 1234567890 (숫자만)">
-                    </div>
-                    <div style="flex:2; min-width:300px;">
-                        <label>네이버 마이플레이스 URL (선택, 참고용)</label>
-                        <input type="text" id="naver_place_url" name="naver_place_url" placeholder="예: https://m.place.naver.com/restaurant/1234567890">
-                    </div>
+                <div class="form-group">
+                    <label>네이버 장소 ID (선택, QR용)</label>
+                    <input type="text" id="naver_place_id" name="naver_place_id" inputmode="numeric" placeholder="예: 1234567890 (숫자만)">
                 </div>
-                <p class="hint" style="margin-top:-8px;"><strong>장소 ID</strong>가 있으면 QR 스캔 시 네이버지도 앱에서 해당 업소 페이지가 바로 열립니다. 네이버 지도에서 업소 검색 → URL의 <code>/restaurant/1234567890/</code> 숫자가 장소 ID입니다. <strong>마이플레이스 URL</strong>은 전체 주소를 저장해 두는 용도입니다.</p>
+                <p class="hint" style="margin-top:-8px;"><strong>장소 ID</strong>가 있으면 QR 스캔 시 네이버지도 앱에서 해당 업소 페이지가 바로 열립니다. 네이버 지도에서 업소 검색 → URL의 <code>/restaurant/1234567890/</code> 숫자가 장소 ID입니다.</p>
 
                 <div style="display:flex; gap:15px; flex-wrap:wrap;" class="form-group">
                     <div style="flex:1; min-width:200px;">
@@ -698,11 +638,6 @@
                     <p class="hint" style="margin-top:8px;margin-bottom:0;">키오스크 목록·상세 화면에 표시됩니다.</p>
                 </div>
                 
-                <div class="form-group">
-                    <label>도보 소요 시간 (분)</label>
-                    <input type="number" id="walk_time" name="walk_time" placeholder="예: 5" min="1">
-                </div>
-
                 <div class="form-group">
                     <label>시설 및 서비스 (다중 선택 가능)</label>
                     <div class="checkbox-grid" id="facilitiesGrid">
@@ -760,15 +695,6 @@
                 </div>
                 
                 <div class="form-group">
-                    <label>가시는 길 약도 이미지 (선택, 지도 팝업용)</label>
-                    <input type="file" id="map_image" name="map_image" accept="image/*">
-                    <div class="img-preview-wrap" id="map_imagePreviewWrap" hidden>
-                        <span class="img-preview-label">미리보기</span>
-                        <img id="map_imagePreview" alt="약도 미리보기">
-                    </div>
-                </div>
-
-                <div class="form-group">
                     <label>식당 소개 (한국어)</label>
                     <textarea id="description" name="description" rows="3" placeholder="매장 소개를 적어주세요"></textarea>
                 </div>
@@ -791,10 +717,9 @@
     <script>
         let adminData = [];
         let adminCategoryData = [];
-        let adminSubcategoryData = [];
         let mapSlotAssignments = {};
-        const previewBlobUrls = { map_image: null, menu_image: null };
-        let editingAssetUrls = { image_url: null, map_url: null, menu_url: null };
+        const previewBlobUrls = { menu_image: null };
+        let editingAssetUrls = { image_url: null, menu_url: null };
         /** { uid: string, url?: string, file?: File }[] 최대 4 */
         let heroGalleryItems = [];
         const HERO_GALLERY_MAX = 4;
@@ -851,7 +776,7 @@
             const title = document.getElementById('adminMainTitle');
             if (title) {
                 if (isRest) title.textContent = '등록된 식당 목록';
-                else if (isCat) title.textContent = '카테고리·2차 분류';
+                else if (isCat) title.textContent = '카테고리';
                 else title.textContent = '지도 구역 설정';
             }
             const formSec = document.getElementById('restaurantFormSection');
@@ -1248,111 +1173,86 @@
             setupAdminTabs();
             setupMapAdminPanel();
             fetchAdminList();
-            fetchCategoriesAdmin()
-                .then(() => fetchSubcategoriesAdmin())
-                .catch(() => {});
+            fetchCategoriesAdmin().catch(() => {});
             setupCategoryIconForm();
             setupImagePreviews();
-            const catSel = document.getElementById('category');
-            if (catSel) catSel.addEventListener('change', () => fillSubcategorySelectForRestaurant(''));
         });
 
-        function fetchCategoriesAdmin(selectPreferredValue) {
+        function parseAdminCategoryCsv(raw) {
+            if (raw == null || String(raw).trim() === '') return [];
+            return String(raw)
+                .split(',')
+                .map((x) => x.trim())
+                .filter(Boolean);
+        }
+
+        function collectRestaurantCategoriesCsv() {
+            const boxes = document.querySelectorAll('#restaurantCategoryCheckboxes input[type="checkbox"]:checked');
+            const order = [];
+            boxes.forEach((cb) => {
+                const v = cb.value;
+                if (v && order.indexOf(v) === -1) order.push(v);
+            });
+            return order.join(',');
+        }
+
+        function setRestaurantCategoriesFromCsv(csv) {
+            const want = parseAdminCategoryCsv(csv);
+            document.querySelectorAll('#restaurantCategoryCheckboxes input[type="checkbox"]').forEach((cb) => {
+                cb.checked = want.indexOf(cb.value) !== -1;
+            });
+        }
+
+        function renderRestaurantCategoryCheckboxes(preferredCsv) {
+            const wrap = document.getElementById('restaurantCategoryCheckboxes');
+            if (!wrap) return;
+            wrap.innerHTML = '';
+            if (!adminCategoryData.length) {
+                const p = document.createElement('p');
+                p.style.cssText = 'margin:0;color:#868e96;';
+                p.textContent = '등록된 1차 카테고리가 없습니다. 「카테고리」 탭에서 추가하세요.';
+                wrap.appendChild(p);
+                return;
+            }
             const preferred =
-                selectPreferredValue !== undefined
+                preferredCsv !== undefined && preferredCsv !== null ? parseAdminCategoryCsv(preferredCsv) : [];
+            adminCategoryData.forEach((c) => {
+                const lab = document.createElement('label');
+                lab.className = 'checkbox-label';
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.value = c.value;
+                cb.checked = preferred.indexOf(c.value) !== -1;
+                const span = document.createElement('span');
+                span.textContent = ' ' + (c.label_ko || c.value || '');
+                lab.appendChild(cb);
+                lab.appendChild(span);
+                wrap.appendChild(lab);
+            });
+        }
+
+        function fetchCategoriesAdmin(selectPreferredValue) {
+            const preferredJoined =
+                selectPreferredValue !== undefined && selectPreferredValue !== null && String(selectPreferredValue).trim() !== ''
                     ? selectPreferredValue
-                    : (document.getElementById('category') ? document.getElementById('category').value : '');
+                    : collectRestaurantCategoriesCsv();
+
             return fetchJson('/api/categories')
                 .then(({ data }) => {
                     adminCategoryData = data.data || [];
                     renderCategoryAdminTable();
-                    fillCategorySelect(preferred);
+                    renderRestaurantCategoryCheckboxes(preferredJoined || '');
                 })
                 .catch((err) => {
                     console.error(err);
                     adminCategoryData = [];
                     renderCategoryAdminTable();
-                    const sel = document.getElementById('category');
-                    if (sel) sel.innerHTML = '<option value="">API 연결 실패 — npm start 후 localhost:3000 으로 여세요</option>';
+                    const wrap = document.getElementById('restaurantCategoryCheckboxes');
+                    if (wrap) {
+                        wrap.innerHTML =
+                            '<p style="margin:0;color:#c92a2a;">API 연결 실패 — 프로젝트 루트에서 npm start 실행 후 localhost:3000 으로 이 페이지를 여세요.</p>';
+                    }
                 });
-        }
-
-        function fetchSubcategoriesAdmin() {
-            return fetchJson('/api/subcategories')
-                .then(({ data }) => {
-                    adminSubcategoryData = data.data || [];
-                    syncSubCatParentPick();
-                    renderSubcategoryAdminTable();
-                    const subSel = document.getElementById('subcategory');
-                    const keep = subSel ? subSel.value : '';
-                    fillSubcategorySelectForRestaurant(keep);
-                })
-                .catch((err) => {
-                    console.error(err);
-                    adminSubcategoryData = [];
-                });
-        }
-
-        function syncSubCatParentPick() {
-            const pick = document.getElementById('subCatParentPick');
-            if (!pick) return;
-            const cur = pick.value;
-            pick.innerHTML = '';
-            if (!adminCategoryData.length) {
-                const o = document.createElement('option');
-                o.value = '';
-                o.textContent = '먼저 1차 카테고리를 등록하세요';
-                pick.appendChild(o);
-                return;
-            }
-            adminCategoryData.forEach((c) => {
-                const o = document.createElement('option');
-                o.value = c.value;
-                o.textContent = c.label_ko + ' (' + c.value + ')';
-                pick.appendChild(o);
-            });
-            if (cur && [...pick.options].some((x) => x.value === cur)) pick.value = cur;
-            else pick.selectedIndex = 0;
-        }
-
-        function renderSubcategoryAdminTable() {
-            const pick = document.getElementById('subCatParentPick');
-            const tbody = document.getElementById('subcategoryListBody');
-            if (!pick || !tbody) return;
-            const cv = pick.value;
-            tbody.innerHTML = '';
-            if (!cv) {
-                tbody.innerHTML = '<tr><td colspan="4" style="color:#868e96;">상위 카테고리를 선택하세요.</td></tr>';
-                return;
-            }
-            const rows = adminSubcategoryData.filter((s) => s.category_value === cv);
-            if (!rows.length) {
-                tbody.innerHTML = '<tr><td colspan="4" style="color:#868e96;">이 1차 카테고리에 등록된 2차 분류가 없습니다.</td></tr>';
-                return;
-            }
-            rows.forEach((s) => {
-                const tr = document.createElement('tr');
-                tr.innerHTML =
-                    '<td>' +
-                    s.sort_order +
-                    '</td><td><code>' +
-                    escapeAdminHtml(s.value) +
-                    '</code></td><td>' +
-                    escapeAdminHtml(s.label_ko) +
-                    '</td><td></td>';
-                const td = tr.lastElementChild;
-                const eb = document.createElement('button');
-                eb.className = 'action-btn edit-btn';
-                eb.textContent = '수정';
-                eb.onclick = () => editSubcategoryRow(s);
-                const db = document.createElement('button');
-                db.className = 'action-btn delete-btn';
-                db.textContent = '삭제';
-                db.onclick = () => deleteSubcategoryRow(s.id);
-                td.appendChild(eb);
-                td.appendChild(db);
-                tbody.appendChild(tr);
-            });
         }
 
         function escapeAdminHtml(t) {
@@ -1361,150 +1261,6 @@
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;');
-        }
-
-        function fillSubcategorySelectForRestaurant(preferredSub) {
-            const cat = document.getElementById('category').value;
-            const sel = document.getElementById('subcategory');
-            if (!sel) return;
-            sel.innerHTML = '';
-            const o0 = document.createElement('option');
-            o0.value = '';
-            o0.textContent = '없음 (1차만)';
-            sel.appendChild(o0);
-            if (!cat) return;
-            adminSubcategoryData
-                .filter((s) => s.category_value === cat)
-                .forEach((s) => {
-                    const o = document.createElement('option');
-                    o.value = s.value;
-                    o.textContent = s.label_ko || s.value;
-                    sel.appendChild(o);
-                });
-            const want = preferredSub != null ? String(preferredSub) : '';
-            if (want && [...sel.options].some((op) => op.value === want)) sel.value = want;
-            else sel.value = '';
-        }
-
-        function resetSubcategoryForm() {
-            document.getElementById('subCatEditId').value = '';
-            document.getElementById('subcategoryAdminForm').reset();
-            document.getElementById('subCatFormTitle').innerText = '새 2차 분류 추가';
-            document.getElementById('subCatSubmitBtn').innerText = '2차 분류 추가';
-            document.getElementById('subCatCancelBtn').style.display = 'none';
-        }
-
-        function editSubcategoryRow(s) {
-            document.getElementById('subCatFormTitle').innerText = '2차 분류 수정';
-            document.getElementById('subCatSubmitBtn').innerText = '수정 저장';
-            document.getElementById('subCatCancelBtn').style.display = 'block';
-            document.getElementById('subCatEditId').value = s.id;
-            document.getElementById('subCatValue').value = s.value;
-            document.getElementById('subCatLabelKo').value = s.label_ko;
-            document.getElementById('subCatLabelEn').value = s.label_en || '';
-            document.getElementById('subCatSortOrder').value = s.sort_order != null ? s.sort_order : '';
-            const pick = document.getElementById('subCatParentPick');
-            if (pick && s.category_value) pick.value = s.category_value;
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function deleteSubcategoryRow(id, forceDetach) {
-            const msg = forceDetach
-                ? '해당 2차 분류를 쓰는 식당의 「2차분류」만 비우고, 이 항목은 삭제합니다. 계속할까요?'
-                : '이 2차 분류를 삭제할까요? 해당 값을 쓰는 식당이 있으면 먼저 막히며, 안내에 따라 연결 끊고 삭제할 수 있습니다.';
-            if (!confirm(msg)) return;
-            const url = '/api/subcategories/' + id + (forceDetach ? '?detach=1' : '');
-            fetchJson(url, { method: 'DELETE' })
-                .then(({ ok, status, data }) => {
-                    if (!ok || data.error) {
-                        if (
-                            !forceDetach &&
-                            status === 400 &&
-                            data &&
-                            data.error &&
-                            String(data.error).indexOf('2차 분류를 쓰는 식당') !== -1
-                        ) {
-                            const n =
-                                typeof data.inUseCount === 'number'
-                                    ? data.inUseCount
-                                    : parseInt(String(data.error).replace(/[^\d]/g, ''), 10);
-                            if (
-                                confirm(
-                                    '이 2차 분류를 쓰는 식당이 ' +
-                                        (Number.isFinite(n) && n > 0 ? n + '곳 ' : '') +
-                                        '있습니다.\n\n식당 데이터의 2차분류만 비우고 이 항목을 삭제할까요? (1차 카테고리·상호는 그대로입니다.)'
-                                )
-                            ) {
-                                deleteSubcategoryRow(id, true);
-                            }
-                            return;
-                        }
-                        alert(data.error || '삭제 실패');
-                        return;
-                    }
-                    fetchSubcategoriesAdmin();
-                    fetchAdminList();
-                })
-                .catch((err) => alert(err.message));
-        }
-
-        function submitSubcategoryForm(e) {
-            e.preventDefault();
-            const editId = document.getElementById('subCatEditId').value.trim();
-            const parent = document.getElementById('subCatParentPick').value;
-            if (!parent) {
-                alert('상위 카테고리를 선택하세요.');
-                return;
-            }
-            const body = {
-                category_value: parent,
-                value: document.getElementById('subCatValue').value.trim(),
-                label_ko: document.getElementById('subCatLabelKo').value.trim(),
-                label_en: document.getElementById('subCatLabelEn').value.trim(),
-                sort_order: document.getElementById('subCatSortOrder').value.trim()
-            };
-            const url = editId ? '/api/subcategories/' + editId : '/api/subcategories';
-            const method = editId ? 'PUT' : 'POST';
-            fetchJson(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            })
-                .then(({ ok, data }) => {
-                    if (!ok || data.error) {
-                        alert(data.error || '저장 실패');
-                        return;
-                    }
-                    alert(editId ? '수정되었습니다.' : '추가되었습니다.');
-                    resetSubcategoryForm();
-                    fetchSubcategoriesAdmin();
-                    fetchAdminList();
-                })
-                .catch((err) => alert(err.message));
-        }
-
-        function fillCategorySelect(preferredValue) {
-            const sel = document.getElementById('category');
-            if (!sel) return;
-            sel.innerHTML = '';
-            if (!adminCategoryData.length) {
-                const o = document.createElement('option');
-                o.value = '';
-                o.textContent = '등록된 카테고리 없음 — 위에서 추가하세요';
-                sel.appendChild(o);
-                sel.required = false;
-                return;
-            }
-            sel.required = true;
-            adminCategoryData.forEach((c) => {
-                const opt = document.createElement('option');
-                opt.value = c.value;
-                opt.textContent = c.label_ko;
-                sel.appendChild(opt);
-            });
-            const want = preferredValue || '';
-            if (want && [...sel.options].some((o) => o.value === want)) sel.value = want;
-            else sel.selectedIndex = 0;
         }
 
         function renderCategoryAdminTable() {
@@ -1616,7 +1372,7 @@
                     !confirm(
                         '식당을 저장값 「' +
                             reassignTo +
-                            '」 1차 카테고리로 옮기고, 이 카테고리와 그 아래 2차분류를 삭제합니다. 계속할까요?'
+                            '」 1차 카테고리로 옮기고, 이 카테고리 및 연결 데이터를 삭제합니다. 계속할까요?'
                     )
                 )
                     return;
@@ -1636,7 +1392,7 @@
                             String(data.error).indexOf('사용 중인 식당') !== -1
                         ) {
                             const to = prompt(
-                                '이 카테고리를 쓰는 식당이 있습니다.\n\n식당을 옮길 1차 카테고리의 저장값을 입력하세요 (목록의 「저장값」 열과 동일, 예: 한식). 2차분류는 모두 비웁니다.',
+                                '이 카테고리를 쓰는 식당이 있습니다.\n\n식당을 옮길 1차 카테고리의 저장값을 입력하세요 (목록의 「저장값」 열과 동일). 복수 카테고리(쉼표)로 들어간 행은 별도로 수정해야 할 수 있습니다.',
                                 ''
                             );
                             if (to != null && String(to).trim()) deleteCategoryRow(id, String(to).trim());
@@ -1645,8 +1401,8 @@
                         alert(data.error || '삭제에 실패했습니다.');
                         return;
                     }
-                    const prevCat = document.getElementById('category').value;
-                    fetchCategoriesAdmin(prevCat).then(() => fetchSubcategoriesAdmin());
+                    const prevCat = collectRestaurantCategoriesCsv();
+                    fetchCategoriesAdmin(prevCat || undefined);
                     fetchAdminList();
                 })
                 .catch((err) => alert(err.message));
@@ -1671,7 +1427,7 @@
             }
             const url = editId ? '/api/categories/' + editId : '/api/categories';
             const method = editId ? 'PUT' : 'POST';
-            const prevRestaurantCat = document.getElementById('category').value;
+            const prevRestaurantCat = collectRestaurantCategoriesCsv();
 
             fetchJson(url, {
                 method: method,
@@ -1699,7 +1455,7 @@
                     if (uploadErr) alert('카테고리는 저장되었으나 이미지 업로드 실패: ' + uploadErr);
                     else alert(editId ? '카테고리가 수정되었습니다.' : '카테고리가 추가되었습니다.');
                     resetCategoryForm();
-                    fetchCategoriesAdmin(prevRestaurantCat || body.value).then(() => fetchSubcategoriesAdmin());
+                    fetchCategoriesAdmin(prevRestaurantCat || body.value || undefined);
                     fetchAdminList();
                 })
                 .catch((err) => alert('네트워크 오류: ' + err.message));
@@ -1949,7 +1705,7 @@
             const file = input && input.files && input.files[0];
             clearPreviewBlob(inputId);
 
-            const assetKey = inputId === 'map_image' ? 'map_url' : 'menu_url';
+            const assetKey = 'menu_url';
 
             if (file) {
                 if (file.type.startsWith('image/')) {
@@ -1967,10 +1723,8 @@
         }
 
         function setupImagePreviews() {
-            ['map_image', 'menu_image'].forEach((id) => {
-                const el = document.getElementById(id);
-                if (el) el.addEventListener('change', () => syncPreviewForInput(id));
-            });
+            const menuIn = document.getElementById('menu_image');
+            if (menuIn) menuIn.addEventListener('change', () => syncPreviewForInput('menu_image'));
             const addBtn = document.getElementById('heroGalleryAddBtn');
             const finput = document.getElementById('heroGalleryFileInput');
             if (addBtn && finput) {
@@ -2010,7 +1764,7 @@
         }
 
         function refreshAllImagePreviews() {
-            ['map_image', 'menu_image'].forEach((id) => syncPreviewForInput(id));
+            syncPreviewForInput('menu_image');
         }
 
         function sortAdminDataOldestFirst(list) {
@@ -2031,7 +1785,7 @@
                 .catch((err) => {
                     console.error(err);
                     const tbody = document.getElementById('adminListBody');
-                    if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="color:#c92a2a;">' + err.message + '</td></tr>';
+                    if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="color:#c92a2a;">' + err.message + '</td></tr>';
                 });
         }
 
@@ -2046,8 +1800,7 @@
                 tr.innerHTML = `
                     <td>${index + 1}</td>
                     <td><strong>${item.name}</strong></td>
-                    <td>${item.category}</td>
-                    <td><code style="font-size:0.85em;">${item.subcategory || '—'}</code></td>
+                    <td>${escapeAdminHtml(item.category || '')}</td>
                     <td>${kioskCell}</td>
                     <td>
                         <button type="button" class="action-btn edit-btn" onclick="editItemById(${item.id})">수정</button>
@@ -2060,10 +1813,9 @@
 
         function filterAdminList() {
             const query = document.getElementById('adminSearch').value.toLowerCase();
-            const filtered = adminData.filter(item => 
-                item.name.toLowerCase().includes(query) || 
-                item.category.toLowerCase().includes(query) ||
-                (item.subcategory && String(item.subcategory).toLowerCase().includes(query))
+            const filtered = adminData.filter(item =>
+                item.name.toLowerCase().includes(query) ||
+                (item.category && String(item.category).toLowerCase().includes(query))
             );
             renderAdminList(filtered);
         }
@@ -2086,13 +1838,10 @@
             document.getElementById('editId').value = item.id;
             document.getElementById('name').value = item.name;
             document.getElementById('name_en').value = item.name_en || '';
-            document.getElementById('category').value = item.category;
-            fillSubcategorySelectForRestaurant(item.subcategory || '');
+            setRestaurantCategoriesFromCsv(item.category || '');
             document.getElementById('address').value = item.address || '';
             const npid = document.getElementById('naver_place_id');
             if (npid) npid.value = item.naver_place_id || '';
-            const npurl = document.getElementById('naver_place_url');
-            if (npurl) npurl.value = item.naver_place_url || '';
             const dlat = document.getElementById('dest_lat');
             const dlng = document.getElementById('dest_lng');
             if (dlat) dlat.value = item.dest_lat != null && item.dest_lat !== '' ? String(item.dest_lat) : '';
@@ -2102,7 +1851,6 @@
             document.getElementById('open_time').value = item.open_time || '';
             document.getElementById('close_time').value = item.close_time || '';
             document.getElementById('closed_days').value = item.closed_days || '';
-            document.getElementById('walk_time').value = item.walk_time || '';
             document.getElementById('description').value = item.description || '';
             document.getElementById('description_en').value = item.description_en || '';
             const kh = document.getElementById('kiosk_hidden');
@@ -2116,14 +1864,11 @@
                 cb.checked = existingTags.includes(cb.value);
             });
 
-            ['map_image', 'menu_image'].forEach((id) => {
-                clearPreviewBlob(id);
-                const el = document.getElementById(id);
-                if (el) el.value = '';
-            });
+            clearPreviewBlob('menu_image');
+            const menuElClear = document.getElementById('menu_image');
+            if (menuElClear) menuElClear.value = '';
             editingAssetUrls = {
                 image_url: item.image_url || null,
-                map_url: item.map_url || null,
                 menu_url: item.menu_url || null
             };
             loadHeroGalleryFromItem(item);
@@ -2141,14 +1886,13 @@
             const khEl = document.getElementById('kiosk_hidden');
             if (khEl) khEl.checked = false;
             document.querySelectorAll('#facilitiesGrid input').forEach(cb => cb.checked = false);
-            editingAssetUrls = { image_url: null, map_url: null, menu_url: null };
+            editingAssetUrls = { image_url: null, menu_url: null };
             revokeAllHeroGalleryBlobs();
             heroGalleryItems = [];
             renderHeroGallery();
-            ['map_image', 'menu_image'].forEach((id) => {
-                clearPreviewBlob(id);
-                hidePreview(id);
-            });
+            setRestaurantCategoriesFromCsv('');
+            clearPreviewBlob('menu_image');
+            hidePreview('menu_image');
         }
 
         function submitForm(e) {
@@ -2156,9 +1900,17 @@
             
             const checkedBoxes = Array.from(document.querySelectorAll('#facilitiesGrid input:checked')).map(cb => cb.value);
             document.getElementById('tags').value = checkedBoxes.join(',');
-            
+
+            const catCsv = collectRestaurantCategoriesCsv();
+            if (!catCsv) {
+                alert('카테고리(1차)를 하나 이상 선택하세요.');
+                return;
+            }
+
             const form = document.getElementById('adminForm');
             const formData = new FormData(form);
+            formData.set('category', catCsv);
+            formData.set('clear_map_url', '1');
             const hg = buildHeroGalleryPayload();
             formData.append('gallery_manifest', JSON.stringify(hg.manifest));
             hg.files.forEach((f) => formData.append('images', f));
