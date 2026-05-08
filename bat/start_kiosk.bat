@@ -33,9 +33,15 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo Step 3 of 4 - Starting server in a new window titled Kiosk Server...
-REM If Node exits with an error, that window stays open so you can read the message.
-start "Kiosk Server" cmd /k "cd /d ""%ROOT%"" && node backend\server.js || pause"
+echo Step 3 of 4 - Checking existing server on port 3000...
+powershell -NoProfile -Command "if (Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue) { exit 0 } else { exit 1 }"
+if errorlevel 1 (
+    echo No server detected. Starting a new window titled Kiosk Server...
+    REM If Node exits with an error, that window stays open so you can read the message.
+    start "Kiosk Server" cmd /k "cd /d ""%ROOT%"" && node backend\server.js || pause"
+) else (
+    echo Existing server detected on port 3000. Reusing it.
+)
 
 echo Step 4 of 4 - Waiting until port 3000 is ready...
 powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT%\scripts\wait-for-port.ps1" -Port 3000 -TimeoutSec 45
