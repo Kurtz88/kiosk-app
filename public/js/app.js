@@ -82,8 +82,28 @@ function hasNaverPlaceId(item) {
     return pid.length > 0;
 }
 
+function normalizeCustomNaverRouteUrl(raw) {
+    let s = raw != null ? String(raw).trim() : '';
+    if (!s) return '';
+    if (s.startsWith('//')) return 'https:' + s;
+    if (/^www\./i.test(s)) return 'https://' + s;
+    if (/^\/naver-route(\?|$)/i.test(s)) return window.location.origin + s;
+    if (/^(https?:\/\/|nmap:\/\/|intent:\/\/)/i.test(s)) return s;
+    return s;
+}
+
+function hasCustomNaverRouteUrl(item) {
+    if (!item) return false;
+    return normalizeCustomNaverRouteUrl(item.naver_place_url).length > 0;
+}
+
 function buildNaverRouteUrl(item) {
     const dname = encodeURIComponent((item.name || '목적지').trim() || '목적지');
+
+    // 0순위: 관리자에 직접 입력한 길찾기 링크
+    if (hasCustomNaverRouteUrl(item)) {
+        return normalizeCustomNaverRouteUrl(item.naver_place_url);
+    }
 
     // 1순위: 네이버 장소 ID(did)가 있으면 플레이스로 바로 연결
     if (hasNaverPlaceId(item)) {
@@ -1500,9 +1520,11 @@ function openModal(item, opts) {
     const nMapUrl = buildNaverRouteUrl(item);
     console.log('[QR 디버그]', {
         name: item.name,
+        naver_place_url: item.naver_place_url,
         naver_place_id: item.naver_place_id,
         dest_lat: item.dest_lat,
         dest_lng: item.dest_lng,
+        hasCustomUrl: hasCustomNaverRouteUrl(item),
         hasPlaceId: hasNaverPlaceId(item),
         hasCoords: hasDestCoordsForNaver(item),
         qrUrl: nMapUrl

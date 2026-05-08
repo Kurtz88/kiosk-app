@@ -270,6 +270,16 @@ function parseOptionalWgsNumber(v) {
     return Number.isFinite(n) ? n : null;
 }
 
+function parseOptionalNaverRouteUrl(v) {
+    if (v == null) return null;
+    let s = String(v).trim();
+    if (s === '') return null;
+    if (s.startsWith('//')) s = 'https:' + s;
+    else if (/^www\./i.test(s)) s = 'https://' + s;
+    if (s.length > 2000) s = s.slice(0, 2000);
+    return s;
+}
+
 function parseKioskHidden(v) {
     if (v === true || v === 1 || v === '1' || v === 'on' || v === 'true') return 1;
     if (v === false || v === 0 || v === '0' || v === 'off' || v === 'false' || v === '' || v == null) return 0;
@@ -317,11 +327,13 @@ app.post('/api/restaurants', cpUpload, (req, res) => {
         kiosk_hidden,
         dest_lat,
         dest_lng,
-        naver_place_id
+        naver_place_id,
+        naver_place_url
     } = req.body;
     const dLat = parseOptionalWgsNumber(dest_lat);
     const dLng = parseOptionalWgsNumber(dest_lng);
     const npid = naver_place_id != null && String(naver_place_id).trim() !== '' ? String(naver_place_id).trim().replace(/\D/g, '') : null;
+    const nurl = parseOptionalNaverRouteUrl(naver_place_url);
     const catN = normalizeRestaurantCategories(category);
     if (!catN) return res.status(400).json({ error: '카테고리(1차)를 하나 이상 선택해야 합니다.' });
     const kh = parseKioskHidden(kiosk_hidden);
@@ -354,7 +366,7 @@ app.post('/api/restaurants', cpUpload, (req, res) => {
         closed_days != null && String(closed_days).trim() !== '' ? String(closed_days).trim() : null;
     db.run(`INSERT INTO restaurants (name, name_en, category, subcategory, image_url, image_gallery, map_url, description, description_en, address, phone, homepage, menu_url, open_time, close_time, closed_days, tags, main_menu, walk_time, kiosk_hidden, dest_lat, dest_lng, naver_place_id, naver_place_url) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [name, name_en, catN, sub, image_url, image_gallery, map_url, description, description_en, address, phone, homepage, menu_url, open_time, close_time, cd, tags, mm, walk_time || null, kh, dLat, dLng, npid, null],
+        [name, name_en, catN, sub, image_url, image_gallery, map_url, description, description_en, address, phone, homepage, menu_url, open_time, close_time, cd, tags, mm, walk_time || null, kh, dLat, dLng, npid, nurl],
         function(err) {
             if (err) res.status(500).json({ error: err.message });
             else res.json({ id: this.lastID });
@@ -382,11 +394,13 @@ app.put('/api/restaurants/:id', cpUpload, (req, res) => {
         kiosk_hidden,
         dest_lat,
         dest_lng,
-        naver_place_id
+        naver_place_id,
+        naver_place_url
     } = req.body;
     const dLatU = parseOptionalWgsNumber(dest_lat);
     const dLngU = parseOptionalWgsNumber(dest_lng);
     const npidU = naver_place_id != null && String(naver_place_id).trim() !== '' ? String(naver_place_id).trim().replace(/\D/g, '') : null;
+    const nurlU = parseOptionalNaverRouteUrl(naver_place_url);
     const files = req.files || {};
     const catU = normalizeRestaurantCategories(category);
     if (!catU) return res.status(400).json({ error: '카테고리(1차)를 하나 이상 선택해야 합니다.' });
@@ -418,7 +432,7 @@ app.put('/api/restaurants/:id', cpUpload, (req, res) => {
         'naver_place_id = ?',
         'naver_place_url = ?'
     ];
-    let params = [name, name_en, catU, sub, description, description_en, address, phone, homepage, open_time, close_time, cd, tags, mm, walk_time || null, kh, dLatU, dLngU, npidU, null];
+    let params = [name, name_en, catU, sub, description, description_en, address, phone, homepage, open_time, close_time, cd, tags, mm, walk_time || null, kh, dLatU, dLngU, npidU, nurlU];
 
     const g = buildGalleryUrlsFromManifest(req.body, files, name);
     if (g.error) return res.status(400).json({ error: g.error });

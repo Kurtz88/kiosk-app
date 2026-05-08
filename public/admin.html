@@ -597,6 +597,11 @@
                     <input type="text" id="naver_place_id" name="naver_place_id" inputmode="numeric" placeholder="예: 1234567890 (숫자만)">
                 </div>
                 <p class="hint" style="margin-top:-8px;"><strong>장소 ID</strong>가 있으면 QR 스캔 시 네이버지도 앱에서 해당 업소 페이지가 바로 열립니다. 네이버 지도에서 업소 검색 → URL의 <code>/restaurant/1234567890/</code> 숫자가 장소 ID입니다.</p>
+                <div class="form-group">
+                    <label>네이버 지도 길찾기 링크 (선택, QR 우선)</label>
+                    <input type="text" id="naver_place_url" name="naver_place_url" placeholder="예: https://map.naver.com/... 또는 nmap://...">
+                </div>
+                <p class="hint" style="margin-top:-8px;">여기에 링크를 넣으면 QR은 이 링크를 <strong>최우선</strong>으로 사용합니다. 비우면 장소 ID → 좌표 → 상호명 순으로 자동 생성됩니다.</p>
 
                 <div style="display:flex; gap:15px; flex-wrap:wrap;" class="form-group">
                     <div style="flex:1; min-width:200px;">
@@ -1842,6 +1847,8 @@
             document.getElementById('address').value = item.address || '';
             const npid = document.getElementById('naver_place_id');
             if (npid) npid.value = item.naver_place_id || '';
+            const nurl = document.getElementById('naver_place_url');
+            if (nurl) nurl.value = item.naver_place_url || '';
             const dlat = document.getElementById('dest_lat');
             const dlng = document.getElementById('dest_lng');
             if (dlat) dlat.value = item.dest_lat != null && item.dest_lat !== '' ? String(item.dest_lat) : '';
