@@ -276,6 +276,12 @@ function parseOptionalNaverRouteUrl(v) {
     if (s === '') return null;
     if (s.startsWith('//')) s = 'https:' + s;
     else if (/^www\./i.test(s)) s = 'https://' + s;
+    else if (
+        !/^[a-z][a-z0-9+.-]*:\/\//i.test(s) &&
+        /^(?:m\.)?(?:map\.naver\.com|n\.map\.naver\.com|m\.place\.naver\.com)\//i.test(s)
+    ) {
+        s = 'https://' + s;
+    }
     if (s.length > 2000) s = s.slice(0, 2000);
     return s;
 }

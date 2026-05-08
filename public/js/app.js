@@ -87,6 +87,12 @@ function normalizeCustomNaverRouteUrl(raw) {
     if (!s) return '';
     if (s.startsWith('//')) return 'https:' + s;
     if (/^www\./i.test(s)) return 'https://' + s;
+    if (
+        !/^[a-z][a-z0-9+.-]*:\/\//i.test(s) &&
+        /^(?:m\.)?(?:map\.naver\.com|n\.map\.naver\.com|m\.place\.naver\.com)\//i.test(s)
+    ) {
+        return 'https://' + s;
+    }
     if (/^\/naver-route(\?|$)/i.test(s)) return window.location.origin + s;
     if (/^(https?:\/\/|nmap:\/\/|intent:\/\/)/i.test(s)) return s;
     return s;
