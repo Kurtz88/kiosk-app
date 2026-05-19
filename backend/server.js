@@ -1223,6 +1223,10 @@ app.use('/api', (req, res) => {
     res.status(404).json({ error: '알 수 없는 API입니다.', path: req.originalUrl });
 });
 
+app.get('/', (req, res) => {
+    res.sendFile(path.join(publicDir, 'index.html'));
+});
+
 app.use('/uploads', express.static(uploadsDir));
 app.use(express.static(publicDir));
 

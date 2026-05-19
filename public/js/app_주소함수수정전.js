@@ -854,26 +854,15 @@ function stripAddressFloorDetailSuffixForLabel(raw) {
     return t;
 }
 
-/** 지도 건물 층별 모달 제목용: 행정구역 제외, 마지막 도로명+번지만 표시 */
+/** 도로명주소: 시작부터 「…대로|…길|…로」+ 본번(-부번)까지만 (뒤 층·호·상세 제거) */
 function trimToKoreanRoadNameNumberForLabel(raw) {
     const t = String(raw || '')
         .replace(/\r?\n/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
-
     if (!t) return '';
-
-    // 예: "대구광역시 달성군 유가읍 테크노상업로4길 17-5" → "테크노상업로4길 17-5"
-    // 주소 안에 여러 개의 "로/길/대로 + 번지" 패턴이 있을 수 있으므로 마지막 패턴을 사용
-    const re = /([^\s,，]+(?:대로|길|로))\s+(\d+(?:-\d+)?)/g;
-    let m;
-    let last = null;
-
-    while ((m = re.exec(t)) !== null) {
-        last = m;
-    }
-
-    return last ? (last[1] + ' ' + last[2]).trim() : '';
+    const m = t.match(/^(.+?(?:대로|길|로))\s+(\d+(?:-\d+)?)/);
+    return m ? (m[1] + ' ' + m[2]).trim() : '';
 }
 
 function mapBuildingLabelFromAddress(rawAddress) {

@@ -1,7 +1,8 @@
 @echo off
 setlocal EnableExtensions
 if /i "%~1" neq "__minimized__" (
-    start "" /min cmd /c ""%~f0" __minimized__ %*"
+    REM Paths with spaces (e.g. F:\유가읍 키오스크\...): run .bat directly, not via cmd /c ""path""
+    start "" /min "%~f0" __minimized__ %*
     exit /b 0
 )
 if /i "%~1"=="__minimized__" shift
@@ -15,7 +16,7 @@ echo.
 cd /d "%~dp0.."
 set "ROOT=%CD%"
 
-echo Step 1 of 4 - Checking Node.js...
+echo Step 1 of 5 - Checking Node.js...
 where node >nul 2>nul
 if errorlevel 1 (
     echo.
@@ -27,7 +28,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo Step 2 of 4 - npm install...
+echo Step 2 of 5 - npm install...
 call npm install --silent
 if errorlevel 1 (
     echo.
@@ -38,11 +39,14 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo Step 3 of 4 - Starting server in a new window titled Kiosk Server...
-REM cd + absolute script path: START /D alone is unreliable with "cmd /k" on some Windows builds.
-start "Kiosk Server" /min cmd /k "cd /d ""%ROOT%"" && node ""%ROOT%\backend\server.js"" || pause"
+echo Step 3 of 5 - Stopping any old server on port 3000...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$c=Get-NetTCPConnection -LocalPort 3000 -State Listen -EA SilentlyContinue | Select-Object -First 1; if($c){$p=$c.OwningProcess; Write-Host ('  Stopping PID '+$p); Stop-Process -Id $p -Force -EA SilentlyContinue; Start-Sleep -Seconds 1}"
 
-echo Step 4 of 4 - Waiting until port 3000 is ready...
+echo Step 4 of 5 - Starting server in a new window titled Kiosk Server...
+REM Use /D + relative script path so paths with spaces (USB: ...\유가읍 키오스크\...) are not split at node.
+start "Kiosk Server" /min /D "%ROOT%" cmd /k "node backend\server.js || pause"
+
+echo Step 5 of 5 - Waiting until port 3000 is ready...
 powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT%\scripts\wait-for-port.ps1" -Port 3000 -TimeoutSec 45
 if errorlevel 1 (
     echo.
@@ -66,18 +70,18 @@ where chrome.exe >nul 2>nul
 if errorlevel 1 (
     echo chrome.exe not in PATH. Trying default Chrome install path...
     if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" (
-        start "" "%ProgramFiles%\Google\Chrome\Application\chrome.exe" --kiosk --user-data-dir="%temp%\kiosk_profile" --no-first-run --disable-infobars http://localhost:3000/index.html
+        start "" "%ProgramFiles%\Google\Chrome\Application\chrome.exe" --kiosk --user-data-dir="%temp%\kiosk_profile" --no-first-run --disable-infobars http://localhost:3000/
     ) else if exist "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" (
-        start "" "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" --kiosk --user-data-dir="%temp%\kiosk_profile" --no-first-run --disable-infobars http://localhost:3000/index.html
+        start "" "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" --kiosk --user-data-dir="%temp%\kiosk_profile" --no-first-run --disable-infobars http://localhost:3000/
     ) else (
         color 0E
         echo Chrome not found. Open this address in Edge or another browser:
-        echo   http://localhost:3000/index.html
+        echo   http://localhost:3000/
         color 0B
-        start "" http://localhost:3000/index.html
+        start "" http://localhost:3000/
     )
 ) else (
-    start chrome.exe --kiosk --user-data-dir="%temp%\kiosk_profile" --no-first-run --disable-infobars http://localhost:3000/index.html
+    start chrome.exe --kiosk --user-data-dir="%temp%\kiosk_profile" --no-first-run --disable-infobars http://localhost:3000/
 )
 
 if /i "%~1"=="nopause" exit /b 0

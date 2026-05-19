@@ -57,8 +57,8 @@ html[data-kiosk-page='list'] .list-page-list-only .list-store {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: #8a4b00;
-    font-weight: 500;
+   /*  color: #8a4b00; */
+  /*   font-weight: 500; */
 }
 
 .list-store .list-tel-row {
@@ -68,6 +68,7 @@ html[data-kiosk-page='list'] .list-page-list-only .list-store {
     gap: clamp(6px, 1.4cqw, 10px);
     margin: 0;
     min-width: 0;
+	padding:3px 0px;
     font-size: clamp(0.68rem, 2.45cqh, 0.88rem);
     color: var(--text-700);
 }
@@ -80,6 +81,10 @@ html[data-kiosk-page='list'] .list-page-list-only .list-store {
     text-overflow: ellipsis;
 }
 
+.list-store .list-tel-num,
+.list-store .list-menu-num {	font-size: 1vh;}
+
+
 .list-store .desc-one-line.list-row-muted,
 .list-store .list-tel-row.list-row-muted .list-tel-num {
     color: var(--text-300);
@@ -91,12 +96,15 @@ html[data-kiosk-page='list'] .list-page-list-only .list-store {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: clamp(3px, 0.6cqh, 6px);
+    gap: 2vh 0px;
     /*font-size: clamp(0.68rem, 2.5cqh, 0.86rem);*/
     margin: 0;
-    color: var(--text-500);
+
     font-weight: 400;
 }
+
+
+
 
 .list-store .list-contact-head {
     display: flex;
@@ -200,7 +208,7 @@ html[data-kiosk-page='list'] .list-page-list-only .list-store {
 }
 
 .status-closed {
-    background: rgba(231, 76, 60, 0.95);
+   background: rgba(125, 127, 130, 0.95);
     color: #fff;
 }
 /* 페이지네이션 */
