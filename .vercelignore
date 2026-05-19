@@ -1,0 +1,8 @@
+# Vercel Serverless Function 약 300MB 한도 — uploads(~800MB+)는 번들·배포에서 제외
+# 실제 사진은 자체 서버/VPS의 public/uploads 또는 USB 배포로 제공
+public/uploads/
+
+# 레거시·로컬용 대용량/참고 폴더 (있을 경우)
+moon_st/
+moon_st2/
+유틸/
