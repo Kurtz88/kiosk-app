@@ -5,6 +5,10 @@ const multer = require('multer');
 const fs = require('fs');
 const db = require('./db');
 const { importRowsFromBuffer } = require('../lib/excelImport');
+const {
+    applyPublicUploadUrlsToRestaurant,
+    applyPublicUploadUrlsToCategory,
+} = require('../lib/uploadsPublicUrl');
 const QRCode = require('qrcode');
 const XLSX = require('xlsx');
 
@@ -260,6 +264,10 @@ function enrichRestaurantWithUploadFolder(row) {
     return out;
 }
 
+function enrichRestaurantRow(row) {
+    return applyPublicUploadUrlsToRestaurant(enrichRestaurantWithUploadFolder(row));
+}
+
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 25 * 1024 * 1024 }
@@ -390,7 +398,7 @@ app.get('/api/restaurants', (req, res) => {
         [],
         (err, rows) => {
         if (err) res.status(500).json({ error: err.message });
-        else res.json({ data: rows.map((r) => enrichRestaurantWithUploadFolder(r)) });
+        else res.json({ data: rows.map((r) => enrichRestaurantRow(r)) });
     });
 });
 
@@ -680,7 +688,7 @@ app.get('/api/categories', (req, res) => {
         [],
         (err, rows) => {
             if (err) res.status(500).json({ error: err.message });
-            else res.json({ data: rows });
+            else res.json({ data: rows.map((r) => applyPublicUploadUrlsToCategory(r)) });
         }
     );
 });
