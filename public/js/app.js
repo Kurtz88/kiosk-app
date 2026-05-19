@@ -243,6 +243,8 @@ let currentCategory = 'all';
 let currentSubcategory = 'all';
 /** applyFilters 이후 목록에 쓸 식당 배열(순서 셔플됨) */
 let currentFilteredList = [];
+/** 하루(로컬 날짜) 기준 고정 랜덤 순서 맵: key(id/name) -> rank */
+let dailyOrderRankMap = new Map();
 
 // =============================================================================
 // 네트워크 · 문자열 유틸
@@ -277,6 +279,7 @@ function escapeHtml(s) {
         .replace(/"/g, '&quot;');
 }
 
+<<<<<<< HEAD
 /** 오늘 날짜(로컬) 기준 키: 같은 날에는 동일 */
 function dailySeedKey() {
     const d = new Date();
@@ -292,10 +295,32 @@ function hash32FNV1a(str) {
     for (let i = 0; i < str.length; i++) {
         h ^= str.charCodeAt(i);
         h = Math.imul(h, 0x01000193);
+=======
+/** 로컬 날짜 키(YYYY-MM-DD) */
+function localDateKey(d) {
+    const n = d || new Date();
+    return (
+        String(n.getFullYear()) +
+        '-' +
+        String(n.getMonth() + 1).padStart(2, '0') +
+        '-' +
+        String(n.getDate()).padStart(2, '0')
+    );
+}
+
+/** 문자열 -> 32-bit seed (FNV-1a) */
+function hash32(str) {
+    let h = 2166136261 >>> 0;
+    const s = String(str || '');
+    for (let i = 0; i < s.length; i++) {
+        h ^= s.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+>>>>>>> d2ee32d0bcd4d4b7804d1aa88e662fccf37eda6a
     }
     return h >>> 0;
 }
 
+<<<<<<< HEAD
 /** 하루 기준 고정 랜덤 순서 (날짜 바뀌면 재배치) */
 function dailyStableShuffle(list) {
     const seed = dailySeedKey();
@@ -307,6 +332,38 @@ function dailyStableShuffle(list) {
         if (ah !== bh) return ah - bh;
         return String(a && a.name ? a.name : '').localeCompare(String(b && b.name ? b.name : ''), 'ko');
     });
+=======
+/** 고정 시드 PRNG (mulberry32) */
+function seededRandom(seed) {
+    let a = seed >>> 0;
+    return function () {
+        a = (a + 0x6d2b79f5) >>> 0;
+        let t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+}
+
+function restaurantStableKey(item) {
+    if (item && item.id != null && String(item.id).trim() !== '') return 'id:' + String(item.id).trim();
+    return 'name:' + String(item && item.name ? item.name : '').trim().toLowerCase();
+}
+
+/** 하루 기준 고정 랜덤 순서 맵 생성 */
+function buildDailyOrderRankMap(list) {
+    const dateSeed = hash32(localDateKey(new Date()));
+    const keys = list.map((item) => restaurantStableKey(item));
+    // API 원본 순서 영향 제거: 키 기준 정렬 후 시드 셔플
+    keys.sort((a, b) => a.localeCompare(b, 'ko'));
+    const rng = seededRandom(dateSeed);
+    for (let i = keys.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [keys[i], keys[j]] = [keys[j], keys[i]];
+    }
+    const rankMap = new Map();
+    keys.forEach((k, idx) => rankMap.set(k, idx));
+    return rankMap;
+>>>>>>> d2ee32d0bcd4d4b7804d1aa88e662fccf37eda6a
 }
 
 // =============================================================================
@@ -677,6 +734,7 @@ function loadKioskData() {
             subcategoriesCache = [];
             const rawList = Array.isArray(restData.data) ? restData.data : [];
             allRestaurants = rawList.filter((r) => !Number(r.kiosk_hidden));
+            dailyOrderRankMap = buildDailyOrderRankMap(allRestaurants);
             if (!IS_HOME) readListUrlState();
             updateUILanguage();
             if (IS_HOME) return;
@@ -1269,7 +1327,18 @@ function applyFilters() {
                 })
             );
         });
+<<<<<<< HEAD
     currentFilteredList = dailyStableShuffle(filtered);
+=======
+    currentFilteredList = [...filtered].sort((a, b) => {
+        const ra = dailyOrderRankMap.get(restaurantStableKey(a));
+        const rb = dailyOrderRankMap.get(restaurantStableKey(b));
+        const av = Number.isFinite(ra) ? ra : Number.MAX_SAFE_INTEGER;
+        const bv = Number.isFinite(rb) ? rb : Number.MAX_SAFE_INTEGER;
+        if (av !== bv) return av - bv;
+        return String(a.name || '').localeCompare(String(b.name || ''), 'ko');
+    });
+>>>>>>> d2ee32d0bcd4d4b7804d1aa88e662fccf37eda6a
     renderFilteredRestaurantList();
     syncUrlToState();
 }

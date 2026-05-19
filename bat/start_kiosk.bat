@@ -38,9 +38,21 @@ if errorlevel 1 (
     exit /b 1
 )
 
+<<<<<<< HEAD
 echo Step 3 of 4 - Starting server in a new window titled Kiosk Server...
 REM cd + absolute script path: START /D alone is unreliable with "cmd /k" on some Windows builds.
 start "Kiosk Server" /min cmd /k "cd /d ""%ROOT%"" && node ""%ROOT%\backend\server.js"" || pause"
+=======
+echo Step 3 of 4 - Checking existing server on port 3000...
+powershell -NoProfile -Command "if (Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue) { exit 0 } else { exit 1 }"
+if errorlevel 1 (
+    echo No server detected. Starting a new window titled Kiosk Server...
+    REM If Node exits with an error, that window stays open so you can read the message.
+    start "Kiosk Server" cmd /k "cd /d ""%ROOT%"" && node backend\server.js || pause"
+) else (
+    echo Existing server detected on port 3000. Reusing it.
+)
+>>>>>>> d2ee32d0bcd4d4b7804d1aa88e662fccf37eda6a
 
 echo Step 4 of 4 - Waiting until port 3000 is ready...
 powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT%\scripts\wait-for-port.ps1" -Port 3000 -TimeoutSec 45
