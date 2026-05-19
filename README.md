@@ -43,9 +43,7 @@
 | 파일 | 용도 |
 |------|------|
 | `bat\start_kiosk.bat` | `npm install` 후 서버를 띄우고 Chrome 키오스크 모드로 전체 화면 실행 |
-| `bat\open_admin.bat` | 브라우저로 관리자 페이지만 열기 (서버가 떠 있어야 함) |
-| `bat\install-windows-autostart.bat` | 로그인할 때마다 `start_kiosk.bat`이 자동 실행되도록 등록 |
-| `bat\allow-firewall-port-3000.bat` | 같은 Wi‑Fi의 다른 기기에서 접속하려면 **관리자 권한**으로 실행 |
+| `bat\kiosk-tools.bat` | 자동 시작·작업 스케줄러·방화벽(3000)·매일 재부팅·바탕화면 바로가기·관리자 페이지 열기 등 **메뉴 한 곳**에서 실행 (7~9번은 관리자 권한). 명령줄: `kiosk-tools.bat help` |
 
 자동 시작이 안 되면 `docs\WINDOWS-AUTOSTART.md`를 참고하세요.
 

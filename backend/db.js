@@ -112,6 +112,7 @@ function bootstrapSchema(db) {
                 rejectReady(e2);
                 return;
             }
+            db.run(`INSERT OR IGNORE INTO kiosk_settings (key, value) VALUES ('map_slot_address_hints', '{}')`, () => {});
             markReady();
 
             db.all('PRAGMA table_info(restaurants)', [], (pragmaRErr, rCols) => {
@@ -140,6 +141,13 @@ function bootstrapSchema(db) {
                 }
                 if (!rNames.has('naver_place_url')) {
                     db.run('ALTER TABLE restaurants ADD COLUMN naver_place_url TEXT;', () => {});
+                }
+                if (!rNames.has('display_order')) {
+                    db.run('ALTER TABLE restaurants ADD COLUMN display_order INTEGER;', () => {
+                        db.run('UPDATE restaurants SET display_order = id WHERE display_order IS NULL', () => {});
+                    });
+                } else {
+                    db.run('UPDATE restaurants SET display_order = id WHERE display_order IS NULL', () => {});
                 }
             });
 

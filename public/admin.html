@@ -2,13 +2,33 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>맛집 정보 키오스크 - 관리자 페이지</title>
     <link rel="stylesheet" href="css/style.css?v=202604031200">
     <style>
+        html, body { -webkit-text-size-adjust: 100%; touch-action: pan-x pan-y; }
         body { background: #f4f6f9; color: #1b1b1b; padding: 40px; }
         .dashboard { max-width: 1400px; margin: 0 auto; display: flex; gap: 40px; }
         .list-section { flex: 1; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); max-height: 85vh; overflow-y: auto; }
-        .form-section { width: 550px; background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); flex-shrink: 0; position: sticky; top: 40px; max-height: 85vh; overflow-y: auto;}
+        .form-section { width: min(1100px, 92vw); max-height: 90vh; overflow-y: auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 24px 60px rgba(0,0,0,0.25); position: relative; }
+        .form-modal { position: fixed; inset: 0; z-index: 999990; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.45); padding: 20px; box-sizing: border-box; }
+        .form-modal.open { display: flex; }
+        .form-modal-close {
+            position: absolute;
+            right: 12px;
+            top: 12px;
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            background: #f1f3f5;
+            color: #495057;
+            font-size: 1.35rem;
+            font-weight: 900;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .form-modal-close:hover { background: #e9ecef; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { padding: 15px; text-align: left; border-bottom: 1px solid #efefef; }
         th { background: #f8f9fa; font-weight: 800; color: #6c757d; }
@@ -38,23 +58,146 @@
         #subcategoryAdminTable .action-btn:last-child {
             margin-right: 0;
         }
+        #adminTable td.admin-list-thumb-cell {
+            width: 1%;
+            padding: 8px 12px;
+            vertical-align: middle;
+        }
+        #adminTable .admin-list-thumb {
+            width: 44px;
+            height: 44px;
+            object-fit: cover;
+            border-radius: 8px;
+            background: #e9ecef;
+            display: block;
+            border: 1px solid #dee2e6;
+        }
+        #adminTable .admin-list-thumb-ph {
+            display: inline-block;
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            background: #f1f3f5;
+            border: 1px dashed #ced4da;
+            box-sizing: border-box;
+            vertical-align: middle;
+        }
         .search-box { width: 100%; padding: 15px; border: 2px solid #eee; border-radius: 10px; font-size: 1.1rem; margin-bottom: 20px; }
         .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; font-weight: 700; margin-bottom: 8px; color: #495057; }
-        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 8px; font-family: inherit; font-size: 1rem; box-sizing: border-box; }
+        .form-group label {
+            display: inline-block;
+            font-weight: 800;
+            margin-bottom: 10px;
+            color: #2b2f36;
+            font-size: 0.95rem;
+            letter-spacing: 0.01em;
+            background: #f1f3f5;
+            border: 1px solid #e9ecef;
+            border-radius: 999px;
+            padding: 6px 12px;
+        }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid #d9dee3;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 1rem;
+            box-sizing: border-box;
+            background: #fff;
+            transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+        }
+        .form-group input:hover, .form-group textarea:hover, .form-group select:hover {
+            border-color: #bcc5cf;
+            background: #fcfdff;
+        }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.14);
+            background: #fff;
+        }
+        .form-group textarea { min-height: 92px; resize: vertical; }
+        .form-group .hint {
+            font-size: 0.86rem;
+            color: #6c757d;
+            line-height: 1.45;
+            margin-top: 8px;
+        }
         .submit-btn { width: 100%; padding: 15px; border: none; background: var(--pink, #DE5B9E); color: white; font-size: 1.2rem; font-weight: 800; border-radius: 10px; cursor: pointer; margin-top: 10px; }
         .submit-btn:hover { background: var(--pink-deep, #B8447E); }
         .cancel-btn { width: 100%; padding: 15px; border: none; background: #adb5bd; color: white; font-size: 1.2rem; font-weight: 800; border-radius: 10px; cursor: pointer; margin-top: 10px; display: none; }
         .header-title { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 25px; }
+        .list-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 16px; }
+        .toggle-form-btn {
+            background: #20c997;
+            color: #fff;
+            padding: 10px 16px;
+            font-size: 1rem;
+            font-weight: 800;
+            border-radius: 8px;
+        }
+        .toggle-form-btn:hover { background: #12b886; }
         
         .checkbox-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; margin-top: 10px; }
-        .checkbox-label { display: flex; align-items: center; gap: 8px; background: #f8f9fa; border: 1px solid #ced4da; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; user-select: none; }
-        .checkbox-label:hover { background: #e9ecef; }
-        .checkbox-label input:checked + span { font-weight: 800; color: var(--primary); }
-        .checkbox-label input { width: auto; margin:0; cursor: pointer; accent-color: var(--primary); }
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f8f9fa;
+            border: 1px solid #d7dee7;
+            padding: 10px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.16s ease;
+            user-select: none;
+        }
+        .checkbox-label:hover {
+            background: #f1f5f9;
+            border-color: #bac8d8;
+            transform: translateY(-1px);
+        }
+        .checkbox-label input:checked + span { font-weight: 800; color: #3b2f78; }
+        .checkbox-label input { width: auto; margin:0; cursor: pointer; accent-color: #8b5cf6; }
+        #restaurantCategoryCheckboxes {
+            background: #f9fbff;
+            border: 1px solid #e5edf7;
+            border-radius: 16px;
+            padding: 12px;
+            gap: 10px;
+        }
+        #restaurantCategoryCheckboxes .checkbox-label {
+            background: #fff;
+            border: 1px solid #dbe7f5;
+            border-radius: 12px;
+            padding: 10px 12px;
+            font-weight: 700;
+            color: #334155;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+        }
+        #restaurantCategoryCheckboxes .checkbox-label:hover {
+            background: #f8fbff;
+            border-color: #bcd3ef;
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.08);
+            transform: translateY(-1px);
+        }
+        #restaurantCategoryCheckboxes .checkbox-label input {
+            accent-color: #3182f6;
+        }
+        #restaurantCategoryCheckboxes .checkbox-label input:checked + span {
+            color: #1d4ed8;
+            font-weight: 800;
+        }
+        #restaurantCategoryCheckboxes .checkbox-label:has(input:checked) {
+            background: #eff6ff;
+            border-color: #93c5fd;
+            box-shadow: 0 6px 14px rgba(49, 130, 246, 0.16);
+        }
         .excel-import { margin-top: 24px; padding: 20px; background: #f8f9fa; border-radius: 12px; border: 1px solid #e9ecef; }
         .excel-import h3 { margin: 0 0 10px 0; font-size: 1.1rem; color: #495057; }
         .excel-import p { margin: 0 0 14px 0; font-size: 0.9rem; color: #6c757d; line-height: 1.5; }
+        .excel-import-warn { color: #c92a2a; }
         .excel-import-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
         .excel-import-actions input[type="file"] { flex: 1; min-width: 200px; font-size: 0.95rem; }
         .excel-import .btn-template {
@@ -373,6 +516,193 @@
         }
         .admin-gate-box .admin-gate-submit:hover { background: var(--pink-deep, #B8447E); }
         #adminAccessError { min-height: 1.2em; margin-top: 12px; font-size: 0.9rem; color: #c92a2a; }
+
+        /* Toss-style theme override */
+        :root {
+            --toss-bg: #f6f8fb;
+            --toss-surface: #ffffff;
+            --toss-surface-soft: #f9fbff;
+            --toss-border: #e5edf7;
+            --toss-border-strong: #d1deee;
+            --toss-text: #191f28;
+            --toss-text-sub: #4e5968;
+            --toss-text-muted: #8b95a1;
+            --toss-primary: #3182f6;
+            --toss-primary-deep: #1b64da;
+            --toss-danger: #e5484d;
+            --toss-success: #18a058;
+            --toss-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06);
+            --toss-shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
+            --toss-shadow-lg: 0 24px 56px rgba(15, 23, 42, 0.18);
+        }
+
+        body {
+            background: linear-gradient(180deg, #f8fbff 0%, var(--toss-bg) 100%);
+            color: var(--toss-text);
+        }
+        .dashboard { gap: 24px; }
+        .list-section,
+        .form-section,
+        .category-admin-box,
+        .excel-import,
+        .admin-gate-box {
+            background: var(--toss-surface);
+            border: 1px solid var(--toss-border);
+            box-shadow: var(--toss-shadow-md);
+            border-radius: 16px;
+        }
+        .header-title {
+            border-bottom-color: var(--toss-border);
+            margin-bottom: 20px;
+        }
+        h1, h2, h3, h4 { color: var(--toss-text); letter-spacing: -0.01em; }
+        .hint, p.hint { color: var(--toss-text-muted) !important; }
+
+        .search-box {
+            border: 1px solid var(--toss-border-strong);
+            border-radius: 12px;
+            background: #fff;
+            padding: 13px 14px;
+        }
+        .search-box:focus {
+            outline: none;
+            border-color: #8fbfff;
+            box-shadow: 0 0 0 4px rgba(49, 130, 246, 0.14);
+        }
+
+        table { border-collapse: separate; border-spacing: 0; }
+        th {
+            background: #f2f6fc;
+            color: #58677a;
+            border-bottom-color: var(--toss-border);
+            font-weight: 800;
+        }
+        td { border-bottom-color: #eef3f8; color: var(--toss-text-sub); }
+        tr:hover td { background: #fbfdff; }
+
+        .admin-tab-bar { border-bottom-color: var(--toss-border); gap: 8px; }
+        .admin-tab {
+            color: #6b7684;
+            border-radius: 10px 10px 0 0;
+            padding: 12px 16px;
+            font-weight: 800;
+        }
+        .admin-tab:hover { color: var(--toss-text); background: #f5f8fc; }
+        .admin-tab.active {
+            color: var(--toss-primary);
+            border-bottom-color: var(--toss-primary);
+            background: #f0f6ff;
+        }
+
+        .action-btn {
+            border-radius: 10px;
+            font-weight: 800;
+            box-shadow: var(--toss-shadow-sm);
+        }
+        .edit-btn { background: var(--toss-primary); color: #fff; }
+        .edit-btn:hover { background: var(--toss-primary-deep); }
+        .delete-btn { background: var(--toss-danger); color: #fff; }
+        .delete-btn:hover { filter: brightness(0.96); }
+
+        .submit-btn {
+            background: var(--toss-primary);
+            border-radius: 12px;
+            box-shadow: var(--toss-shadow-sm);
+        }
+        .submit-btn:hover { background: var(--toss-primary-deep); }
+        .cancel-btn {
+            background: #8b95a1;
+            border-radius: 12px;
+        }
+        .cancel-btn:hover { background: #6b7684; }
+
+        .form-group label {
+            background: #f2f6fc;
+            border-color: var(--toss-border);
+            color: #344051;
+        }
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            border-color: var(--toss-border-strong);
+            border-radius: 12px;
+            color: var(--toss-text);
+            background: #fff;
+        }
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            border-color: #8fbfff;
+            box-shadow: 0 0 0 4px rgba(49, 130, 246, 0.14);
+        }
+
+        .checkbox-label {
+            border-color: var(--toss-border);
+            background: #fff;
+            color: var(--toss-text-sub);
+            border-radius: 12px;
+        }
+        .checkbox-label:hover {
+            background: #f7faff;
+            border-color: #c7daf2;
+        }
+
+        #restaurantCategoryCheckboxes {
+            background: var(--toss-surface-soft);
+            border: 1px solid var(--toss-border);
+            border-radius: 14px;
+            padding: 12px;
+        }
+        #restaurantCategoryCheckboxes .checkbox-label {
+            border-color: #d6e4f5;
+            border-radius: 12px;
+            box-shadow: none;
+        }
+        #restaurantCategoryCheckboxes .checkbox-label:has(input:checked) {
+            background: #eff6ff;
+            border-color: #9cc4ff;
+            box-shadow: 0 4px 10px rgba(49, 130, 246, 0.14);
+        }
+        #restaurantCategoryCheckboxes .checkbox-label input {
+            accent-color: var(--toss-primary);
+        }
+        #restaurantCategoryCheckboxes .checkbox-label input:checked + span {
+            color: var(--toss-primary-deep);
+        }
+
+        .excel-import .btn-template,
+        .excel-import .btn-upload {
+            border-radius: 10px;
+            box-shadow: var(--toss-shadow-sm);
+        }
+        .excel-import .btn-template { background: #00b894; }
+        .excel-import .btn-template:hover { background: #00a381; }
+        .excel-import .btn-upload { background: var(--toss-primary); }
+        .excel-import .btn-upload:hover { background: var(--toss-primary-deep); }
+
+        .form-modal { background: rgba(15, 23, 42, 0.45); }
+        .form-section {
+            border: 1px solid var(--toss-border);
+            box-shadow: var(--toss-shadow-lg);
+            border-radius: 18px;
+        }
+        .form-modal-close {
+            background: #f2f6fc;
+            color: #5b6676;
+            border: 1px solid var(--toss-border);
+        }
+        .form-modal-close:hover { background: #e9f0f8; }
+
+        #adminAccessGate {
+            background: linear-gradient(160deg, #0f172a 0%, #1e293b 100%);
+        }
+        .admin-gate-box .admin-gate-submit {
+            background: var(--toss-primary);
+            border-radius: 12px;
+        }
+        .admin-gate-box .admin-gate-submit:hover {
+            background: var(--toss-primary-deep);
+        }
     </style>
     <script>
         (function () {
@@ -390,6 +720,7 @@
     </script>
 </head>
 <body>
+    <script src="js/disable-pinch-zoom.js?v=20260512"></script>
     <div id="adminAccessGate" role="dialog" aria-modal="true" aria-labelledby="adminAccessTitle">
         <div class="admin-gate-box">
             <h1 id="adminAccessTitle">관리자 접속</h1>
@@ -443,15 +774,19 @@
             </div>
 
             <div id="adminPanelRestaurants" class="admin-panel" role="tabpanel">
+            <div class="list-toolbar">
+                <button type="button" class="action-btn toggle-form-btn" id="toggleRestaurantFormBtn" onclick="openNewRestaurantForm()">+ 새 식당 등록</button>
+            </div>
             <input type="text" id="adminSearch" class="search-box" placeholder="상호명 또는 카테고리로 검색..." onkeyup="filterAdminList()">
 
             <div class="excel-import">
                 <h3>엑셀 일괄 등록</h3>
-                <p>첫 행은 열 이름, 둘째 행부터 데이터입니다. <strong>상호명·카테고리·주소</strong>는 필수입니다. <strong>카테고리</strong> 칸에는 1차 저장값 하나만 넣거나, 여러 개는 <strong>영문 쉼표</strong>(예: <code>korean,chicken</code>)로 넣을 수 있습니다. <strong>키오스크숨김</strong>은 0(표시)·1(숨김)·예/아니오 등으로 넣을 수 있습니다. <strong>네이버장소ID</strong>(또는 <code>naver_place_id</code>, <code>did</code>)가 있으면 QR 스캔 시 네이버지도 앱에서 해당 업소 페이지가 바로 열립니다. 없으면 <strong>목적지위도·목적지경도</strong>로 길찾기, 그것도 없으면 상호명 검색으로 연결됩니다. 대표 이미지는 URL 열에 웹 경로(예: <code>/uploads/...</code>)를 넣거나 비워 두면 됩니다.</p>
+                <p>첫 행은 열 이름, 둘째 행부터 데이터입니다. <strong class="excel-import-warn">업로드 시 기존 식당이 전부 삭제되고 엑셀 내용으로만 다시 채워집니다.</strong> 키오스크 <strong>지도 슬롯 배정</strong>도 초기화됩니다. <strong>상호명·카테고리·주소</strong>는 필수입니다. 권장 열 순서: <strong>순서 → 상호명 → 주소 → 전화번호 → 영업시간 → 휴무일 → 카테고리 → 주요메뉴 → 한줄설명</strong>(열 이름만 맞으면 순서는 바꿔도 됩니다). <strong>순서</strong>는 숫자(작을수록 위); 비우면 시트 위에서 아래 순서로 저장됩니다. <strong>영업시간</strong>은 <code>09:00-21:00</code>처럼 한 칸에 넣거나, 오픈/마감 열을 나눠 넣을 수 있습니다. <strong>카테고리</strong>는 관리자에 등록된 <strong>저장값</strong>(예: <code>korean</code>)·<strong>한글 표시명</strong>·<strong>영문 표시명</strong> 중 하나로 적을 수 있고, 여러 개는 영문 쉼표로(<code>한식,chicken</code> 등). DB에 넣는 중 오류가 나면 <strong>삭제·추가 전부 취소</strong>되어 기존 목록이 유지됩니다. 그 밖의 열(이미지·좌표·네이버장소ID 등)은 예전 형식 그대로 호환됩니다.</p>
                 <div class="excel-import-actions">
                     <a class="btn-template" href="/templates/restaurant-import-template.xlsx" download="restaurant-import-template.xlsx">양식 다운로드 (.xlsx)</a>
                     <input type="file" id="excelFile" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel">
                     <button type="button" class="btn-upload" id="excelUploadBtn" onclick="uploadExcelFile()">엑셀 업로드</button>
+                    <button type="button" class="btn-template" id="excelExportBtn" onclick="downloadCurrentDbExcel()">엑셀 다운로드</button>
                 </div>
                 <div id="excelImportStatus" role="status"></div>
             </div>
@@ -461,6 +796,7 @@
                     <tr>
                         <th>번호</th>
                         <th>상호명</th>
+                        <th>이미지</th>
                         <th>카테고리</th>
                         <th>키오스크</th>
                         <th>관리</th>
@@ -548,6 +884,15 @@
                         <label>구역 번호 (표 편집)</label>
                         <select id="mapSlotSelect" style="max-width:280px;"></select>
                     </div>
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <label>주소로 자동 배치</label>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                            <input type="text" id="mapSlotAddressAutoInput" placeholder="예: 테크노중앙대로 254" style="max-width:420px;">
+                            <button type="button" class="action-btn edit-btn" id="mapSlotAddressAutoBtn">주소로 자동 추가</button>
+                            <button type="button" class="action-btn edit-btn" id="mapSlotAddressHintSaveBtn" style="background:#4263eb;color:#fff;border-color:#364fc7;">검색어만 저장</button>
+                        </div>
+                        <p class="hint" style="margin:8px 0 0 0;">입력한 문자열이 주소에 포함된 업소를 현재 구역에 추가합니다. 「검색어만 저장」하면 규칙이 DB에 남고, 나중에 식당 목록을 불러올 때 아직 어떤 구역에도 없는 업소만 같은 규칙으로 자동 배치됩니다.</p>
+                    </div>
                     <div style="overflow-x:auto; max-height:52vh; border:1px solid #c3fae8; border-radius:10px; background:#fff;">
                         <table class="map-slot-table" style="width:100%; border-collapse:collapse; font-size:0.88rem;">
                             <thead>
@@ -569,7 +914,9 @@
         </div>
 
         <!-- Form Section -->
+        <div class="form-modal" id="restaurantFormModal" role="dialog" aria-modal="true" aria-labelledby="formTitle">
         <div class="form-section" id="restaurantFormSection">
+            <button type="button" class="form-modal-close" id="restaurantFormCloseBtn" aria-label="등록 폼 닫기" onclick="closeRestaurantForm()">×</button>
             <h2 id="formTitle" style="margin-top:0; border-bottom: 2px solid #eee; padding-bottom: 15px;">새 식당 등록</h2>
             <form id="adminForm" onsubmit="submitForm(event)">
                 <input type="hidden" id="editId" name="editId">
@@ -580,70 +927,55 @@
                     <p class="hint" style="margin-top:8px;margin-bottom:0;">하나 이상 체크해야 합니다. DB에는 선택한 저장값들이 영문 쉼표로 합쳐져 들어갑니다.</p>
                 </div>
 
-                <div class="form-group">
-                    <label>상호명 (한국어)</label>
-                    <input type="text" id="name" name="name" required placeholder="상호명을 입력하세요">
+                <div style="display:flex; gap:15px; flex-wrap:wrap;" class="form-group">
+                    <div style="flex:1; min-width:240px;">
+                        <label>상호명</label>
+                        <input type="text" id="name" name="name" required placeholder="상호명을 입력하세요">
+                    </div>
+                    <div style="flex:1.2; min-width:260px;">
+                        <label>주소</label>
+                        <input type="text" id="address" name="address" required placeholder="예: 지하 1층 푸드코트 안쪽">
+                    </div>
                 </div>
                 
                 <input type="hidden" id="name_en" name="name_en" value="">
-
-                <div class="form-group">
-                    <label>상세 위치설명 / 주소</label>
-                    <input type="text" id="address" name="address" required placeholder="예: 지하 1층 푸드코트 안쪽">
-                </div>
-
-                <div class="form-group">
-                    <label>네이버 장소 ID (선택, QR용)</label>
-                    <input type="text" id="naver_place_id" name="naver_place_id" inputmode="numeric" placeholder="예: 1234567890 (숫자만)">
-                </div>
-                <p class="hint" style="margin-top:-8px;"><strong>장소 ID</strong>가 있으면 QR 스캔 시 네이버지도 앱에서 해당 업소 페이지가 바로 열립니다. 네이버 지도에서 업소 검색 → URL의 <code>/restaurant/1234567890/</code> 숫자가 장소 ID입니다.</p>
-                <div class="form-group">
-                    <label>네이버 지도 길찾기 링크 (선택, QR 우선)</label>
-                    <input type="text" id="naver_place_url" name="naver_place_url" placeholder="예: https://map.naver.com/... 또는 nmap://...">
-                </div>
-                <p class="hint" style="margin-top:-8px;">여기에 링크를 넣으면 QR은 이 링크를 <strong>최우선</strong>으로 사용합니다. 비우면 장소 ID → 좌표 → 상호명 순으로 자동 생성됩니다.</p>
-
                 <div style="display:flex; gap:15px; flex-wrap:wrap;" class="form-group">
-                    <div style="flex:1; min-width:200px;">
-                        <label>목적지 위도 (선택, 장소ID 없을 때 사용)</label>
-                        <input type="text" id="dest_lat" name="dest_lat" inputmode="decimal" placeholder="예: 37.498095">
-                    </div>
-                    <div style="flex:1; min-width:200px;">
-                        <label>목적지 경도 (선택, 장소ID 없을 때 사용)</label>
-                        <input type="text" id="dest_lng" name="dest_lng" inputmode="decimal" placeholder="예: 127.027621">
-                    </div>
-                </div>
-                <p class="hint" style="margin-top:-8px;">네이버 장소 ID가 없고 위·경도가 있으면 좌표 기반 길찾기로 연결됩니다. 둘 다 없으면 상호명으로 검색합니다.</p>
-                
-                <div style="display:flex; gap:15px;" class="form-group">
-                    <div style="flex:1;">
+                    <div style="flex:1.1; min-width:210px;">
                         <label>전화번호 (선택)</label>
                         <input type="text" id="phone" name="phone" placeholder="예: 02-123-4567">
                     </div>
-                    <div style="flex:1;">
-                        <label>웹사이트/SNS URL (선택)</label>
-                        <input type="text" id="homepage" name="homepage" placeholder="예: instagram.com/맛쥡">
+                    <div style="flex:2; min-width:220px;">
+                        <label for="business_hours">영업시간 (선택)</label>
+                        <input type="text" id="business_hours" autocomplete="off" placeholder="예: 09:00-21:00">
+                        <p class="hint" style="margin-top:6px;margin-bottom:0;">한 칸에 적은 내용이 그대로 저장됩니다(예: <code>09:00-21:00</code> 또는 안내 문구). 비우면 표시하지 않습니다.</p>
                     </div>
-                </div>
-
-                <div style="display:flex; gap:15px;" class="form-group">
-                    <div style="flex:1;">
-                        <label>오픈 시간 (선택)</label>
-                        <input type="time" id="open_time" name="open_time">
+                    <div style="flex:1.4; min-width:260px;">
+                        <label>휴무일 (선택)</label>
+                        <input type="text" id="closed_days" name="closed_days" placeholder="예: 매주 월요일, 공휴일">
                     </div>
-                    <div style="flex:1;">
-                        <label>마감 시간 (선택)</label>
-                        <input type="time" id="close_time" name="close_time">
-                    </div>
+                    <p class="hint" style="margin-top:8px;margin-bottom:0; width:100%;">전화·영업시간·휴무는 키오스크 목록·상세에 표시됩니다.</p>
                 </div>
 
                 <div class="form-group">
-                    <label>휴무일 (선택)</label>
-                    <input type="text" id="closed_days" name="closed_days" placeholder="예: 매주 월요일, 공휴일">
-                    <p class="hint" style="margin-top:8px;margin-bottom:0;">키오스크 목록·상세 화면에 표시됩니다.</p>
+                    <label for="main_menu">주요메뉴 (선택)</label>
+                    <input type="text" id="main_menu" name="main_menu" placeholder="예: 짜장면, 탕수육, 볶음밥 (쉼표로 구분)">
+                    <p class="hint" style="margin-top:8px;margin-bottom:0;">목록·상세 화면에 「주요메뉴」로 표시됩니다.</p>
                 </div>
-                
+
                 <div class="form-group">
+                    <label>식당 소개</label>
+                    <textarea id="description" name="description" rows="3" placeholder="매장 소개를 적어주세요"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>네이버 지도 길찾기 링크 (선택, QR 우선)</label>
+                    <input type="text" id="naver_place_url" name="naver_place_url" placeholder="예: https://map.naver.com/... 또는 nmap://...">
+                    <p class="hint" style="margin-top:8px;margin-bottom:0;">여기에 링크를 넣으면 QR은 이 링크를 우선 사용합니다.</p>
+                </div>
+
+                <textarea id="description_en" name="description_en" hidden aria-hidden="true"></textarea>
+
+                <div class="form-group" hidden>
                     <label>시설 및 서비스 (다중 선택 가능)</label>
                     <div class="checkbox-grid" id="facilitiesGrid">
                         <label class="checkbox-label"><input type="checkbox" value="룸"><span> 룸</span></label>
@@ -671,11 +1003,14 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="main_menu">주요메뉴 (선택)</label>
-                    <input type="text" id="main_menu" name="main_menu" placeholder="예: 짜장면, 탕수육, 볶음밥 (쉼표로 구분)">
-                    <p class="hint" style="margin-top:8px;margin-bottom:0;">목록·상세 화면에 「주요메뉴」로 표시됩니다.</p>
+                    <label>메뉴판 사진 (선택, 메뉴 팝업용)</label>
+                    <input type="file" id="menu_image" name="menu_image" accept="image/*">
+                    <div class="img-preview-wrap" id="menu_imagePreviewWrap" hidden>
+                        <span class="img-preview-label">미리보기</span>
+                        <img id="menu_imagePreview" alt="메뉴판 미리보기">
+                    </div>
                 </div>
-                                
+
                 <div class="form-group">
                     <label>대표 이미지 (최대 4장 · 드래그로 순서 변경 · 맨 위가 대표)</label>
                     <p class="hint" style="margin-top:0;">첫 번째 이미지가 목록·상세 화면의 대표 썸네일로 사용됩니다. 탐색기에서 여러 장을 선택해 이 영역으로 끌어 넣을 수 있습니다.</p>
@@ -689,22 +1024,6 @@
                         <ul id="heroGalleryList" class="hero-gallery-list" aria-label="대표 이미지 목록"></ul>
                     </div>
                 </div>
-
-                <div class="form-group">
-                    <label>메뉴판 사진 (선택, 메뉴 팝업용)</label>
-                    <input type="file" id="menu_image" name="menu_image" accept="image/*">
-                    <div class="img-preview-wrap" id="menu_imagePreviewWrap" hidden>
-                        <span class="img-preview-label">미리보기</span>
-                        <img id="menu_imagePreview" alt="메뉴판 미리보기">
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label>식당 소개 (한국어)</label>
-                    <textarea id="description" name="description" rows="3" placeholder="매장 소개를 적어주세요"></textarea>
-                </div>
-                
-                <textarea id="description_en" name="description_en" hidden aria-hidden="true"></textarea>
                 
                 <div class="form-group" style="margin-bottom:18px;">
                     <label class="checkbox-label" style="display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:#fff9db;border:1px solid #ffe066;border-radius:12px;cursor:pointer;max-width:100%;">
@@ -717,12 +1036,16 @@
                 <button type="button" class="cancel-btn" id="cancelBtn" onclick="resetForm()">수정 취소 및 새로 등록하기</button>
             </form>
         </div>
+        </div>
     </div>
 
     <script>
         let adminData = [];
         let adminCategoryData = [];
+        let restaurantFormVisible = false;
         let mapSlotAssignments = {};
+        /** 구역(슬롯) 키 → 주소에 포함될 검색어(서버 `map_slot_address_hints`와 동기) */
+        let mapSlotAddressHints = {};
         const previewBlobUrls = { menu_image: null };
         let editingAssetUrls = { image_url: null, menu_url: null };
         /** { uid: string, url?: string, file?: File }[] 최대 4 */
@@ -784,8 +1107,9 @@
                 else if (isCat) title.textContent = '카테고리';
                 else title.textContent = '지도 구역 설정';
             }
-            const formSec = document.getElementById('restaurantFormSection');
-            if (formSec) formSec.style.display = isRest ? '' : 'none';
+            if (!isRest && restaurantFormVisible) {
+                setRestaurantFormVisible(false);
+            }
             const dash = document.getElementById('adminDashboard');
             if (dash) dash.classList.toggle('categories-only', !isRest);
             if (isMap) {
@@ -802,6 +1126,22 @@
             }
         }
 
+        function setRestaurantFormVisible(visible) {
+            restaurantFormVisible = !!visible;
+            const modal = document.getElementById('restaurantFormModal');
+            if (modal) {
+                modal.classList.toggle('open', restaurantFormVisible);
+            }
+        }
+
+        function openNewRestaurantForm() {
+            resetForm(true);
+        }
+
+        function closeRestaurantForm() {
+            resetForm(false);
+        }
+
         function setupAdminTabs() {
             const br = document.getElementById('tabBtnRestaurants');
             const bc = document.getElementById('tabBtnCategories');
@@ -816,13 +1156,17 @@
             if (!sel) return;
             const prev = sel.value;
             sel.innerHTML = '';
+            const opt0 = document.createElement('option');
+            opt0.value = '0';
+            opt0.textContent = '0번 (달성농수산물유통센터)';
+            sel.appendChild(opt0);
             for (let i = 1; i <= 33; i++) {
                 const o = document.createElement('option');
                 o.value = String(i);
                 o.textContent = '건물 ' + i + '번';
                 sel.appendChild(o);
             }
-            if (prev && Number(prev) >= 1 && Number(prev) <= 33) sel.value = prev;
+            if (prev && Number(prev) >= 0 && Number(prev) <= 33) sel.value = prev;
         }
 
         function normalizeMapSlotEntryAdmin(e) {
@@ -851,6 +1195,37 @@
                 if (o && o.id === id) return { floor: o.floor || '', unit: o.unit || '' };
             }
             return { floor: '', unit: '' };
+        }
+
+        function extractFloorFromAddress(addr) {
+            const s = String(addr || '').trim();
+            if (!s) return '';
+            let m = s.match(/지하\s*([0-9]{1,2})\s*층/i);
+            if (m) return 'B' + m[1] + 'F';
+            m = s.match(/\bB\s*([0-9]{1,2})\s*F\b/i);
+            if (m) return 'B' + m[1] + 'F';
+            m = s.match(/([0-9]{1,2})\s*층/);
+            if (m) return m[1] + 'F';
+            m = s.match(/\b([0-9]{1,2})\s*F\b/i);
+            if (m) return m[1] + 'F';
+            // 000호 규칙: 1000호->1F, 2000호->2F, 12000호->12F
+            m = s.match(/([1-9][0-9]*)000\s*호\b/);
+            if (m) {
+                const floorFromThousand = parseInt(m[1], 10);
+                if (!Number.isNaN(floorFromThousand) && floorFromThousand >= 1 && floorFromThousand <= 99) {
+                    return String(floorFromThousand) + 'F';
+                }
+            }
+            // 호수 기반 추출: 101호->1F, 201호->2F, 1203호->12F
+            m = s.match(/(?:제\s*)?([1-9][0-9]{2,3})\s*호\b/);
+            if (m) {
+                const unitNum = parseInt(m[1], 10);
+                if (!Number.isNaN(unitNum)) {
+                    const floor = Math.floor(unitNum / 100);
+                    if (floor >= 1 && floor <= 99) return String(floor) + 'F';
+                }
+            }
+            return '';
         }
 
         function mapSlotHasRestaurant(slotArr, id) {
@@ -929,6 +1304,17 @@
             if (!stage || stage.dataset.dropBound === '1') return;
             stage.dataset.dropBound = '1';
             stage.querySelectorAll('.bldg[data-slot]').forEach((bldg) => {
+                bldg.addEventListener('click', () => {
+                    const slot = bldg.getAttribute('data-slot');
+                    if (!slot) return;
+                    const sel = document.getElementById('mapSlotSelect');
+                    if (sel) {
+                        sel.value = slot;
+                        renderMapSlotRestaurantChecks();
+                    }
+                    const st = document.getElementById('mapSlotStatus');
+                    if (st) st.textContent = '건물 ' + slot + '번 선택됨';
+                });
                 bldg.addEventListener('dragover', (e) => {
                     e.preventDefault();
                     e.dataTransfer.dropEffect = 'copy';
@@ -980,19 +1366,31 @@
             putMapAssignments(next, '드롭 반영 · 저장했습니다.');
         }
 
+        function syncMapSlotAddressHintInputFromStore() {
+            const sel = document.getElementById('mapSlotSelect');
+            const inp = document.getElementById('mapSlotAddressAutoInput');
+            if (!sel || !inp) return;
+            const slotKey = String(sel.value || '').trim();
+            inp.value = slotKey ? String(mapSlotAddressHints[slotKey] || '') : '';
+        }
+
         function putMapAssignments(next, okMessage) {
             const status = document.getElementById('mapSlotStatus');
             if (status) status.textContent = '저장 중…';
             return fetch('/api/map-slot-assignments', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ assignments: next })
+                body: JSON.stringify({ assignments: next, addressHints: mapSlotAddressHints })
             })
                 .then((r) => r.json().then((body) => ({ ok: r.ok, body })))
                 .then(({ ok, body }) => {
                     if (!ok) throw new Error((body && body.error) || '저장 실패');
                     mapSlotAssignments = body.assignments || next;
+                    if (body && body.addressHints != null && typeof body.addressHints === 'object' && !Array.isArray(body.addressHints)) {
+                        mapSlotAddressHints = Object.assign({}, body.addressHints);
+                    }
                     if (status) status.textContent = okMessage != null ? okMessage : '저장했습니다.';
+                    syncMapSlotAddressHintInputFromStore();
                     renderMapSlotRestaurantChecks();
                     refreshAdminMapBuildingBadges();
                     renderMapDragPalette();
@@ -1062,7 +1460,20 @@
             const slotKey = sel.value;
             const slotArr = mapSlotAssignments[slotKey] || [];
             tbody.innerHTML = '';
-            const rows = adminData.slice().sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'ko'));
+            const selectedIdSet = new Set(
+                (slotArr || [])
+                    .map((e) => normalizeMapSlotEntryAdmin(e))
+                    .filter(Boolean)
+                    .map((o) => Number(o.id))
+            );
+            const rows = adminData
+                .slice()
+                .sort((a, b) => {
+                    const aSel = selectedIdSet.has(Number(a.id)) ? 1 : 0;
+                    const bSel = selectedIdSet.has(Number(b.id)) ? 1 : 0;
+                    if (aSel !== bSel) return bSel - aSel; // 선택된 항목 우선
+                    return String(a.name || '').localeCompare(String(b.name || ''), 'ko');
+                });
             rows.forEach((r) => {
                 const id = Number(r.id);
                 const meta = mapSlotMetaForId(slotArr, id);
@@ -1087,8 +1498,8 @@
                 inFloor.type = 'text';
                 inFloor.className = 'map-slot-floor';
                 inFloor.dataset.rid = String(id);
-                inFloor.placeholder = '예: 2F';
-                inFloor.value = meta.floor;
+                inFloor.placeholder = '';
+                inFloor.value = meta.floor || extractFloorFromAddress(r.address || '');
                 inFloor.style.width = '100%';
                 inFloor.style.maxWidth = '120px';
                 inFloor.style.boxSizing = 'border-box';
@@ -1100,7 +1511,7 @@
                 inUnit.type = 'text';
                 inUnit.className = 'map-slot-unit';
                 inUnit.dataset.rid = String(id);
-                inUnit.placeholder = '호수·코너 등';
+                inUnit.placeholder = '';
                 inUnit.value = meta.unit;
                 inUnit.style.width = '100%';
                 inUnit.style.minWidth = '120px';
@@ -1122,11 +1533,16 @@
                 .then(({ data }) => {
                     const a = data.assignments;
                     mapSlotAssignments = a && typeof a === 'object' && !Array.isArray(a) ? a : {};
+                    const h = data.addressHints;
+                    mapSlotAddressHints =
+                        h && typeof h === 'object' && !Array.isArray(h) ? Object.assign({}, h) : {};
                     fillMapSlotSelect();
+                    syncMapSlotAddressHintInputFromStore();
                     renderMapSlotRestaurantChecks();
                     refreshAdminMapBuildingBadges();
                     renderMapDragPalette();
                     if (status) status.textContent = '구역을 선택한 뒤 음식점을 체크하고 저장하세요.';
+                    return applyStoredAddressHintsAutoAssign();
                 })
                 .catch((err) => {
                     if (status) status.textContent = '오류: ' + (err.message || '불러오기 실패');
@@ -1157,12 +1573,157 @@
             putMapAssignments(next, '저장했습니다.');
         }
 
+        function normalizeAddressTextForMatch(v) {
+            return String(v || '')
+                .toLowerCase()
+                .replace(/\s+/g, '')
+                .trim();
+        }
+
+        /** DB에 저장된 구역별 주소 검색어로, 아직 어떤 구역에도 없는 식당만 자동 배치 */
+        function applyStoredAddressHintsAutoAssign() {
+            if (!adminData || !adminData.length) return Promise.resolve();
+            const hints = mapSlotAddressHints || {};
+            const slotKeys = Object.keys(hints)
+                .filter((k) => String(hints[k] || '').trim() !== '')
+                .sort((a, b) => Number(a) - Number(b));
+            if (!slotKeys.length) return Promise.resolve();
+
+            const next = JSON.parse(JSON.stringify(mapSlotAssignments || {}));
+            const assignedIds = new Set();
+            for (const key of Object.keys(next)) {
+                for (const e of next[key] || []) {
+                    const o = normalizeMapSlotEntryAdmin(e);
+                    if (o) assignedIds.add(o.id);
+                }
+            }
+
+            let changed = false;
+            for (const slotKey of slotKeys) {
+                const q = normalizeAddressTextForMatch(hints[slotKey]);
+                if (!q) continue;
+                const list = next[slotKey] || [];
+                const byId = new Map();
+                list.forEach((e) => {
+                    const o = normalizeMapSlotEntryAdmin(e);
+                    if (o) byId.set(o.id, { id: o.id, floor: o.floor || '', unit: o.unit || '' });
+                });
+
+                const matched = adminData.filter((r) => {
+                    const addr = normalizeAddressTextForMatch(r && r.address);
+                    return !!addr && addr.indexOf(q) !== -1;
+                });
+
+                for (const r of matched) {
+                    const rid = Number(r.id);
+                    if (Number.isNaN(rid)) continue;
+                    if (assignedIds.has(rid)) continue;
+                    const floorAuto = extractFloorFromAddress(r.address || '') || '';
+                    byId.set(rid, { id: rid, floor: floorAuto, unit: '' });
+                    assignedIds.add(rid);
+                    changed = true;
+                }
+                next[slotKey] = Array.from(byId.values());
+            }
+
+            if (!changed) return Promise.resolve();
+            return putMapAssignments(next, '저장된 주소 규칙으로 미배치 업소를 자동 배치했습니다.');
+        }
+
+        function saveMapSlotAddressHintOnly() {
+            const sel = document.getElementById('mapSlotSelect');
+            const input = document.getElementById('mapSlotAddressAutoInput');
+            const status = document.getElementById('mapSlotStatus');
+            if (!sel || !input) return Promise.resolve();
+            const slotKey = String(sel.value || '').trim();
+            if (!slotKey) {
+                if (status) status.textContent = '구역 번호를 먼저 선택하세요.';
+                return Promise.resolve();
+            }
+            const raw = String(input.value || '').trim();
+            if (!raw) {
+                delete mapSlotAddressHints[slotKey];
+            } else {
+                mapSlotAddressHints[slotKey] = raw.length > 200 ? raw.slice(0, 200) : raw;
+            }
+            return putMapAssignments(mapSlotAssignments, '이 구역의 주소 검색어를 저장했습니다.');
+        }
+
+        function autoAssignByAddressForSelectedSlot() {
+            const sel = document.getElementById('mapSlotSelect');
+            const input = document.getElementById('mapSlotAddressAutoInput');
+            const status = document.getElementById('mapSlotStatus');
+            if (!sel || !input) return;
+            const slotKey = String(sel.value || '').trim();
+            const queryRaw = String(input.value || '').trim();
+            if (!slotKey) {
+                if (status) status.textContent = '구역 번호를 먼저 선택하세요.';
+                return;
+            }
+            if (!queryRaw) {
+                if (status) status.textContent = '주소 검색어를 입력하세요.';
+                return;
+            }
+            const q = normalizeAddressTextForMatch(queryRaw);
+            const matched = (adminData || []).filter((r) => {
+                const addr = normalizeAddressTextForMatch(r && r.address);
+                return !!addr && addr.indexOf(q) !== -1;
+            });
+            if (!matched.length) {
+                if (status) status.textContent = '일치하는 주소의 업소가 없습니다.';
+                return;
+            }
+
+            const current = (mapSlotAssignments[slotKey] || [])
+                .map((e) => normalizeMapSlotEntryAdmin(e))
+                .filter(Boolean);
+            const byId = new Map();
+            current.forEach((e) => byId.set(Number(e.id), { id: Number(e.id), floor: e.floor || '', unit: e.unit || '' }));
+            matched.forEach((r) => {
+                const rid = Number(r.id);
+                if (Number.isNaN(rid)) return;
+                const prev = byId.get(rid);
+                const floorAuto = extractFloorFromAddress(r.address || '');
+                byId.set(rid, {
+                    id: rid,
+                    floor: prev && prev.floor ? prev.floor : floorAuto,
+                    unit: prev && prev.unit ? prev.unit : ''
+                });
+            });
+            const out = Array.from(byId.values());
+            const next = Object.assign({}, mapSlotAssignments, { [slotKey]: out });
+            mapSlotAddressHints[slotKey] = queryRaw.length > 200 ? queryRaw.slice(0, 200) : queryRaw;
+            putMapAssignments(next, '주소 자동 추가 완료: ' + matched.length + '건');
+        }
+
         function setupMapAdminPanel() {
             fillMapSlotSelect();
             const sel = document.getElementById('mapSlotSelect');
-            if (sel) sel.addEventListener('change', () => renderMapSlotRestaurantChecks());
+            if (sel) {
+                sel.addEventListener('change', () => {
+                    syncMapSlotAddressHintInputFromStore();
+                    renderMapSlotRestaurantChecks();
+                });
+            }
             const btn = document.getElementById('mapSlotSaveBtn');
             if (btn) btn.addEventListener('click', () => saveMapSlotAssignments());
+            const autoBtn = document.getElementById('mapSlotAddressAutoBtn');
+            const hintSaveBtn = document.getElementById('mapSlotAddressHintSaveBtn');
+            const autoInput = document.getElementById('mapSlotAddressAutoInput');
+            if (autoBtn) autoBtn.addEventListener('click', () => autoAssignByAddressForSelectedSlot());
+            if (hintSaveBtn) {
+                hintSaveBtn.addEventListener('click', () => {
+                    saveMapSlotAddressHintOnly().then(() => applyStoredAddressHintsAutoAssign());
+                });
+            }
+            if (autoInput) {
+                autoInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        autoAssignByAddressForSelectedSlot();
+                    }
+                });
+            }
             const mapDragSearch = document.getElementById('mapDragSearch');
             if (mapDragSearch) mapDragSearch.addEventListener('input', () => renderMapDragPalette());
             window.addEventListener('resize', () => {
@@ -1181,6 +1742,16 @@
             fetchCategoriesAdmin().catch(() => {});
             setupCategoryIconForm();
             setupImagePreviews();
+            setRestaurantFormVisible(false);
+            const formModal = document.getElementById('restaurantFormModal');
+            if (formModal) {
+                formModal.addEventListener('click', (e) => {
+                    if (e.target === formModal) closeRestaurantForm();
+                });
+            }
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && restaurantFormVisible) closeRestaurantForm();
+            });
         });
 
         function parseAdminCategoryCsv(raw) {
@@ -1247,6 +1818,7 @@
                     adminCategoryData = data.data || [];
                     renderCategoryAdminTable();
                     renderRestaurantCategoryCheckboxes(preferredJoined || '');
+                    renderAdminList(adminData || []);
                 })
                 .catch((err) => {
                     console.error(err);
@@ -1266,6 +1838,15 @@
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;');
+        }
+
+        function adminCategoryLabelCsv(csv) {
+            const vals = parseAdminCategoryCsv(csv);
+            if (!vals.length) return '';
+            const map = new Map((adminCategoryData || []).map((c) => [String(c.value || ''), String(c.label_ko || c.value || '')]));
+            return vals
+                .map((v) => map.get(v) || v)
+                .join(', ');
         }
 
         function renderCategoryAdminTable() {
@@ -1772,14 +2353,10 @@
             syncPreviewForInput('menu_image');
         }
 
-        function sortAdminDataOldestFirst(list) {
-            return (list || []).slice().sort((a, b) => (Number(a.id) || 0) - (Number(b.id) || 0));
-        }
-
         function fetchAdminList() {
-            fetchJson('/api/restaurants')
+            return fetchJson('/api/restaurants')
                 .then(({ data }) => {
-                    adminData = sortAdminDataOldestFirst(data.data || []);
+                    adminData = Array.isArray(data.data) ? data.data.slice() : [];
                     renderAdminList(adminData);
                     const pMap = document.getElementById('adminPanelMap');
                     if (pMap && !pMap.hidden) {
@@ -1787,11 +2364,28 @@
                         renderMapDragPalette();
                     }
                 })
+                .then(() => fetchMapAssignments().catch((e) => console.error(e)))
                 .catch((err) => {
                     console.error(err);
                     const tbody = document.getElementById('adminListBody');
-                    if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="color:#c92a2a;">' + err.message + '</td></tr>';
+                    if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="color:#c92a2a;">' + err.message + '</td></tr>';
                 });
+        }
+
+        /** 식당 목록 썸네일: 갤러리 첫 장 → 없으면 image_url */
+        function adminRestaurantListThumbUrl(item) {
+            if (!item) return '';
+            if (item.image_gallery) {
+                try {
+                    const p = JSON.parse(item.image_gallery);
+                    if (Array.isArray(p) && p.length) {
+                        const s = String(p[0] != null ? p[0] : '').trim();
+                        if (s) return s;
+                    }
+                } catch (e) {}
+            }
+            const u = item.image_url != null ? String(item.image_url).trim() : '';
+            return u;
         }
 
         function renderAdminList(list) {
@@ -1799,13 +2393,25 @@
             tbody.innerHTML = '';
             list.forEach((item, index) => {
                 const tr = document.createElement('tr');
+                const categoryLabel = escapeAdminHtml(adminCategoryLabelCsv(item.category || ''));
+                const hasNaverQr =
+                    (item.naver_place_url != null && String(item.naver_place_url).trim() !== '') ||
+                    (item.naver_place_id != null && String(item.naver_place_id).trim() !== '');
+                const naverQrBadge = hasNaverQr
+                    ? '<span style="display:inline-block;padding:2px 7px;border-radius:999px;font-size:11px;font-weight:700;color:#0b7285;background:#e3fafc;border:1px solid #99e9f2;">네이버QR</span>'
+                    : '<span style="display:inline-block;padding:2px 7px;border-radius:999px;font-size:11px;font-weight:700;color:#868e96;background:#f1f3f5;border:1px solid #dee2e6;">QR없음</span>';
                 const kioskCell = Number(item.kiosk_hidden)
                     ? '<span style="color:#c92a2a;font-weight:800;">숨김</span>'
                     : '<span style="color:#2b8a3e;">표시</span>';
+                const thumbSrc = adminRestaurantListThumbUrl(item);
+                const thumbTd = thumbSrc
+                    ? `<td class="admin-list-thumb-cell"><img class="admin-list-thumb" src="${escapeAdminHtml(thumbSrc)}" alt="" loading="lazy" decoding="async"></td>`
+                    : '<td class="admin-list-thumb-cell"><span class="admin-list-thumb-ph" title="등록된 이미지 없음"></span></td>';
                 tr.innerHTML = `
                     <td>${index + 1}</td>
-                    <td><strong>${item.name}</strong></td>
-                    <td>${escapeAdminHtml(item.category || '')}</td>
+                    <td><strong>${escapeAdminHtml(String(item.name || ''))}</strong></td>
+                    ${thumbTd}
+                    <td><span>${categoryLabel}</span> <span style="margin-left:6px;vertical-align:middle;">${naverQrBadge}</span></td>
                     <td>${kioskCell}</td>
                     <td>
                         <button type="button" class="action-btn edit-btn" onclick="editItemById(${item.id})">수정</button>
@@ -1825,6 +2431,21 @@
             renderAdminList(filtered);
         }
 
+        /** DB 값 → 입력칸 (예전 open/close 분리·현재 open 한 칸 모두) */
+        function formatBusinessHoursField(openTime, closeTime) {
+            const o = openTime != null ? String(openTime).trim() : '';
+            const c = closeTime != null ? String(closeTime).trim() : '';
+            if (o && c) return o + '-' + c;
+            if (o) return o;
+            if (c) return c;
+            return '';
+        }
+
+        /** DB open_time 한 칸에만 저장 (close_time은 비움) */
+        function businessHoursForDb(raw) {
+            return String(raw || '').trim();
+        }
+
         function editItemById(id) {
             const n = Number(id);
             const item = adminData.find((r) => Number(r.id) === n);
@@ -1836,6 +2457,7 @@
         }
 
         function editItem(item) {
+            setRestaurantFormVisible(true);
             document.getElementById('formTitle').innerText = '식당 정보 수정';
             document.getElementById('submitBtn').innerText = '수정 내용 저장';
             document.getElementById('cancelBtn').style.display = 'block';
@@ -1854,9 +2476,8 @@
             if (dlat) dlat.value = item.dest_lat != null && item.dest_lat !== '' ? String(item.dest_lat) : '';
             if (dlng) dlng.value = item.dest_lng != null && item.dest_lng !== '' ? String(item.dest_lng) : '';
             document.getElementById('phone').value = item.phone || '';
-            document.getElementById('homepage').value = item.homepage || '';
-            document.getElementById('open_time').value = item.open_time || '';
-            document.getElementById('close_time').value = item.close_time || '';
+            const bh = document.getElementById('business_hours');
+            if (bh) bh.value = formatBusinessHoursField(item.open_time, item.close_time);
             document.getElementById('closed_days').value = item.closed_days || '';
             document.getElementById('description').value = item.description || '';
             document.getElementById('description_en').value = item.description_en || '';
@@ -1884,7 +2505,8 @@
             window.scrollTo({top: 0, behavior: 'smooth'});
         }
 
-        function resetForm() {
+        function resetForm(keepVisible) {
+            setRestaurantFormVisible(!!keepVisible);
             document.getElementById('formTitle').innerText = '새 식당 등록';
             document.getElementById('submitBtn').innerText = '등록 완료하기';
             document.getElementById('cancelBtn').style.display = 'none';
@@ -1918,6 +2540,9 @@
             const formData = new FormData(form);
             formData.set('category', catCsv);
             formData.set('clear_map_url', '1');
+            const bhRaw = (document.getElementById('business_hours') || {}).value;
+            formData.set('open_time', businessHoursForDb(bhRaw));
+            formData.set('close_time', '');
             const hg = buildHeroGalleryPayload();
             formData.append('gallery_manifest', JSON.stringify(hg.manifest));
             hg.files.forEach((f) => formData.append('images', f));
@@ -1957,6 +2582,9 @@
                 statusEl.textContent = '엑셀 파일을 선택해주세요.';
                 return;
             }
+            if (!confirm('기존 식당이 모두 삭제되고 엑셀 내용으로 교체됩니다. 지도 슬롯 배정도 초기화됩니다. 계속할까요?')) {
+                return;
+            }
             const fd = new FormData();
             fd.append('excel', file);
             btn.disabled = true;
@@ -1973,11 +2601,15 @@
                     }
                     let summary = '';
                     if (data.imported > 0) {
-                        summary = data.imported + '건 등록';
-                        if (data.emptySkipped) summary += ', 빈 행 ' + data.emptySkipped + '건 생략';
-                        summary += '했습니다.';
+                        summary =
+                            '기존 목록을 지우고 ' +
+                            data.imported +
+                            '건으로 교체했습니다. 지도 슬롯 배정은 초기화되었습니다.';
+                        if (data.emptySkipped) summary += ' 빈 행 ' + data.emptySkipped + '건 생략.';
                     } else if (data.emptySkipped) {
-                        summary = '등록된 행 없음 (빈 행 ' + data.emptySkipped + '건 생략).';
+                        summary = '등록된 행 없음 (빈 행 ' + data.emptySkipped + '건 생략). 기존 목록은 그대로입니다.';
+                    } else if (data.errors && data.errors.length) {
+                        summary = '등록 실패 — 기존 목록은 그대로입니다. (DB 오류 시 전체 취소)';
                     }
                     if (data.imported > 0) fetchAdminList();
                     if (data.errors && data.errors.length) {
@@ -1997,6 +2629,10 @@
                     statusEl.className = 'error';
                     statusEl.textContent = '네트워크 오류: ' + err.message;
                 });
+        }
+
+        function downloadCurrentDbExcel() {
+            window.location.href = '/api/restaurants/export-excel?ts=' + Date.now();
         }
     </script>
 </body>

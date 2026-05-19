@@ -6,6 +6,7 @@ const fs = require('fs');
 const db = require('./db');
 const { importRowsFromBuffer } = require('../lib/excelImport');
 const QRCode = require('qrcode');
+const XLSX = require('xlsx');
 
 const app = express();
 // 로컬에서 PC 전역 PORT(예: 3002)가 잡혀 있으면 서버·브라우저 포트가 어긋나 API 404가 납니다. 프로덕션 또는 RUN_WITH_ENV_PORT=1 일 때만 PORT 사용.
@@ -130,36 +131,114 @@ function baseNameNoExt(filename) {
     return path.basename(filename, path.extname(filename));
 }
 
-/** DB에 URL이 없을 때 uploads 안 파일명으로 매칭 (예: 설빙_사진.jpg, 설빙_지도.png, 설빙_메뉴판.jpg 또는 설빙_메뉴.jpg) */
-function pickUploadFileForRestaurant(filenames, nameBase, kind) {
-    const reB = escapeRegex(nameBase);
-    let re;
-    if (kind === 'photo') {
-        re = new RegExp('^' + reB + '_사진(_[0-9]+)?$');
-    } else if (kind === 'map') {
-        re = new RegExp('^' + reB + '_지도(_[0-9]+)?$');
-    } else {
-        re = new RegExp('^' + reB + '_메뉴판(_[0-9]+)?$|^' + reB + '_메뉴(_[0-9]+)?$');
+/** 업로드 파일명 ↔ 상호명 비교용(공백·유니코드·ZWSP 등) */
+function normalizeUploadMatchKey(s) {
+    let t = String(s ?? '')
+        .replace(/^\uFEFF/, '')
+        .replace(/[\u200B-\u200D\uFEFF]/g, '');
+    try {
+        t = t.normalize('NFKC');
+    } catch (_) {
+        /* ignore */
     }
+    return t.trim();
+}
+
+/** 상호명만 파일명 매칭: "명가 갈비" DB ↔ "명가갈비.PNG" 파일 등 */
+function uploadPlainPhotoBasenamesMatch(nameBase, fileBasename) {
+    const a = normalizeUploadMatchKey(nameBase);
+    const b = normalizeUploadMatchKey(fileBasename);
+    if (!a || !b) return false;
+    if (a === b || a.toLowerCase() === b.toLowerCase()) return true;
+    const ac = a.replace(/\s+/g, '');
+    const bc = b.replace(/\s+/g, '');
+    return ac === bc || ac.toLowerCase() === bc.toLowerCase();
+}
+
+/** DB에 URL이 없을 때 uploads 안 파일명으로 매칭
+ *  대표: (1) 상호명_사진.jpg … (2) 상호명만.jpg|png|… (basename 정확 일치)
+ *  지도·메뉴: 상호명_지도 / 상호명_메뉴판|메뉴
+ */
+function pickUploadFileForRestaurant(filenames, nameBase, kind) {
+    const bases = [];
+    const nb0 = normalizeUploadMatchKey(nameBase);
+    if (nb0) bases.push(nb0);
+    const compact = nb0.replace(/\s+/g, '');
+    if (compact && compact !== nb0) bases.push(compact);
+
     const scored = [];
-    for (const f of filenames) {
-        const bn = baseNameNoExt(f);
-        if (!re.test(bn)) continue;
-        const tail = bn.match(/_([0-9]+)$/);
-        const variant = tail ? parseInt(tail[1], 10) : 0;
-        let menuRank = 0;
-        if (kind === 'menu') {
-            if (bn.indexOf('_메뉴판') !== -1) menuRank = 0;
-            else menuRank = 1;
+    for (const base of bases) {
+        const reB = escapeRegex(base);
+        let re;
+        if (kind === 'photo') {
+            re = new RegExp('^' + reB + '_사진(_[0-9]+)?$');
+        } else if (kind === 'map') {
+            re = new RegExp('^' + reB + '_지도(_[0-9]+)?$');
+        } else {
+            re = new RegExp('^' + reB + '_메뉴판(_[0-9]+)?$|^' + reB + '_메뉴(_[0-9]+)?$');
         }
-        scored.push({ f, variant, menuRank });
+        for (const f of filenames) {
+            const bn = normalizeUploadMatchKey(baseNameNoExt(f));
+            if (!re.test(bn)) continue;
+            const tail = bn.match(/_([0-9]+)$/);
+            const variant = tail ? parseInt(tail[1], 10) : 0;
+            let menuRank = 0;
+            if (kind === 'menu') {
+                if (bn.indexOf('_메뉴판') !== -1) menuRank = 0;
+                else menuRank = 1;
+            }
+            scored.push({ f, variant, menuRank, baseRank: bases.indexOf(base) });
+        }
     }
     scored.sort((a, b) => {
+        if (a.baseRank !== b.baseRank) return a.baseRank - b.baseRank;
         if (a.variant !== b.variant) return a.variant - b.variant;
         if (a.menuRank !== b.menuRank) return a.menuRank - b.menuRank;
         return a.f.localeCompare(b.f);
     });
     return scored[0] ? scored[0].f : null;
+}
+
+/** uploads 파일명(확장자 제외)이 상호명과 같을 때 — 명가갈비.JPG 등 */
+const PHOTO_EXT_ORDER = new Map([
+    ['.jpg', 0],
+    ['.jpeg', 0],
+    ['.png', 1],
+    ['.webp', 2],
+    ['.gif', 3],
+    ['.bmp', 4]
+]);
+
+function pickPlainBasenamePhotoFile(filenames, nameBase) {
+    if (!nameBase) return null;
+    const scored = [];
+    for (const f of filenames) {
+        const bn = normalizeUploadMatchKey(baseNameNoExt(f));
+        if (!uploadPlainPhotoBasenamesMatch(nameBase, bn)) continue;
+        const ext = path.extname(f).toLowerCase();
+        if (!IMAGE_EXT.has(ext)) continue;
+        scored.push({ f, extRank: PHOTO_EXT_ORDER.has(ext) ? PHOTO_EXT_ORDER.get(ext) : 50 });
+    }
+    scored.sort((a, b) => {
+        if (a.extRank !== b.extRank) return a.extRank - b.extRank;
+        return a.f.localeCompare(b.f);
+    });
+    return scored[0] ? scored[0].f : null;
+}
+
+/** 대표 이미지: _사진 규칙 우선, 없으면 상호명만 파일명 */
+function resolveAutoImageUploadFilename(filesList, restaurantName) {
+    const primary = sanitizeRestaurantFileBase(restaurantName);
+    const raw = normalizeUploadMatchKey(restaurantName);
+    const tryOrder = [];
+    if (primary) tryOrder.push(primary);
+    if (raw && raw !== primary) tryOrder.push(raw);
+    for (const base of tryOrder) {
+        let hit = pickUploadFileForRestaurant(filesList, base, 'photo');
+        if (!hit) hit = pickPlainBasenamePhotoFile(filesList, base);
+        if (hit) return hit;
+    }
+    return null;
 }
 
 function isBlankUrl(u) {
@@ -171,7 +250,7 @@ function enrichRestaurantWithUploadFolder(row) {
     const files = getCachedUploadFiles();
     const out = { ...row };
     if (isBlankUrl(out.image_url)) {
-        const hit = pickUploadFileForRestaurant(files, base, 'photo');
+        const hit = resolveAutoImageUploadFilename(files, row.name);
         if (hit) out.image_url = '/uploads/' + hit;
     }
     if (isBlankUrl(out.menu_url)) {
@@ -196,7 +275,7 @@ const categoryIconUpload = multer({
 });
 
 const RESTAURANT_COLUMNS =
-    'id, name, name_en, category, subcategory, image_url, image_gallery, map_url, description, description_en, address, phone, homepage, menu_url, open_time, close_time, closed_days, tags, main_menu, walk_time, kiosk_hidden, dest_lat, dest_lng, naver_place_id, naver_place_url';
+    'id, name, name_en, category, subcategory, image_url, image_gallery, map_url, description, description_en, address, phone, homepage, menu_url, open_time, close_time, closed_days, tags, main_menu, walk_time, kiosk_hidden, dest_lat, dest_lng, naver_place_id, naver_place_url, display_order';
 
 function isSafeRestaurantImageUrl(u) {
     if (!u || typeof u !== 'string') return false;
@@ -306,7 +385,10 @@ const excelUpload = multer({
 
 // GET
 app.get('/api/restaurants', (req, res) => {
-    db.all(`SELECT ${RESTAURANT_COLUMNS} FROM restaurants ORDER BY id DESC`, [], (err, rows) => {
+    db.all(
+        `SELECT ${RESTAURANT_COLUMNS} FROM restaurants ORDER BY COALESCE(display_order, 2147483647) ASC, id ASC`,
+        [],
+        (err, rows) => {
         if (err) res.status(500).json({ error: err.message });
         else res.json({ data: rows.map((r) => enrichRestaurantWithUploadFolder(r)) });
     });
@@ -359,8 +441,8 @@ app.post('/api/restaurants', cpUpload, (req, res) => {
     const nb = sanitizeRestaurantFileBase(name);
     const fl = getCachedUploadFiles();
     if (g.skip && !image_url) {
-        const h = pickUploadFileForRestaurant(fl, nb, 'photo');
-        if (h) image_url = '/uploads/' + h;
+        const fn = resolveAutoImageUploadFilename(fl, name);
+        if (fn) image_url = '/uploads/' + fn;
     }
     if (!menu_url) {
         const h = pickUploadFileForRestaurant(fl, nb, 'menu');
@@ -370,13 +452,45 @@ app.post('/api/restaurants', cpUpload, (req, res) => {
     const sub = null;
     const cd =
         closed_days != null && String(closed_days).trim() !== '' ? String(closed_days).trim() : null;
-    db.run(`INSERT INTO restaurants (name, name_en, category, subcategory, image_url, image_gallery, map_url, description, description_en, address, phone, homepage, menu_url, open_time, close_time, closed_days, tags, main_menu, walk_time, kiosk_hidden, dest_lat, dest_lng, naver_place_id, naver_place_url) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [name, name_en, catN, sub, image_url, image_gallery, map_url, description, description_en, address, phone, homepage, menu_url, open_time, close_time, cd, tags, mm, walk_time || null, kh, dLat, dLng, npid, nurl],
-        function(err) {
-            if (err) res.status(500).json({ error: err.message });
-            else res.json({ id: this.lastID });
-        });
+    db.get('SELECT COALESCE(MAX(display_order), 0) AS m FROM restaurants', [], (gErr, maxRow) => {
+        if (gErr) return res.status(500).json({ error: gErr.message });
+        const nextOrder = (maxRow && maxRow.m != null ? Number(maxRow.m) : 0) + 10;
+        db.run(
+            `INSERT INTO restaurants (name, name_en, category, subcategory, image_url, image_gallery, map_url, description, description_en, address, phone, homepage, menu_url, open_time, close_time, closed_days, tags, main_menu, walk_time, kiosk_hidden, dest_lat, dest_lng, naver_place_id, naver_place_url, display_order) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                name,
+                name_en,
+                catN,
+                sub,
+                image_url,
+                image_gallery,
+                map_url,
+                description,
+                description_en,
+                address,
+                phone,
+                homepage,
+                menu_url,
+                open_time,
+                close_time,
+                cd,
+                tags,
+                mm,
+                walk_time || null,
+                kh,
+                dLat,
+                dLng,
+                npid,
+                nurl,
+                nextOrder
+            ],
+            function(err) {
+                if (err) res.status(500).json({ error: err.message });
+                else res.json({ id: this.lastID });
+            }
+        );
+    });
 });
 
 // PUT
@@ -562,7 +676,7 @@ app.delete('/api/restaurants/:id', (req, res) => {
 // Categories
 app.get('/api/categories', (req, res) => {
     db.all(
-        'SELECT id, value, label_ko, label_en, icon, icon_image, sort_order FROM categories ORDER BY sort_order ASC, id ASC',
+        'SELECT id, value, label_ko, label_en, label_sub_ko, icon, icon_image, sort_order FROM categories ORDER BY sort_order ASC, id ASC',
         [],
         (err, rows) => {
             if (err) res.status(500).json({ error: err.message });
@@ -943,6 +1057,44 @@ app.post('/api/restaurants/import-excel', (req, res) => {
     });
 });
 
+// 현재 DB 식당 목록 — 엑셀 다운로드
+app.get('/api/restaurants/export-excel', (req, res) => {
+    db.all(
+        `SELECT ${RESTAURANT_COLUMNS} FROM restaurants ORDER BY COALESCE(display_order, 2147483647) ASC, id ASC`,
+        [],
+        (err, rows) => {
+            if (err) return res.status(500).json({ error: err.message });
+            const list = rows || [];
+            const exportRows = list.map((r, idx) => ({
+                번호: r.id,
+                순서: r.display_order != null ? r.display_order : (idx + 1) * 10,
+                상호명: r.name || '',
+                카테고리: r.category || '',
+                주소: r.address || '',
+                전화번호: r.phone || '',
+                영업시간: r.open_time || '',
+                휴무일: r.closed_days || '',
+                주요메뉴: r.main_menu || '',
+                한줄설명: r.description || '',
+                이미지URL: r.image_url || '',
+                네이버QR링크: r.naver_place_url || '',
+                키오스크숨김: Number(r.kiosk_hidden) ? '숨김' : '표시'
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(exportRows);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, '식당목록');
+            const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+            const day = new Date().toISOString().slice(0, 10);
+            const filename = `restaurant-db-export-${day}.xlsx`;
+
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            res.send(buf);
+        }
+    );
+});
+
 // QR Code API
 app.get('/api/qrcode', async (req, res) => {
     const text = req.query.text;
@@ -955,19 +1107,47 @@ app.get('/api/qrcode', async (req, res) => {
     }
 });
 
-/** 키오스크 지도: 슬롯 번호(문자열) → 식당 id 배열 JSON */
+function parseKioskJsonObject(raw, fallback) {
+    try {
+        const o = raw ? JSON.parse(raw) : fallback;
+        if (!o || typeof o !== 'object' || Array.isArray(o)) return fallback;
+        return o;
+    } catch (e) {
+        return fallback;
+    }
+}
+
+/** 구역(슬롯)별 주소 검색어 — { "5": "테크노중앙대로 254", ... } */
+function normalizeMapSlotAddressHintsInput(raw) {
+    const out = {};
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+    for (const [k, v] of Object.entries(raw)) {
+        const n = parseInt(String(k).trim(), 10);
+        if (Number.isNaN(n) || n < 0 || n > 33) continue;
+        const key = String(n);
+        let s = v != null ? String(v).trim() : '';
+        if (s.length > 200) s = s.slice(0, 200);
+        if (s) out[key] = s;
+    }
+    return out;
+}
+
+/** 키오스크 지도: 슬롯 번호(문자열) → 식당 id 배열 JSON + 구역별 주소 규칙 */
 app.get('/api/map-slot-assignments', (req, res) => {
-    db.get('SELECT value FROM kiosk_settings WHERE key = ?', ['map_slot_assignments'], (err, row) => {
-        if (err) return res.status(500).json({ error: err.message });
-        let parsed = {};
-        try {
-            parsed = row && row.value ? JSON.parse(row.value) : {};
-        } catch (e) {
-            parsed = {};
+    db.all(
+        'SELECT key, value FROM kiosk_settings WHERE key IN (?, ?)',
+        ['map_slot_assignments', 'map_slot_address_hints'],
+        (err, rows) => {
+            if (err) return res.status(500).json({ error: err.message });
+            let assignments = {};
+            let addressHints = {};
+            for (const row of rows || []) {
+                if (row.key === 'map_slot_assignments') assignments = parseKioskJsonObject(row.value, {});
+                else if (row.key === 'map_slot_address_hints') addressHints = parseKioskJsonObject(row.value, {});
+            }
+            res.json({ assignments, addressHints });
         }
-        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) parsed = {};
-        res.json({ assignments: parsed });
-    });
+    );
 });
 
 /** 슬롯당 항목: 레거시 숫자 id 또는 { id, floor?, unit? } — 층·위치(호수 등) */
@@ -996,7 +1176,8 @@ function normalizeMapSlotArray(arr) {
 }
 
 app.put('/api/map-slot-assignments', express.json(), (req, res) => {
-    const { assignments } = req.body || {};
+    const body = req.body || {};
+    const { assignments } = body;
     if (!assignments || typeof assignments !== 'object' || Array.isArray(assignments)) {
         return res.status(400).json({ error: 'assignments 객체가 필요합니다.' });
     }
@@ -1008,14 +1189,33 @@ app.put('/api/map-slot-assignments', express.json(), (req, res) => {
         normalized[key] = normalizeMapSlotArray(v);
     }
     const json = JSON.stringify(normalized);
-    db.run(
-        'INSERT OR REPLACE INTO kiosk_settings (key, value) VALUES (?, ?)',
-        ['map_slot_assignments', json],
-        function(err2) {
-            if (err2) return res.status(500).json({ error: err2.message });
-            res.json({ ok: true, assignments: normalized });
+
+    const hasHintsKey = Object.prototype.hasOwnProperty.call(body, 'addressHints');
+    const hintsNorm = hasHintsKey ? normalizeMapSlotAddressHintsInput(body.addressHints) : null;
+
+    const finish = (hintsOut) => {
+        res.json({ ok: true, assignments: normalized, addressHints: hintsOut });
+    };
+
+    db.run('INSERT OR REPLACE INTO kiosk_settings (key, value) VALUES (?, ?)', ['map_slot_assignments', json], function(err2) {
+        if (err2) return res.status(500).json({ error: err2.message });
+        if (hasHintsKey) {
+            const hj = JSON.stringify(hintsNorm);
+            return db.run(
+                'INSERT OR REPLACE INTO kiosk_settings (key, value) VALUES (?, ?)',
+                ['map_slot_address_hints', hj],
+                function(err3) {
+                    if (err3) return res.status(500).json({ error: err3.message });
+                    finish(hintsNorm);
+                }
+            );
         }
-    );
+        db.get('SELECT value FROM kiosk_settings WHERE key = ?', ['map_slot_address_hints'], (gErr, row) => {
+            if (gErr) return res.status(500).json({ error: gErr.message });
+            const hintsOut = parseKioskJsonObject(row && row.value, {});
+            finish(hintsOut);
+        });
+    });
 });
 
 // 정적 파일은 API 라우트 뒤에 두어 /api/* 가 실수로 HTML로 가지 않게 함
@@ -1054,7 +1254,7 @@ function printListenBanner() {
     console.log(line);
     if (host === '0.0.0.0') {
         console.log('   Tip: 스마트폰에서 안 열리면 Windows 방화벽에서 TCP ' + port + ' 허용');
-        console.log('        bat\\allow-firewall-port-3000.bat (관리자 권한으로 실행)');
+        console.log('        bat\\kiosk-tools.bat 메뉴 7 또는 kiosk-tools.bat 7 (관리자 권한)');
     }
     console.log(box);
     console.log('');

@@ -7,15 +7,28 @@ const outPath = path.join(outDir, 'restaurant-import-template.xlsx');
 
 if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
 
+/** 기본 업로드 열: 순서·상호명·주소·전화·영업시간·휴무·카테고리·주요메뉴·한줄설명 (서버는 업로드 시 restaurants 전체 교체) */
 const headers = [
-    '상호명', '상호명(영문)', '카테고리', '2차분류', '주소', '키오스크숨김', '전화', '홈페이지',
-    '오픈시간', '마감시간', '휴무일', '도보(분)', '태그', '소개(한)', '소개(영)',
-    '이미지URL', '약도URL', '메뉴URL'
+    '순서',
+    '상호명',
+    '주소',
+    '전화번호',
+    '영업시간',
+    '휴무일',
+    '카테고리',
+    '주요메뉴',
+    '한줄설명'
 ];
 const example = [
-    '예시맛집', 'Sample Restaurant', 'korean', '', '지하1층 푸드코트', 0, '02-123-4567', '',
-    '11:00', '21:00', '매주 월요일', 5, '주차,룸', '한식 전문점입니다.', 'Korean restaurant.',
-    '', '', ''
+    1,
+    '예시맛집',
+    '지하1층 푸드코트',
+    '02-123-4567',
+    '11:00-21:00',
+    '매주 월요일',
+    'korean',
+    '비빔밥·갈비',
+    '한식 전문점입니다.'
 ];
 
 const ws = XLSX.utils.aoa_to_sheet([headers, example]);

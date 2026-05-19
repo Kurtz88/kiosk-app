@@ -38,8 +38,6 @@
         listLabelTel: '전화',
         listLabelClosed: '휴무일',
         listPlaceholder: '—',
-        exitConfirm: '브라우저 창을 종료할까요?',
-        exitManual: '자동으로 닫히지 않으면 Alt+F4 로 종료해 주세요.',
         mapEmptySlot: '이 구역에 연결된 음식점이 없습니다.',
         mapResultCount: (n) => `총 ${n}곳의 음식점이 있어요`,
         mapPromptTitle: '건물을 선택하세요',

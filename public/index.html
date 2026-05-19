@@ -2,26 +2,14 @@
 <html lang="ko" class="kiosk-page" data-kiosk-page="home">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>달빛거리먹자골목</title>
-    <link rel="stylesheet" href="css/moon-layout.css?v=202605071710">
+    <link rel="stylesheet" href="css/moon-layout.css?v=423">
     <link rel="stylesheet" href="css/kiosk-moon-overrides.css?v=202605071730">
 </head>
 <body class="kiosk-page">
     <div class="kiosk-shell">
     <div class="kiosk-viewport">
-    <div id="screensaver" class="screensaver" onclick="resetIdleTimer()" ontouchstart="resetIdleTimer()">
-        <video class="screensaver-bg-video" id="screensaverVideo" muted loop playsinline preload="metadata" aria-hidden="true">
-            <source src="img/mv.mp4" type="video/mp4">
-        </video>
-        <div class="screensaver-content">
-            <div class="screensaver-logo"><img src="img/logo.svg" alt=""></div>
-            <div class="screensaver-title" id="ss-title">달빛거리먹자골목</div>
-            <div class="screensaver-subtitle" id="ss-subtitle">화면을 터치해서 맛집을 찾아보세요!</div>
-            <div class="touch-icon"><img src="img/inicon01.png" alt=""></div>
-        </div>
-    </div>
-
     <article id="kiosk">
       <header class="k-header">
         <button type="button" class="header-btn" id="headerBack" aria-label="뒤로가기">
@@ -47,7 +35,9 @@
           <div class="k-food-grid category-tabs" id="categoryTabs"></div>
 
           <video autoplay muted loop playsinline preload="auto" id="myVideo" aria-hidden="true">
-            <source src="img/mv.mp4" type="video/mp4">
+            <!-- <source src="img/mv.mp4" type="video/mp4">-->           
+              <source src="img/bg_sunner_01.mp4" type="video/mp4">
+
           </video>
         </section>
       </main>
@@ -69,6 +59,7 @@
       <div id="keyboard-modal-mount" data-kiosk-input-aria-label="검색어 미리보기"></div>
     </article>
 
+    <script src="js/disable-pinch-zoom.js?v=20260512"></script>
     <script src="js/hangul.js?v=202604201000"></script>
     <script src="js/kiosk/kiosk-i18n.js?v=202604271712"></script>
     <script src="js/app.js?v=202604271712"></script>

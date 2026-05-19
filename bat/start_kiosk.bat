@@ -1,5 +1,10 @@
 @echo off
 setlocal EnableExtensions
+if /i "%~1" neq "__minimized__" (
+    start "" /min cmd /c ""%~f0" __minimized__ %*"
+    exit /b 0
+)
+if /i "%~1"=="__minimized__" shift
 title Kiosk Server Launcher
 color 0B
 echo ==========================================================
@@ -34,8 +39,8 @@ if errorlevel 1 (
 )
 
 echo Step 3 of 4 - Starting server in a new window titled Kiosk Server...
-REM If Node exits with an error, that window stays open so you can read the message.
-start "Kiosk Server" cmd /k "cd /d ""%ROOT%"" && node backend\server.js || pause"
+REM cd + absolute script path: START /D alone is unreliable with "cmd /k" on some Windows builds.
+start "Kiosk Server" /min cmd /k "cd /d ""%ROOT%"" && node ""%ROOT%\backend\server.js"" || pause"
 
 echo Step 4 of 4 - Waiting until port 3000 is ready...
 powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT%\scripts\wait-for-port.ps1" -Port 3000 -TimeoutSec 45
@@ -61,18 +66,18 @@ where chrome.exe >nul 2>nul
 if errorlevel 1 (
     echo chrome.exe not in PATH. Trying default Chrome install path...
     if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" (
-        start "" "%ProgramFiles%\Google\Chrome\Application\chrome.exe" --kiosk --user-data-dir="%temp%\kiosk_profile" --no-first-run --disable-infobars http://localhost:3000
+        start "" "%ProgramFiles%\Google\Chrome\Application\chrome.exe" --kiosk --user-data-dir="%temp%\kiosk_profile" --no-first-run --disable-infobars http://localhost:3000/index.html
     ) else if exist "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" (
-        start "" "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" --kiosk --user-data-dir="%temp%\kiosk_profile" --no-first-run --disable-infobars http://localhost:3000
+        start "" "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" --kiosk --user-data-dir="%temp%\kiosk_profile" --no-first-run --disable-infobars http://localhost:3000/index.html
     ) else (
         color 0E
         echo Chrome not found. Open this address in Edge or another browser:
-        echo   http://localhost:3000/
+        echo   http://localhost:3000/index.html
         color 0B
-        start "" http://localhost:3000/
+        start "" http://localhost:3000/index.html
     )
 ) else (
-    start chrome.exe --kiosk --user-data-dir="%temp%\kiosk_profile" --no-first-run --disable-infobars http://localhost:3000
+    start chrome.exe --kiosk --user-data-dir="%temp%\kiosk_profile" --no-first-run --disable-infobars http://localhost:3000/index.html
 )
 
 if /i "%~1"=="nopause" exit /b 0

@@ -57,6 +57,7 @@ html {
     -webkit-text-size-adjust: 100%;
 }
 
+* {word-break:keep-all;}
 body {
     margin: 0;
     font-family: var(--font);
@@ -404,10 +405,11 @@ html[data-kiosk-page='home'] .k-inner.mainbg3::before {
     height: min(125vh, 30%);
     background: linear-gradient(
         to bottom,
-        rgba(255, 255, 255, 0.9) 0%,
-        rgba(112, 170, 239, 0.7) 49%,
+        rgba(255, 255, 255, 0.1) 0%,
+        rgba(112, 170, 239, 0.4) 49%,
         rgba(112, 170, 239, 0) 100%
     );
+	
     pointer-events: none;
 }
 
@@ -2203,17 +2205,6 @@ button.btn {
 
 button.btn:active {
     transform: scale(0.98);
-}
-
-.exit-tap-zone {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    width: 96px;
-    height: 96px;
-    z-index: 10000;
-    opacity: 0;
-    touch-action: manipulation;
 }
 
 /* -------------------------------------------------------------------------- */
