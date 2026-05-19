@@ -277,6 +277,39 @@ function escapeHtml(s) {
         .replace(/"/g, '&quot;');
 }
 
+/** img src 등 속성용 — URL은 escapeHtml 대신 사용 (& 깨짐 방지) */
+function escapeAttr(s) {
+    if (s == null || s === '') return '';
+    return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+}
+
+/**
+ * iniini 등 외부 이미지 URL — 한글·공백 파일명을 브라우저용 %인코딩으로 통일
+ * 예: …/디저트39 대구…jpg → …/%EB%94%94%EC%A0%80%ED%8A%B839%20%EB%8C%80%EA%B5%AC…
+ */
+function resolveKioskImageUrl(raw) {
+    const s = raw != null ? String(raw).trim() : '';
+    if (!s || s.startsWith('data:')) return s;
+    if (!/^https?:\/\//i.test(s)) return s;
+    try {
+        const u = new URL(s);
+        u.pathname = u.pathname
+            .split('/')
+            .map((seg) => {
+                if (!seg) return seg;
+                try {
+                    return encodeURIComponent(decodeURIComponent(seg));
+                } catch {
+                    return encodeURIComponent(seg);
+                }
+            })
+            .join('/');
+        return u.href;
+    } catch {
+        return encodeURI(s);
+    }
+}
+
 /** 오늘 날짜(로컬) 기준 키: 같은 날에는 동일 */
 function dailySeedKey() {
     const d = new Date();
@@ -459,7 +492,7 @@ function iniconSrcFromTabIndex(i) {
 function categoryCardIconSrc(cat, idx) {
     const raw = cat.icon_image != null ? String(cat.icon_image).trim() : '';
     if (raw) {
-        if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+        if (raw.startsWith('http://') || raw.startsWith('https://')) return resolveKioskImageUrl(raw);
         if (raw.startsWith('/')) return raw;
         return '/' + raw.replace(/^\//, '');
     }
@@ -1123,9 +1156,11 @@ function renderList(list, containerOverride, emptyMessage) {
         row.setAttribute('role', 'listitem');
         row.addEventListener('click', () => openModal(item));
 
+        const PLACEHOLDER_LIST_IMG =
+            'data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22200%22%20height%3D%22200%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23e8e8e8%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-size%3D%2214%22%20font-family%3D%22sans-serif%22%20text-anchor%3D%22middle%22%20fill%3D%22%23999%22%20dy%3D%22.3em%22%3E%EC%9D%B4%EB%AF%B8%EC%A7%80%20%EC%97%86%EC%9D%8C%3C%2Ftext%3E%3C%2Fsvg%3E';
         const imgSrc = item.image_url
-            ? item.image_url
-            : 'data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22200%22%20height%3D%22200%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23e8e8e8%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-size%3D%2214%22%20font-family%3D%22sans-serif%22%20text-anchor%3D%22middle%22%20fill%3D%22%23999%22%20dy%3D%22.3em%22%3E%EC%9D%B4%EB%AF%B8%EC%A7%80%20%EC%97%86%EC%9D%8C%3C%2Ftext%3E%3C%2Fsvg%3E';
+            ? escapeAttr(resolveKioskImageUrl(item.image_url))
+            : PLACEHOLDER_LIST_IMG;
         const displayName = escapeHtml(item.name);
 
         const status = checkIsOpen(item.open_time, item.close_time);
@@ -1515,7 +1550,7 @@ function openModal(item, opts) {
     const PLACEHOLDER_IMG =
         'data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22200%22%20height%3D%22200%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23e8e8e8%22%2F%3E%3C/svg%3E';
     const imgList = restaurantHeroImageList(item);
-    const heroSrc = imgList[0] ? escapeHtml(imgList[0]) : PLACEHOLDER_IMG;
+    const heroSrc = imgList[0] ? escapeAttr(resolveKioskImageUrl(imgList[0])) : PLACEHOLDER_IMG;
     const bd = badgeClassForCategory(primaryCanonicalCategoryForItem(item));
     const displayName = escapeHtml(item.name);
     const displayCategory = escapeHtml(categoryDisplayLabel(item));
