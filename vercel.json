@@ -3,7 +3,7 @@
   "functions": {
     "index.js": {
       "maxDuration": 60,
-      "excludeFiles": "{public/uploads/**,moon_st/**,moon_st2/**,유틸/**}"
+      "excludeFiles": "{public/uploads/*.{jpg,jpeg,png,gif,webp,bmp,JPG,JPEG,PNG},moon_st/**,moon_st2/**,유틸/**}"
     }
   }
 }

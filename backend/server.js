@@ -1227,6 +1227,13 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(publicDir, 'index.html'));
 });
 
+/** Vercel: 배포본의 uploads/categories PNG만 포함 — 루트 식당 사진은 제외됨 */
+if (process.env.VERCEL) {
+    const bundledCategoriesDir = path.join(publicDir, 'uploads', 'categories');
+    if (fs.existsSync(bundledCategoriesDir)) {
+        app.use('/uploads/categories', express.static(bundledCategoriesDir));
+    }
+}
 app.use('/uploads', express.static(uploadsDir));
 app.use(express.static(publicDir));
 
