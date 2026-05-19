@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const os = require('os');
+const http = require('http');
 const multer = require('multer');
 const fs = require('fs');
 const db = require('./db');
@@ -8,6 +9,8 @@ const { importRowsFromBuffer } = require('../lib/excelImport');
 const {
     applyPublicUploadUrlsToRestaurant,
     applyPublicUploadUrlsToCategory,
+    getUploadsPublicBase,
+    shouldUseUploadsProxy,
 } = require('../lib/uploadsPublicUrl');
 const QRCode = require('qrcode');
 const XLSX = require('xlsx');
@@ -1223,6 +1226,38 @@ app.put('/api/map-slot-assignments', express.json(), (req, res) => {
             const hintsOut = parseKioskJsonObject(row && row.value, {});
             finish(hintsOut);
         });
+    });
+});
+
+/**
+ * HTTPS 키오스크(Vercel)에서 http://iniini… 이미지 혼합 콘텐츠 차단 방지 — 같은 출처로 프록시
+ * GET /api/uploads-proxy/파일명(인코딩) → http://iniini.co.kr/kiosk/uploads/…
+ */
+app.use('/api/uploads-proxy', (req, res) => {
+    const base = getUploadsPublicBase();
+    if (!base || !shouldUseUploadsProxy()) {
+        return res.status(404).type('text/plain').send('Uploads proxy not configured');
+    }
+    let suffix = (req.url || '').split('?')[0];
+    if (suffix.startsWith('/')) suffix = suffix.slice(1);
+    if (!suffix || suffix.includes('..')) {
+        return res.status(400).type('text/plain').send('Bad path');
+    }
+    const target = base.replace(/\/+$/, '') + '/' + suffix;
+    const upstream = http.get(target, (up) => {
+        const code = up.statusCode || 502;
+        if (code >= 400) {
+            res.status(code).type('text/plain').end();
+            up.resume();
+            return;
+        }
+        res.status(code);
+        if (up.headers['content-type']) res.setHeader('Content-Type', up.headers['content-type']);
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+        up.pipe(res);
+    });
+    upstream.on('error', () => {
+        res.status(502).type('text/plain').send('Upstream error');
     });
 });
 

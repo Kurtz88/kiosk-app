@@ -290,6 +290,8 @@ function escapeAttr(s) {
 function resolveKioskImageUrl(raw) {
     const s = raw != null ? String(raw).trim() : '';
     if (!s || s.startsWith('data:')) return s;
+    /* API가 /api/uploads-proxy/… 로 주면 같은 출처(HTTPS) — 그대로 사용 */
+    if (s.startsWith('/api/uploads-proxy/')) return s;
     if (!/^https?:\/\//i.test(s)) return s;
     try {
         const u = new URL(s);
