@@ -1430,8 +1430,9 @@
                 const { ok, data } = await fetchJson('/api/info-reports/mail-status');
                 const s = ok && data ? data : {};
                 if (!s.configured) {
-                    el.textContent =
-                        ' — SMTP 미설정 (Vercel: GMAIL_USER + GMAIL_APP_PASSWORD 후 재배포)';
+                    const miss = s.missing && s.missing.length ? ' (없음: ' + s.missing.join(', ') + ')' : '';
+                    const hint = s.hint ? ' · ' + s.hint : '';
+                    el.textContent = ' — SMTP 미설정' + miss + hint;
                     if (box) box.style.background = '#fff5f5';
                     return;
                 }

@@ -7,6 +7,8 @@ const path = require('path');
 process.env.KIOSK_USE_TMP_DB = '0';
 process.chdir(path.join(__dirname, '..'));
 
+require('../lib/loadEnv').loadEnvFile();
+
 const db = require('../backend/db');
 const app = require('../backend/server');
 const os = require('os');

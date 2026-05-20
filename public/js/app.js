@@ -1806,7 +1806,7 @@ async function submitInfoReport() {
         } else if (mail && mail.skipped) {
             if (statusEl) {
                 statusEl.textContent =
-                    '접수되었습니다. (메일 알림은 서버에 설정되지 않아 보내지 않았습니다)';
+                    '접수되었습니다. (메일 SMTP 미설정 — Vercel은 Production 환경 변수에도 넣어야 합니다)';
             }
         } else if (mail && mail.error) {
             if (statusEl) {

@@ -3,6 +3,7 @@
 /**
  * Vercel serverless 진입점 (@vercel/node → Express app export)
  */
+require('./lib/loadEnv').loadEnvFile();
 require('express');
 const app = require('./backend/server');
 
