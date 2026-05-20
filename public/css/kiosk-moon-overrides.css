@@ -82,7 +82,7 @@ html[data-kiosk-page='list'] .list-page-list-only .list-store {
 }
 
 .list-store .list-tel-num,
-.list-store .list-menu-num {	font-size: 1vh;}
+.list-store .list-menu-num {	font-size: 2vh;}
 
 
 .list-store .desc-one-line.list-row-muted,
