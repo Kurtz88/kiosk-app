@@ -283,8 +283,17 @@ function escapeAttr(s) {
     return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 }
 
-/** DB /uploads/… → iniini 직접 (API 프록시 없이) */
+/** DB /uploads/… → iniini 직접 (반드시 http — https는 이미지 서버에서 안 열림) */
 const KIOSK_UPLOADS_INIINI_BASE = 'http://iniini.co.kr/kiosk/uploads';
+
+function isIniiniKioskUploadUrl(urlStr) {
+    try {
+        const u = new URL(String(urlStr).trim());
+        return /(^|\.)iniini\.co\.kr$/i.test(u.hostname) && /\/kiosk\/uploads(\/|$)/i.test(u.pathname);
+    } catch {
+        return false;
+    }
+}
 
 function encodeKioskUploadPathSegment(seg) {
     if (!seg) return seg;
@@ -319,6 +328,17 @@ function resolveKioskImageUrl(raw) {
         return kioskUploadRelToIniiniUrl(s.slice('/uploads/'.length));
     }
     if (!/^https?:\/\//i.test(s)) return s;
+    if (isIniiniKioskUploadUrl(s)) {
+        try {
+            const u = new URL(s);
+            const rel = u.pathname.replace(/^\/kiosk\/uploads\/?/i, '');
+            if (rel) return kioskUploadRelToIniiniUrl(rel);
+            u.protocol = 'http:';
+            return u.href;
+        } catch {
+            return kioskUploadRelToIniiniUrl(s);
+        }
+    }
     try {
         const u = new URL(s);
         u.pathname = u.pathname
