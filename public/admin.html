@@ -1436,11 +1436,20 @@
                     if (box) box.style.background = '#fff5f5';
                     return;
                 }
+                let extra = '';
+                if (s.passLength != null) {
+                    extra +=
+                        ' · 앱비밀번호 ' +
+                        s.passLength +
+                        '자' +
+                        (s.passLooksLikeGmailApp ? '' : ' (Gmail 앱비밀번호는 보통 16자)');
+                }
                 el.textContent =
                     ' — 설정됨 · 수신 ' +
                     escapeAdminHtml(s.notifyEmail || '') +
                     ' · 발신 ' +
-                    escapeAdminHtml(s.smtpUser || '');
+                    escapeAdminHtml(s.smtpUser || '') +
+                    extra;
                 if (box) box.style.background = '#ebfbee';
             } catch (e) {
                 el.textContent = ' — 상태 조회 실패';

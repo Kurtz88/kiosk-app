@@ -1810,8 +1810,9 @@ async function submitInfoReport() {
             }
         } else if (mail && mail.error) {
             if (statusEl) {
+                const errShort = String(mail.error).slice(0, 80);
                 statusEl.textContent =
-                    '접수되었습니다. 메일 전송은 실패했지만 신고는 저장되었습니다.';
+                    '접수되었습니다. 메일 전송 실패: ' + errShort + ' (관리자·Vercel 로그 확인)';
             }
         } else if (data && data.mailSent) {
             if (statusEl) statusEl.textContent = '접수되었습니다. 담당자에게 메일로 전달되었습니다.';
