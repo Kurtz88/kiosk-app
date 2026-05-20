@@ -943,15 +943,15 @@ background:rgba(100,100,100, 0.4);
 
 .list-store .thumb img{width:100%;height:100%;object-fit:cover;}
 .list-store .info{flex:1;min-width:0;}
-.list-store .name{font-size:1.7vh;  line-height:1.4; font-weight:500;  padding-right:8rem;}
+.list-store .name{font-size:5vh;  line-height:1.4; font-weight:500;  padding-right:8rem;}
 .list-store .addr,
-.list-store .tel {font-size:1.3vh; margin-top:1vh; color:#666; font-weight:300; }
+.list-store .tel {font-size:2vh; margin-top:1vh; color:#666; font-weight:300; }
 
-.list-store .desc {font-size:1vh; padding-top:10px;  margin-bottom:1.4vh; font-weight:300; }
+.list-store .desc {font-size:2vh; padding-top:10px;  margin-bottom:1.4vh; font-weight:300; }
 
 .list-store .right{display:flex;flex-direction:column;gap:6px;flex-shrink:0;  position:absolute; top:3vh; right:3vh;}
 .cat-badge{ display:flex; justify-content:center;
-font-size:0.9vh;  font-weight:400; width:6rem; text-align:Center;
+font-size:2vh;  font-weight:400; width:6rem; text-align:Center;
 line-height:2; border-radius:16vh;
 }
 
