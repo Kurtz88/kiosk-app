@@ -1422,16 +1422,15 @@ html[data-kiosk-page='list'] #searchInput[readonly] {
     color: var(--pink);
 }
 
-/* list.html — 틀린정보 신고 */
-.list-store .list-report-row {
-    margin: 0;
-    padding: 2px 0 4px;
+/* list.html 상세 모달 — 틀린정보 신고 (주요메뉴 아래) */
+.modal-report-wrap {
+    margin-top: 10px;
 }
 
-.list-store .list-report-btn {
+.modal-report-btn {
     display: inline-block;
-    padding: 4px 10px;
-    font-size: clamp(0.62rem, 2.1cqh, 0.78rem);
+    padding: 6px 14px;
+    font-size: clamp(0.72rem, 2.2cqh, 0.85rem);
     font-weight: 600;
     color: #868e96;
     background: transparent;
@@ -1441,10 +1440,16 @@ html[data-kiosk-page='list'] #searchInput[readonly] {
     font-family: inherit;
 }
 
-.list-store .list-report-btn:active {
+.modal-report-btn:active {
     color: var(--pink);
     border-color: var(--pink);
     background: var(--pink-glow);
+}
+
+.info-row.modal-report-row .modal-report-content-only {
+    margin-left: 0;
+    padding-left: 0;
+    width: 100%;
 }
 
 .info-report-overlay {

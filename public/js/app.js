@@ -1195,10 +1195,6 @@ function renderList(list, containerOverride, emptyMessage) {
             ? `<div class="list-tel-row list-menu-row tel"><span class="list-menu-num">🍴 ${menuText}</span></div>`
             : '';
 
-        const reportRowHtml = IS_LIST
-            ? `<div class="list-tel-row list-report-row"><button type="button" class="list-report-btn">틀린정보 신고하기</button></div>`
-            : '';
-
         row.innerHTML = `
             <div class="thumb" style="position:relative;">
                 <img src="${imgSrc}" alt="${displayName}" loading="lazy">
@@ -1207,7 +1203,6 @@ function renderList(list, containerOverride, emptyMessage) {
                 <div class="name">${displayName}</div>
                 <div class="desc desc-one-line${descMuted}">${descOneLine}</div>
                 ${menuRow}
-                ${reportRowHtml}
                 <div class="list-tel-row${telMuted} tel"> <span class="list-tel-num"> 📱 ${telText}</span>
                 </div>
                 ${hoursRow}
@@ -1215,15 +1210,6 @@ function renderList(list, containerOverride, emptyMessage) {
 
             </div>
         `;
-        if (IS_LIST) {
-            const reportBtn = row.querySelector('.list-report-btn');
-            if (reportBtn) {
-                reportBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    openInfoReportModal(item);
-                });
-            }
-        }
         target.appendChild(row);
     });
 }
@@ -1642,6 +1628,12 @@ function openModal(item, opts) {
             <div class="info-content">
                 <div class="info-label">${escapeHtml(t.modalMenuLabel)}</div>
                 <div class="menu-chips">${mainMenuChipsHtml}</div>
+                ${IS_LIST ? `<div class="modal-report-wrap"><button type="button" class="modal-report-btn js-info-report">틀린정보 신고하기</button></div>` : ''}
+            </div></div>`;
+    } else if (IS_LIST) {
+        infoBlocks += `<div class="info-row modal-report-row">
+            <div class="info-content modal-report-content-only">
+                <div class="modal-report-wrap"><button type="button" class="modal-report-btn js-info-report">틀린정보 신고하기</button></div>
             </div></div>`;
     }
     if (facilitiesChipsHtml) {
@@ -1704,6 +1696,15 @@ function openModal(item, opts) {
 
     const menuEl = modalBody.querySelector('.js-open-menu');
     if (menuEl && item.menu_url) menuEl.addEventListener('click', () => openMenuInfo(item.menu_url));
+
+    const reportBtn = modalBody.querySelector('.js-info-report');
+    if (reportBtn) {
+        reportBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openInfoReportModal(item);
+        });
+    }
 
     if (showQrBlock) {
         const nMapUrl = buildNaverRouteUrl(item);
