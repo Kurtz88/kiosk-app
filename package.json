@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "prestart": "node scripts/write-import-template.js",
-    "start": "node backend/server.js",
+    "start": "node scripts/start-server.js",
     "template": "node scripts/write-import-template.js",
     "usb-update": "node scripts/usb-update.js",
     "migrate": "node scripts/migrate.js",

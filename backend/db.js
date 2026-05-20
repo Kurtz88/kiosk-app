@@ -11,15 +11,13 @@ const tmpDataDir = path.join(os.tmpdir(), 'kiosk-app', 'data');
 const tmpDbFile = path.join(tmpDataDir, 'kiosk.sqlite');
 
 /**
- * /tmp DB는 Vercel 프로덕션(읽기 전용 파일시스템)에서만 사용.
- * npm start · vercel dev · 로컬 PC는 항상 data/kiosk.sqlite (틀린정보 신고 등 유지).
+ * 기본: 프로젝트 data/kiosk.sqlite (틀린정보 신고·식당 데이터 영구 저장).
+ * /tmp DB는 KIOSK_USE_TMP_DB=1 일 때만 (Vercel 프로덕션 등).
  */
 function shouldUseTmpSqlite() {
     if (process.env.KIOSK_DB_FILE) return false;
     if (process.env.KIOSK_DATA_DIR) return false;
-    if (process.env.KIOSK_USE_TMP_DB === '1') return true;
-    if (process.env.KIOSK_USE_TMP_DB === '0') return false;
-    return process.env.VERCEL === '1' && process.env.VERCEL_ENV === 'production';
+    return process.env.KIOSK_USE_TMP_DB === '1';
 }
 
 function resolveKioskPaths() {
@@ -143,7 +141,12 @@ const readyPromise = new Promise((resolve, reject) => {
 });
 
 function markReady() {
-    resolveReady();
+    kioskDb.get('SELECT COUNT(*) AS c FROM info_reports', [], (err, row) => {
+        if (!err && row && !usesTmpDb) {
+            console.log(`[kiosk] 틀린정보 신고(info_reports): ${row.c}건 → ${dbFile}`);
+        }
+        resolveReady();
+    });
 }
 
 /** 예전 스키마(restaurant_id UNIQUE 등)면 테이블 재생성 — 업체별 신고 여러 건 허용 */
@@ -374,13 +377,25 @@ function bootstrapSchema(db) {
     });
 }
 
-let db;
+const kioskDb = {
+    ready: readyPromise,
+    dbFile,
+    usesTmpDb,
+};
 
-/** Vercel 프로덕션만 node:sqlite + /tmp. 그 외는 sqlite3 + data/kiosk.sqlite */
+function attachSqliteConnection(conn) {
+    ['serialize', 'run', 'get', 'all', 'prepare'].forEach((method) => {
+        if (typeof conn[method] === 'function') {
+            kioskDb[method] = conn[method].bind(conn);
+        }
+    });
+}
+
+/** Vercel + /tmp 일 때만 node:sqlite. 그 외 sqlite3 → data/kiosk.sqlite */
 const useNodeSqlite = process.env.VERCEL === '1' && usesTmpDb;
 
 function openMainDatabase() {
-    console.log('[kiosk] SQLite:', dbFile, usesTmpDb ? '(임시 — Vercel 프로덕션, 재배포 시 초기화)' : '(영구)');
+    console.log('[kiosk] SQLite:', dbFile, usesTmpDb ? '(임시 — 재시작 시 초기화)' : '(영구 · data/kiosk.sqlite)');
 
     if (useNodeSqlite) {
         let DatabaseSync;
@@ -389,36 +404,32 @@ function openMainDatabase() {
         } catch (e) {
             console.error('node:sqlite 로드 실패 — Vercel 프로젝트 Node 버전을 22.5 이상으로 설정하세요.', e.message);
             rejectReady(e);
-            db = {};
             return;
         }
         const { wrapDb } = require('./node-sqlite-shim');
         try {
             const native = new DatabaseSync(dbFile);
-            db = wrapDb(native);
-            bootstrapSchema(db);
+            attachSqliteConnection(wrapDb(native));
+            bootstrapSchema(kioskDb);
         } catch (e) {
             console.error('Vercel SQLite 초기화 실패:', e);
             rejectReady(e);
-            db = {};
         }
         return;
     }
 
     const sqlite3 = require('sqlite3').verbose();
-    db = new sqlite3.Database(dbFile, (err) => {
+    const conn = new sqlite3.Database(dbFile, (err) => {
         if (err) {
             console.error('Error opening database', err.message);
             rejectReady(err);
             return;
         }
-        bootstrapSchema(db);
+        attachSqliteConnection(conn);
+        bootstrapSchema(kioskDb);
     });
 }
 
 migrateTmpReportsToPersistent(() => openMainDatabase());
 
-db.ready = readyPromise;
-db.dbFile = dbFile;
-db.usesTmpDb = usesTmpDb;
-module.exports = db;
+module.exports = kioskDb;
