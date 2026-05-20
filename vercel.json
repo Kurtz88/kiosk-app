@@ -1,13 +1,23 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "version": 2,
   "env": {
     "KIOSK_UPLOADS_BASE_URL": "https://dgbukfood.co.kr/uploads",
     "KIOSK_USE_TMP_DB": "1"
   },
-  "functions": {
-    "index.js": {
-      "maxDuration": 60,
-      "excludeFiles": "{public/uploads/*.{jpg,jpeg,png,gif,webp,bmp,JPG,JPEG,PNG},moon_st/**,moon_st2/**,유틸/**}"
+  "builds": [
+    {
+      "src": "index.js",
+      "use": "@vercel/node",
+      "config": {
+        "maxDuration": 60
+      }
     }
-  }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.js"
+    }
+  ]
 }

@@ -1,5 +1,10 @@
+'use strict';
+
 /**
- * Vercel 대체 진입점(index.js). express를 여기서 한 번 로드해 감지되게 함.
+ * Vercel serverless 진입점 (@vercel/node → Express app export)
  */
 require('express');
-module.exports = require('./backend/server');
+const app = require('./backend/server');
+
+module.exports = app;
+module.exports.default = app;

@@ -518,10 +518,19 @@ function openMainDatabase() {
     });
 }
 
-migrateTmpReportsToPersistent(() => {
-    if (!usesTmpDb) openInfoReportsDatabase();
-    openMainDatabase();
-});
+function startDatabases() {
+    migrateTmpReportsToPersistent(() => {
+        if (!usesTmpDb) openInfoReportsDatabase();
+        openMainDatabase();
+    });
+}
+
+/** Vercel: index.js가 export를 먼저 등록한 뒤 DB 초기화 */
+if (process.env.VERCEL === '1') {
+    setImmediate(startDatabases);
+} else {
+    startDatabases();
+}
 
 kioskDb.dataDir = usesTmpDb ? tmpDataDir : persistentDataDir;
 kioskDb.dbFile = dbFile;
