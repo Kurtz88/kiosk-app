@@ -52,6 +52,47 @@ function markReady() {
     resolveReady();
 }
 
+/** 예전 스키마(restaurant_id UNIQUE 등)면 테이블 재생성 — 업체별 신고 여러 건 허용 */
+function migrateInfoReportsAllowMultiple(db, cb) {
+    const done = typeof cb === 'function' ? cb : () => {};
+    db.get("SELECT sql FROM sqlite_master WHERE type='table' AND name='info_reports'", [], (err, row) => {
+        if (err || !row || !row.sql) return done();
+        const sql = String(row.sql);
+        const needsRebuild =
+            /restaurant_id\s+INTEGER\s+PRIMARY\s+KEY/i.test(sql) ||
+            /restaurant_id\s+INTEGER\s+UNIQUE/i.test(sql) ||
+            /UNIQUE\s*\(\s*restaurant_id\s*\)/i.test(sql);
+        if (!needsRebuild) {
+            db.run(
+                'CREATE INDEX IF NOT EXISTS idx_info_reports_restaurant ON info_reports(restaurant_id)',
+                () => done()
+            );
+            return;
+        }
+        console.warn('[db] info_reports: 업체별 1건만 허용하던 스키마 → 여러 건 허용으로 마이그레이션');
+        db.serialize(() => {
+            db.run(`CREATE TABLE info_reports_mig (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                restaurant_id INTEGER,
+                restaurant_name TEXT NOT NULL,
+                message TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'new',
+                created_at TEXT NOT NULL
+            )`);
+            db.run(
+                `INSERT INTO info_reports_mig (restaurant_id, restaurant_name, message, status, created_at)
+                 SELECT restaurant_id, restaurant_name, message, status, created_at FROM info_reports`
+            );
+            db.run('DROP TABLE info_reports');
+            db.run('ALTER TABLE info_reports_mig RENAME TO info_reports');
+            db.run(
+                'CREATE INDEX IF NOT EXISTS idx_info_reports_restaurant ON info_reports(restaurant_id)',
+                () => done()
+            );
+        });
+    });
+}
+
 /** sqlite3 / node-sqlite-shim 공통 부트스트랩 */
 function bootstrapSchema(db) {
     db.serialize(() => {
@@ -102,14 +143,17 @@ function bootstrapSchema(db) {
             }
         );
 
-        db.run(`CREATE TABLE IF NOT EXISTS info_reports (
+        db.run(
+            `CREATE TABLE IF NOT EXISTS info_reports (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             restaurant_id INTEGER,
             restaurant_name TEXT NOT NULL,
             message TEXT NOT NULL,
             status TEXT NOT NULL DEFAULT 'new',
             created_at TEXT NOT NULL
-        )`);
+        )`,
+            () => migrateInfoReportsAllowMultiple(db, () => {})
+        );
 
         db.run(`CREATE TABLE IF NOT EXISTS kiosk_settings (
             key TEXT PRIMARY KEY,

@@ -699,7 +699,15 @@ app.post('/api/info-reports', express.json(), (req, res) => {
         'INSERT INTO info_reports (restaurant_id, restaurant_name, message, status, created_at) VALUES (?, ?, ?, ?, ?)',
         [rid, restaurantName.slice(0, 200), message, 'new', createdAt],
         function(err) {
-            if (err) return res.status(500).json({ error: err.message });
+            if (err) {
+                if (/UNIQUE constraint failed/i.test(String(err.message))) {
+                    return res.status(500).json({
+                        error:
+                            'DB에 업체당 1건만 허용하는 제약이 남아 있습니다. 서버를 재시작해 마이그레이션을 적용하거나 관리자에게 문의하세요.',
+                    });
+                }
+                return res.status(500).json({ error: err.message });
+            }
             res.status(201).json({ ok: true, id: this.lastID });
         }
     );
