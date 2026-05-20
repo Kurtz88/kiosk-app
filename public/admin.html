@@ -934,13 +934,13 @@
             <div id="adminPanelReports" class="admin-panel" role="tabpanel" hidden>
                 <div class="category-admin-box" style="background:#fff4e6;border-color:#ffc078;">
                     <h3>틀린정보 신고</h3>
-                    <p class="hint">목록 화면(list.html)에서 사용자가 보낸 내용입니다. 같은 업체를 여러 번 신고하면 신고 번호(#)별로 각각 한 줄씩 표시됩니다(「추가」는 같은 업체의 후속 신고). 각 건마다 읽음·삭제할 수 있습니다.</p>
+                    <p class="hint">목록 화면(list.html)에서 사용자가 보낸 내용이 <strong>data/kiosk.sqlite</strong>에 저장됩니다. <strong>새로고침(F5)·「새로고침」버튼</strong>은 DB에서 다시 읽어 오는 것이지, 그때마다 새 신고가 생기는 것은 아닙니다. 확인한 뒤에는 「읽음」을 누르거나 삭제하세요. 같은 업체를 여러 번 신고하면 #번호별로 각각 한 줄씩 보입니다.</p>
                     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
                         <label style="display:flex;align-items:center;gap:8px;font-weight:600;">
                             필터
                             <select id="infoReportsFilter">
-                                <option value="all">전체</option>
                                 <option value="new">미확인</option>
+                                <option value="all">전체</option>
                                 <option value="read">확인함</option>
                             </select>
                         </label>
@@ -1382,6 +1382,9 @@
             }
             const rows = data.data || [];
             renderInfoReportsTable(rows);
+            if (statusEl && rows.length > 0) {
+                statusEl.textContent += ' · 새로고침은 저장된 목록을 다시 불러온 것입니다.';
+            }
             if (status !== 'new') refreshInfoReportsBadge().catch(() => {});
             else updateInfoReportsBadge(rows);
         }
