@@ -33,7 +33,9 @@ function printListenBanner() {
     console.log(box);
     console.log('   RESTAURANT KIOSK · 서버 준비됨');
     console.log(line);
-    console.log('   DB          ' + (db.dbFile || '') + ' · 영구 (틀린정보 신고 저장)');
+    const reportsFile = (db.infoReports && db.infoReports.dbFile) || path.join(__dirname, '..', 'data', 'kiosk.sqlite');
+    console.log('   DB(식당)    ' + (db.dbFile || '') + ' · 영구');
+    console.log('   DB(신고)    ' + reportsFile + ' · 영구');
     console.log('   이 PC       http://localhost:' + port + '/');
     if (lan) {
         console.log('   같은 Wi-Fi  http://' + lan + ':' + port + '/   관리자 /admin.html');

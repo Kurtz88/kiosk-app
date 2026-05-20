@@ -718,7 +718,9 @@ app.delete('/api/restaurants/:id', (req, res) => {
     });
 });
 
-/** 틀린정보 신고 (list.html) */
+/** 틀린정보 신고 (list.html) — 항상 data/kiosk.sqlite (db.infoReports) */
+const infoReportsDb = () => db.infoReports || db;
+
 app.post('/api/info-reports', express.json(), (req, res) => {
     const body = req.body || {};
     const restaurantName = body.restaurant_name != null ? String(body.restaurant_name).trim() : '';
@@ -729,7 +731,7 @@ app.post('/api/info-reports', express.json(), (req, res) => {
     const ridParsed = body.restaurant_id != null ? parseInt(body.restaurant_id, 10) : NaN;
     const rid = Number.isInteger(ridParsed) && ridParsed > 0 ? ridParsed : null;
     const createdAt = new Date().toISOString();
-    db.run(
+    infoReportsDb().run(
         'INSERT INTO info_reports (restaurant_id, restaurant_name, message, status, created_at) VALUES (?, ?, ?, ?, ?)',
         [rid, restaurantName.slice(0, 200), message, 'new', createdAt],
         function(err) {
@@ -743,7 +745,7 @@ app.post('/api/info-reports', express.json(), (req, res) => {
                 return res.status(500).json({ error: err.message });
             }
             const reportId = this.lastID;
-            const txtDir = db.dataDir || path.join(projectRoot, 'data');
+            const txtDir = infoReportsDb().dataDir || db.dataDir || path.join(projectRoot, 'data');
             appendInfoReportTxt(txtDir, {
                 reportId,
                 restaurantId: rid,
@@ -765,7 +767,7 @@ app.get('/api/info-reports', (req, res) => {
         params.push(status);
     }
     sql += ' ORDER BY datetime(created_at) DESC, id DESC';
-    db.all(sql, params, (err, rows) => {
+    infoReportsDb().all(sql, params, (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         const normalized = (rows || []).map((r) => {
             const id = parseInt(r.id, 10);
@@ -793,7 +795,7 @@ app.patch('/api/info-reports/:id', express.json(), (req, res) => {
     if (status !== 'new' && status !== 'read') {
         return res.status(400).json({ error: 'status는 new 또는 read 여야 합니다.' });
     }
-    db.run('UPDATE info_reports SET status = ? WHERE id = ?', [status, id], function(err) {
+    infoReportsDb().run('UPDATE info_reports SET status = ? WHERE id = ?', [status, id], function(err) {
         if (err) return res.status(500).json({ error: err.message });
         if (this.changes === 0) return res.status(404).json({ error: '신고를 찾을 수 없습니다.' });
         res.json({ ok: true });
@@ -803,7 +805,7 @@ app.patch('/api/info-reports/:id', express.json(), (req, res) => {
 app.delete('/api/info-reports/:id', (req, res) => {
     const id = parseInt(req.params.id, 10);
     if (Number.isNaN(id)) return res.status(400).json({ error: '잘못된 id' });
-    db.run('DELETE FROM info_reports WHERE id = ?', [id], function(err) {
+    infoReportsDb().run('DELETE FROM info_reports WHERE id = ?', [id], function(err) {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ ok: true, deleted: this.changes });
     });
@@ -1395,8 +1397,10 @@ function printListenBanner() {
     console.log('   RESTAURANT KIOSK · 서버 준비됨');
     console.log(line);
     const dbPath = db.dbFile || '(unknown)';
-    const dbNote = db.usesTmpDb ? ' · 임시(/tmp, 신고 등 유지 안 됨)' : ' · 영구 저장';
-    console.log('   DB          ' + dbPath + dbNote);
+    const dbNote = db.usesTmpDb ? ' · 식당 임시(/tmp)' : ' · 영구';
+    const reportsPath = (db.infoReports && db.infoReports.dbFile) || path.join(projectRoot, 'data', 'kiosk.sqlite');
+    console.log('   DB(식당)    ' + dbPath + dbNote);
+    console.log('   DB(신고)    ' + reportsPath + ' · 영구');
     console.log('   이 PC       http://localhost:' + port + '/');
     if (lan) {
         console.log('   같은 Wi-Fi  http://' + lan + ':' + port + '/   관리자 /admin.html');

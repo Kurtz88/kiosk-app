@@ -73,9 +73,8 @@ if (!fs.existsSync(dbFile) && legacyDb && fs.existsSync(legacyDb)) {
     }
 }
 
-/** vercel dev 등으로 /tmp에만 쌓인 틀린정보 신고를 data/kiosk.sqlite로 합침 */
+/** /tmp DB에만 쌓인 틀린정보 신고를 data/kiosk.sqlite로 합침 (Vercel·vercel dev 포함) */
 function migrateTmpReportsToPersistent(done) {
-    if (usesTmpDb) return done();
     if (!fs.existsSync(tmpDbFile)) return done();
 
     if (!fs.existsSync(persistentDbFile)) {
@@ -133,19 +132,90 @@ function migrateTmpReportsToPersistent(done) {
     });
 }
 
-let resolveReady;
-let rejectReady;
-const readyPromise = new Promise((resolve, reject) => {
-    resolveReady = resolve;
-    rejectReady = reject;
+let resolveMainReady;
+let rejectMainReady;
+let resolveReportsReady;
+let rejectReportsReady;
+const mainReadyPromise = new Promise((resolve, reject) => {
+    resolveMainReady = resolve;
+    rejectMainReady = reject;
+});
+const reportsReadyPromise = new Promise((resolve, reject) => {
+    resolveReportsReady = resolve;
+    rejectReportsReady = reject;
 });
 
-function markReady() {
-    kioskDb.get('SELECT COUNT(*) AS c FROM info_reports', [], (err, row) => {
-        if (!err && row && !usesTmpDb) {
-            console.log(`[kiosk] 틀린정보 신고(info_reports): ${row.c}건 → ${dbFile}`);
+function markMainReady() {
+    resolveMainReady();
+}
+
+/** 틀린정보 신고 전용 — 항상 data/kiosk.sqlite */
+const infoReportsDb = {
+    dbFile: persistentDbFile,
+    dataDir: persistentDataDir,
+};
+
+function attachInfoReportsConnection(conn) {
+    ['serialize', 'run', 'get', 'all', 'prepare'].forEach((method) => {
+        if (typeof conn[method] === 'function') {
+            infoReportsDb[method] = conn[method].bind(conn);
         }
-        resolveReady();
+    });
+}
+
+function bootstrapInfoReportsSchema(db, cb) {
+    const done = typeof cb === 'function' ? cb : () => {};
+    db.serialize(() => {
+        db.run(
+            `CREATE TABLE IF NOT EXISTS info_reports (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            restaurant_id INTEGER,
+            restaurant_name TEXT NOT NULL,
+            message TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'new',
+            created_at TEXT NOT NULL
+        )`,
+            () => migrateInfoReportsAllowMultiple(db, done)
+        );
+    });
+}
+
+function openInfoReportsDatabase() {
+    try {
+        if (!fs.existsSync(persistentDataDir)) fs.mkdirSync(persistentDataDir, { recursive: true });
+    } catch (e) {
+        console.error('persistentDataDir 생성 실패:', persistentDataDir, e.message);
+        rejectReportsReady(e);
+        return;
+    }
+    if (!fs.existsSync(persistentDbFile) && legacyDb && fs.existsSync(legacyDb)) {
+        try {
+            fs.copyFileSync(legacyDb, persistentDbFile);
+            console.log('[kiosk] DB 초기 복사(신고 DB):', legacyDb, '→', persistentDbFile);
+        } catch (e) {
+            console.error('신고 DB 복사 실패:', e.message);
+        }
+    }
+
+    const sqlite3 = require('sqlite3').verbose();
+    const conn = new sqlite3.Database(persistentDbFile, (err) => {
+        if (err) {
+            console.error('틀린정보 DB 열기 실패:', persistentDbFile, err.message);
+            rejectReportsReady(err);
+            return;
+        }
+        attachInfoReportsConnection(conn);
+        bootstrapInfoReportsSchema(infoReportsDb, () => {
+            infoReportsDb.get('SELECT COUNT(*) AS c FROM info_reports', [], (countErr, row) => {
+                if (!countErr && row) {
+                    console.log(
+                        `[kiosk] 틀린정보 신고(info_reports): ${row.c}건 → ${persistentDbFile}` +
+                            (usesTmpDb ? ' (식당 DB와 분리·영구)' : '')
+                    );
+                }
+                resolveReportsReady();
+            });
+        });
     });
 }
 
@@ -266,18 +336,6 @@ function bootstrapSchema(db) {
             }
         );
 
-        db.run(
-            `CREATE TABLE IF NOT EXISTS info_reports (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            restaurant_id INTEGER,
-            restaurant_name TEXT NOT NULL,
-            message TEXT NOT NULL,
-            status TEXT NOT NULL DEFAULT 'new',
-            created_at TEXT NOT NULL
-        )`,
-            () => migrateInfoReportsAllowMultiple(db, () => {})
-        );
-
         db.run(`CREATE TABLE IF NOT EXISTS kiosk_settings (
             key TEXT PRIMARY KEY,
             value TEXT NOT NULL
@@ -285,11 +343,11 @@ function bootstrapSchema(db) {
         db.run(`INSERT OR IGNORE INTO kiosk_settings (key, value) VALUES ('map_slot_assignments', '{}')`, (e2) => {
             if (e2) {
                 console.error('kiosk_settings 기본값:', e2.message);
-                rejectReady(e2);
+                rejectMainReady(e2);
                 return;
             }
             db.run(`INSERT OR IGNORE INTO kiosk_settings (key, value) VALUES ('map_slot_address_hints', '{}')`, () => {});
-            markReady();
+            markMainReady();
 
             db.all('PRAGMA table_info(restaurants)', [], (pragmaRErr, rCols) => {
                 if (pragmaRErr) return;
@@ -378,9 +436,10 @@ function bootstrapSchema(db) {
 }
 
 const kioskDb = {
-    ready: readyPromise,
+    ready: Promise.all([mainReadyPromise, reportsReadyPromise]),
     dbFile,
     usesTmpDb,
+    infoReports: infoReportsDb,
 };
 
 function attachSqliteConnection(conn) {
@@ -403,7 +462,7 @@ function openMainDatabase() {
             ({ DatabaseSync } = require('node:sqlite'));
         } catch (e) {
             console.error('node:sqlite 로드 실패 — Vercel 프로젝트 Node 버전을 22.5 이상으로 설정하세요.', e.message);
-            rejectReady(e);
+            rejectMainReady(e);
             return;
         }
         const { wrapDb } = require('./node-sqlite-shim');
@@ -413,7 +472,7 @@ function openMainDatabase() {
             bootstrapSchema(kioskDb);
         } catch (e) {
             console.error('Vercel SQLite 초기화 실패:', e);
-            rejectReady(e);
+            rejectMainReady(e);
         }
         return;
     }
@@ -422,7 +481,7 @@ function openMainDatabase() {
     const conn = new sqlite3.Database(dbFile, (err) => {
         if (err) {
             console.error('Error opening database', err.message);
-            rejectReady(err);
+            rejectMainReady(err);
             return;
         }
         attachSqliteConnection(conn);
@@ -430,9 +489,12 @@ function openMainDatabase() {
     });
 }
 
-migrateTmpReportsToPersistent(() => openMainDatabase());
+migrateTmpReportsToPersistent(() => {
+    openInfoReportsDatabase();
+    openMainDatabase();
+});
 
-kioskDb.dataDir = dataDir;
+kioskDb.dataDir = persistentDataDir;
 kioskDb.dbFile = dbFile;
 
 module.exports = kioskDb;
