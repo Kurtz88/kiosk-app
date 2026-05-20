@@ -384,6 +384,21 @@ function parseKioskHidden(v) {
     return 0;
 }
 
+/** SQLite 바인딩: undefined·NaN → null (node:sqlite / 폼 누락 필드 대비) */
+function sqlParams(values) {
+    return values.map((v) => {
+        if (v === undefined) return null;
+        if (typeof v === 'number' && Number.isNaN(v)) return null;
+        return v;
+    });
+}
+
+function optionalTextField(v) {
+    if (v == null) return null;
+    const s = String(v).trim();
+    return s === '' ? null : s;
+}
+
 const excelUpload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 10 * 1024 * 1024 },
@@ -469,33 +484,33 @@ app.post('/api/restaurants', cpUpload, (req, res) => {
         db.run(
             `INSERT INTO restaurants (name, name_en, category, subcategory, image_url, image_gallery, map_url, description, description_en, address, phone, homepage, menu_url, open_time, close_time, closed_days, tags, main_menu, walk_time, kiosk_hidden, dest_lat, dest_lng, naver_place_id, naver_place_url, display_order) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
+            sqlParams([
                 name,
-                name_en,
+                optionalTextField(name_en),
                 catN,
                 sub,
                 image_url,
                 image_gallery,
                 map_url,
-                description,
-                description_en,
+                optionalTextField(description),
+                optionalTextField(description_en),
                 address,
-                phone,
-                homepage,
+                optionalTextField(phone),
+                optionalTextField(homepage),
                 menu_url,
-                open_time,
-                close_time,
+                optionalTextField(open_time),
+                optionalTextField(close_time),
                 cd,
-                tags,
+                optionalTextField(tags),
                 mm,
-                walk_time || null,
+                optionalTextField(walk_time),
                 kh,
                 dLat,
                 dLng,
                 npid,
                 nurl,
-                nextOrder
-            ],
+                nextOrder,
+            ]),
             function(err) {
                 if (err) res.status(500).json({ error: err.message });
                 else res.json({ id: this.lastID });
@@ -563,7 +578,28 @@ app.put('/api/restaurants/:id', cpUpload, (req, res) => {
         'naver_place_id = ?',
         'naver_place_url = ?'
     ];
-    let params = [name, name_en, catU, sub, description, description_en, address, phone, homepage, open_time, close_time, cd, tags, mm, walk_time || null, kh, dLatU, dLngU, npidU, nurlU];
+    let params = sqlParams([
+        name,
+        optionalTextField(name_en),
+        catU,
+        sub,
+        optionalTextField(description),
+        optionalTextField(description_en),
+        address,
+        optionalTextField(phone),
+        optionalTextField(homepage),
+        optionalTextField(open_time),
+        optionalTextField(close_time),
+        cd,
+        optionalTextField(tags),
+        mm,
+        optionalTextField(walk_time),
+        kh,
+        dLatU,
+        dLngU,
+        npidU,
+        nurlU,
+    ]);
 
     const g = buildGalleryUrlsFromManifest(req.body, files, name);
     if (g.error) return res.status(400).json({ error: g.error });
@@ -586,7 +622,7 @@ app.put('/api/restaurants/:id', cpUpload, (req, res) => {
 
     params.push(req.params.id);
 
-    db.run(`UPDATE restaurants SET ${updates.join(', ')} WHERE id = ?`, params, function(err) {
+    db.run(`UPDATE restaurants SET ${updates.join(', ')} WHERE id = ?`, sqlParams(params), function(err) {
         if (err) res.status(500).json({ error: err.message });
         else res.json({ updated: this.changes });
     });

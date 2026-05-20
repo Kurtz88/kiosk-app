@@ -19,6 +19,15 @@ function parseArgs(args) {
     return { bind, cb };
 }
 
+/** node:sqlite는 undefined 바인딩 불가 — null로 통일 */
+function sanitizeBindValues(bind) {
+    return bind.map((v) => {
+        if (v === undefined) return null;
+        if (typeof v === 'number' && Number.isNaN(v)) return null;
+        return v;
+    });
+}
+
 function wrapDb(database) {
     function serialize(fn) {
         try {
@@ -33,7 +42,7 @@ function wrapDb(database) {
         const { bind, cb } = parseArgs(args);
         try {
             const stmt = database.prepare(sql);
-            const result = stmt.run(...bind);
+            const result = stmt.run(...sanitizeBindValues(bind));
             const ctx = {
                 lastID: Number(result?.lastInsertRowid ?? 0),
                 changes: Number(result?.changes ?? 0),
@@ -49,7 +58,7 @@ function wrapDb(database) {
         const { bind, cb } = parseArgs(args);
         try {
             const stmt = database.prepare(sql);
-            const row = stmt.get(...bind);
+            const row = stmt.get(...sanitizeBindValues(bind));
             if (cb) cb(null, row);
         } catch (err) {
             if (cb) cb(err);
@@ -61,7 +70,7 @@ function wrapDb(database) {
         const { bind, cb } = parseArgs(args);
         try {
             const stmt = database.prepare(sql);
-            const rows = stmt.all(...bind);
+            const rows = stmt.all(...sanitizeBindValues(bind));
             if (cb) cb(null, rows);
         } catch (err) {
             if (cb) cb(err);
