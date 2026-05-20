@@ -684,6 +684,65 @@ app.delete('/api/restaurants/:id', (req, res) => {
     });
 });
 
+/** 틀린정보 신고 (list.html) */
+app.post('/api/info-reports', express.json(), (req, res) => {
+    const body = req.body || {};
+    const restaurantId = body.restaurant_id != null ? parseInt(body.restaurant_id, 10) : null;
+    const restaurantName = body.restaurant_name != null ? String(body.restaurant_name).trim() : '';
+    const message = body.message != null ? String(body.message).trim() : '';
+    if (!restaurantName) return res.status(400).json({ error: '식당명이 필요합니다.' });
+    if (message.length < 2) return res.status(400).json({ error: '내용을 2자 이상 입력해 주세요.' });
+    if (message.length > 2000) return res.status(400).json({ error: '내용은 2000자 이하로 입력해 주세요.' });
+    const rid = Number.isFinite(restaurantId) ? restaurantId : null;
+    const createdAt = new Date().toISOString();
+    db.run(
+        'INSERT INTO info_reports (restaurant_id, restaurant_name, message, status, created_at) VALUES (?, ?, ?, ?, ?)',
+        [rid, restaurantName.slice(0, 200), message, 'new', createdAt],
+        function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.status(201).json({ ok: true, id: this.lastID });
+        }
+    );
+});
+
+app.get('/api/info-reports', (req, res) => {
+    const status = req.query.status != null ? String(req.query.status).trim() : '';
+    let sql = 'SELECT id, restaurant_id, restaurant_name, message, status, created_at FROM info_reports';
+    const params = [];
+    if (status && status !== 'all') {
+        sql += ' WHERE status = ?';
+        params.push(status);
+    }
+    sql += ' ORDER BY datetime(created_at) DESC, id DESC';
+    db.all(sql, params, (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ data: rows || [] });
+    });
+});
+
+app.patch('/api/info-reports/:id', express.json(), (req, res) => {
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: '잘못된 id' });
+    const status = req.body && req.body.status != null ? String(req.body.status).trim() : '';
+    if (status !== 'new' && status !== 'read') {
+        return res.status(400).json({ error: 'status는 new 또는 read 여야 합니다.' });
+    }
+    db.run('UPDATE info_reports SET status = ? WHERE id = ?', [status, id], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        if (this.changes === 0) return res.status(404).json({ error: '신고를 찾을 수 없습니다.' });
+        res.json({ ok: true });
+    });
+});
+
+app.delete('/api/info-reports/:id', (req, res) => {
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: '잘못된 id' });
+    db.run('DELETE FROM info_reports WHERE id = ?', [id], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ ok: true, deleted: this.changes });
+    });
+});
+
 // Categories
 app.get('/api/categories', (req, res) => {
     db.all(

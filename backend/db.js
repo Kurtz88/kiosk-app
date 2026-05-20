@@ -102,6 +102,15 @@ function bootstrapSchema(db) {
             }
         );
 
+        db.run(`CREATE TABLE IF NOT EXISTS info_reports (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            restaurant_id INTEGER,
+            restaurant_name TEXT NOT NULL,
+            message TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'new',
+            created_at TEXT NOT NULL
+        )`);
+
         db.run(`CREATE TABLE IF NOT EXISTS kiosk_settings (
             key TEXT PRIMARY KEY,
             value TEXT NOT NULL

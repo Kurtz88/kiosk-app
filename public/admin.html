@@ -254,6 +254,21 @@
         }
         .admin-tab:hover { color: #495057; background: #f8f9fa; }
         .admin-tab.active { color: #c92a2a; border-bottom-color: #ff5e62; background: #fff5f5; }
+        .admin-reports-badge {
+            display: inline-block;
+            min-width: 1.2em;
+            padding: 2px 6px;
+            margin-left: 4px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            line-height: 1.2;
+            color: #fff;
+            background: #fa5252;
+            border-radius: 999px;
+            vertical-align: middle;
+        }
+        #infoReportsTable tr.info-report-row-new td { background: #fff5f5; }
+        #infoReportsTable .info-report-msg { white-space: pre-wrap; max-width: 420px; font-size: 0.88rem; line-height: 1.45; }
         .admin-panel[hidden] { display: none !important; }
         .dashboard.categories-only .list-section { flex: 1; max-width: 100%; }
         /* 지도 탭 — 드래그로 건물에 배치 */
@@ -771,6 +786,7 @@
                 <button type="button" class="admin-tab active" role="tab" aria-selected="true" data-admin-tab="restaurants" id="tabBtnRestaurants">음식점 목록</button>
                 <button type="button" class="admin-tab" role="tab" aria-selected="false" data-admin-tab="categories" id="tabBtnCategories">카테고리</button>
                 <button type="button" class="admin-tab" role="tab" aria-selected="false" data-admin-tab="map" id="tabBtnMap">지도 구역</button>
+                <button type="button" class="admin-tab" role="tab" aria-selected="false" data-admin-tab="reports" id="tabBtnReports">틀린정보 신고 <span id="infoReportsBadge" class="admin-reports-badge" hidden></span></button>
             </div>
 
             <div id="adminPanelRestaurants" class="admin-panel" role="tabpanel">
@@ -908,6 +924,39 @@
                     </div>
                     <button type="button" class="submit-btn" id="mapSlotSaveBtn" style="margin-top:16px;background:#20c997;">선택한 구역에 저장</button>
                     <p id="mapSlotStatus" role="status" style="margin-top:12px;font-size:0.9rem;"></p>
+                </div>
+            </div>
+
+            <div id="adminPanelReports" class="admin-panel" role="tabpanel" hidden>
+                <div class="category-admin-box" style="background:#fff4e6;border-color:#ffc078;">
+                    <h3>틀린정보 신고</h3>
+                    <p class="hint">목록 화면(list.html)에서 사용자가 보낸 내용입니다. 확인 후 읽음 처리하거나 삭제할 수 있습니다.</p>
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+                        <label style="display:flex;align-items:center;gap:8px;font-weight:600;">
+                            필터
+                            <select id="infoReportsFilter">
+                                <option value="all">전체</option>
+                                <option value="new">미확인</option>
+                                <option value="read">확인함</option>
+                            </select>
+                        </label>
+                        <button type="button" class="action-btn edit-btn" id="infoReportsRefreshBtn">새로고침</button>
+                    </div>
+                    <div style="overflow-x:auto; max-height:60vh; border:1px solid #ffd8a8; border-radius:10px; background:#fff;">
+                        <table id="infoReportsTable" style="width:100%; border-collapse:collapse; font-size:0.88rem;">
+                            <thead>
+                                <tr style="background:#ffe8cc;">
+                                    <th style="text-align:left;padding:8px 10px;width:52px;">상태</th>
+                                    <th style="text-align:left;padding:8px 10px;min-width:120px;">식당</th>
+                                    <th style="text-align:left;padding:8px 10px;">내용</th>
+                                    <th style="text-align:left;padding:8px 10px;width:140px;">접수일</th>
+                                    <th style="text-align:left;padding:8px 10px;width:120px;">처리</th>
+                                </tr>
+                            </thead>
+                            <tbody id="infoReportsTbody"></tbody>
+                        </table>
+                    </div>
+                    <p id="infoReportsStatus" role="status" style="margin-top:12px;font-size:0.9rem;"></p>
                 </div>
             </div>
 
@@ -1080,15 +1129,19 @@
             const isRest = which === 'restaurants';
             const isCat = which === 'categories';
             const isMap = which === 'map';
+            const isReports = which === 'reports';
             const pRest = document.getElementById('adminPanelRestaurants');
             const pCat = document.getElementById('adminPanelCategories');
             const pMap = document.getElementById('adminPanelMap');
+            const pReports = document.getElementById('adminPanelReports');
             const bRest = document.getElementById('tabBtnRestaurants');
             const bCat = document.getElementById('tabBtnCategories');
             const bMap = document.getElementById('tabBtnMap');
+            const bReports = document.getElementById('tabBtnReports');
             if (pRest) pRest.hidden = !isRest;
             if (pCat) pCat.hidden = !isCat;
             if (pMap) pMap.hidden = !isMap;
+            if (pReports) pReports.hidden = !isReports;
             if (bRest) {
                 bRest.classList.toggle('active', isRest);
                 bRest.setAttribute('aria-selected', isRest ? 'true' : 'false');
@@ -1101,10 +1154,15 @@
                 bMap.classList.toggle('active', isMap);
                 bMap.setAttribute('aria-selected', isMap ? 'true' : 'false');
             }
+            if (bReports) {
+                bReports.classList.toggle('active', isReports);
+                bReports.setAttribute('aria-selected', isReports ? 'true' : 'false');
+            }
             const title = document.getElementById('adminMainTitle');
             if (title) {
                 if (isRest) title.textContent = '등록된 식당 목록';
                 else if (isCat) title.textContent = '카테고리';
+                else if (isReports) title.textContent = '틀린정보 신고';
                 else title.textContent = '지도 구역 설정';
             }
             if (!isRest && restaurantFormVisible) {
@@ -1112,6 +1170,9 @@
             }
             const dash = document.getElementById('adminDashboard');
             if (dash) dash.classList.toggle('categories-only', !isRest);
+            if (isReports) {
+                fetchInfoReports().catch(() => {});
+            }
             if (isMap) {
                 ensureAdminMapEmbed()
                     .then(() => fetchMapAssignments())
@@ -1146,9 +1207,153 @@
             const br = document.getElementById('tabBtnRestaurants');
             const bc = document.getElementById('tabBtnCategories');
             const bm = document.getElementById('tabBtnMap');
+            const brep = document.getElementById('tabBtnReports');
             if (br) br.addEventListener('click', () => setAdminTab('restaurants'));
             if (bc) bc.addEventListener('click', () => setAdminTab('categories'));
             if (bm) bm.addEventListener('click', () => setAdminTab('map'));
+            if (brep) brep.addEventListener('click', () => setAdminTab('reports'));
+        }
+
+        function formatInfoReportDate(iso) {
+            if (!iso) return '—';
+            const d = new Date(iso);
+            if (Number.isNaN(d.getTime())) return String(iso);
+            const pad = (n) => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+
+        function updateInfoReportsBadge(rows) {
+            const badge = document.getElementById('infoReportsBadge');
+            if (!badge) return;
+            const newCount = (rows || []).filter((r) => r.status === 'new').length;
+            if (newCount > 0) {
+                badge.hidden = false;
+                badge.textContent = String(newCount);
+            } else {
+                badge.hidden = true;
+                badge.textContent = '';
+            }
+        }
+
+        async function refreshInfoReportsBadge() {
+            try {
+                const { ok, data } = await fetchJson('/api/info-reports?status=new');
+                if (!ok) return;
+                updateInfoReportsBadge(data.data || []);
+            } catch (_) {}
+        }
+
+        function renderInfoReportsTable(rows) {
+            const tbody = document.getElementById('infoReportsTbody');
+            const statusEl = document.getElementById('infoReportsStatus');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            if (!rows || rows.length === 0) {
+                if (statusEl) statusEl.textContent = '신고 내역이 없습니다.';
+                return;
+            }
+            if (statusEl) statusEl.textContent = `총 ${rows.length}건`;
+            rows.forEach((row) => {
+                const tr = document.createElement('tr');
+                if (row.status === 'new') tr.className = 'info-report-row-new';
+                const isNew = row.status === 'new';
+                const statusLabel = isNew ? '미확인' : '확인';
+                const name = row.restaurant_name || '(이름 없음)';
+                const msg = row.message || '';
+                const dateStr = formatInfoReportDate(row.created_at);
+                const actions = document.createElement('td');
+                actions.style.padding = '8px 10px';
+                actions.style.whiteSpace = 'nowrap';
+                if (isNew) {
+                    const readBtn = document.createElement('button');
+                    readBtn.type = 'button';
+                    readBtn.className = 'action-btn edit-btn';
+                    readBtn.textContent = '읽음';
+                    readBtn.addEventListener('click', () => patchInfoReportStatus(row.id, 'read'));
+                    actions.appendChild(readBtn);
+                } else {
+                    const newBtn = document.createElement('button');
+                    newBtn.type = 'button';
+                    newBtn.className = 'action-btn edit-btn';
+                    newBtn.style.background = '#868e96';
+                    newBtn.textContent = '미확인';
+                    newBtn.addEventListener('click', () => patchInfoReportStatus(row.id, 'new'));
+                    actions.appendChild(newBtn);
+                }
+                const delBtn = document.createElement('button');
+                delBtn.type = 'button';
+                delBtn.className = 'action-btn delete-btn';
+                delBtn.style.marginLeft = '4px';
+                delBtn.textContent = '삭제';
+                delBtn.addEventListener('click', () => deleteInfoReport(row.id, name));
+                actions.appendChild(delBtn);
+                tr.innerHTML = `
+                    <td style="padding:8px 10px;font-weight:700;color:${isNew ? '#c92a2a' : '#495057'};">${statusLabel}</td>
+                    <td style="padding:8px 10px;">${escapeHtmlAdmin(name)}</td>
+                    <td class="info-report-msg" style="padding:8px 10px;">${escapeHtmlAdmin(msg)}</td>
+                    <td style="padding:8px 10px;white-space:nowrap;">${escapeHtmlAdmin(dateStr)}</td>
+                `;
+                tr.appendChild(actions);
+                tbody.appendChild(tr);
+            });
+        }
+
+        function escapeHtmlAdmin(s) {
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        async function fetchInfoReports() {
+            const filter = document.getElementById('infoReportsFilter');
+            const status = filter && filter.value ? filter.value : 'all';
+            const url =
+                status === 'all' ? '/api/info-reports' : '/api/info-reports?status=' + encodeURIComponent(status);
+            const statusEl = document.getElementById('infoReportsStatus');
+            if (statusEl) statusEl.textContent = '불러오는 중…';
+            const { ok, data } = await fetchJson(url);
+            if (!ok) {
+                if (statusEl) statusEl.textContent = (data && data.error) || '목록을 불러오지 못했습니다.';
+                return;
+            }
+            const rows = data.data || [];
+            renderInfoReportsTable(rows);
+            if (status !== 'new') refreshInfoReportsBadge().catch(() => {});
+            else updateInfoReportsBadge(rows);
+        }
+
+        async function patchInfoReportStatus(id, status) {
+            const { ok, data } = await fetchJson('/api/info-reports/' + id, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status }),
+            });
+            if (!ok) {
+                alert((data && data.error) || '상태 변경에 실패했습니다.');
+                return;
+            }
+            await fetchInfoReports();
+            refreshInfoReportsBadge().catch(() => {});
+        }
+
+        async function deleteInfoReport(id, name) {
+            if (!confirm('「' + name + '」 신고를 삭제할까요?')) return;
+            const { ok, data } = await fetchJson('/api/info-reports/' + id, { method: 'DELETE' });
+            if (!ok) {
+                alert((data && data.error) || '삭제에 실패했습니다.');
+                return;
+            }
+            await fetchInfoReports();
+            refreshInfoReportsBadge().catch(() => {});
+        }
+
+        function setupInfoReportsAdmin() {
+            const filter = document.getElementById('infoReportsFilter');
+            const refreshBtn = document.getElementById('infoReportsRefreshBtn');
+            if (filter) filter.addEventListener('change', () => fetchInfoReports().catch(() => {}));
+            if (refreshBtn) refreshBtn.addEventListener('click', () => fetchInfoReports().catch(() => {}));
         }
 
         function fillMapSlotSelect() {
@@ -1738,7 +1943,9 @@
         document.addEventListener('DOMContentLoaded', () => {
             setupAdminTabs();
             setupMapAdminPanel();
+            setupInfoReportsAdmin();
             fetchAdminList();
+            refreshInfoReportsBadge().catch(() => {});
             fetchCategoriesAdmin().catch(() => {});
             setupCategoryIconForm();
             setupImagePreviews();

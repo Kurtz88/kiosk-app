@@ -561,6 +561,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadKioskData();
     setupSearch();
     if (IS_HOME || IS_LIST) setupKioskKeyboardModal();
+    if (IS_LIST) setupInfoReportModal();
     setupCategoryTabsDelegation();
     setupSubcategoryTabsDelegation();
     setupIdleTimer();
@@ -1194,6 +1195,10 @@ function renderList(list, containerOverride, emptyMessage) {
             ? `<div class="list-tel-row list-menu-row tel"><span class="list-menu-num">🍴 ${menuText}</span></div>`
             : '';
 
+        const reportRowHtml = IS_LIST
+            ? `<div class="list-tel-row list-report-row"><button type="button" class="list-report-btn">틀린정보 신고하기</button></div>`
+            : '';
+
         row.innerHTML = `
             <div class="thumb" style="position:relative;">
                 <img src="${imgSrc}" alt="${displayName}" loading="lazy">
@@ -1202,6 +1207,7 @@ function renderList(list, containerOverride, emptyMessage) {
                 <div class="name">${displayName}</div>
                 <div class="desc desc-one-line${descMuted}">${descOneLine}</div>
                 ${menuRow}
+                ${reportRowHtml}
                 <div class="list-tel-row${telMuted} tel"> <span class="list-tel-num"> 📱 ${telText}</span>
                 </div>
                 ${hoursRow}
@@ -1209,6 +1215,15 @@ function renderList(list, containerOverride, emptyMessage) {
 
             </div>
         `;
+        if (IS_LIST) {
+            const reportBtn = row.querySelector('.list-report-btn');
+            if (reportBtn) {
+                reportBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    openInfoReportModal(item);
+                });
+            }
+        }
         target.appendChild(row);
     });
 }
@@ -1719,6 +1734,98 @@ function closeMap() {
     document.getElementById('map-overlay')?.classList.remove('active');
 }
 
+// =============================================================================
+// list.html — 틀린정보 신고
+// =============================================================================
+
+let infoReportPendingItem = null;
+
+function openInfoReportModal(item) {
+    infoReportPendingItem = item;
+    const overlay = document.getElementById('info-report-overlay');
+    const storeEl = document.getElementById('infoReportStoreName');
+    const msgEl = document.getElementById('infoReportMessage');
+    const statusEl = document.getElementById('infoReportStatus');
+    if (!overlay) return;
+    if (storeEl) storeEl.textContent = item && item.name ? String(item.name) : '';
+    if (msgEl) {
+        msgEl.value = '';
+        msgEl.disabled = false;
+    }
+    if (statusEl) statusEl.textContent = '';
+    const submitBtn = document.getElementById('infoReportSubmit');
+    if (submitBtn) submitBtn.disabled = false;
+    overlay.classList.add('active');
+    overlay.setAttribute('aria-hidden', 'false');
+    if (msgEl) msgEl.focus();
+}
+
+function closeInfoReportModal() {
+    const overlay = document.getElementById('info-report-overlay');
+    if (overlay) {
+        overlay.classList.remove('active');
+        overlay.setAttribute('aria-hidden', 'true');
+    }
+    infoReportPendingItem = null;
+}
+
+async function submitInfoReport() {
+    const item = infoReportPendingItem;
+    const msgEl = document.getElementById('infoReportMessage');
+    const statusEl = document.getElementById('infoReportStatus');
+    const submitBtn = document.getElementById('infoReportSubmit');
+    const message = msgEl ? String(msgEl.value || '').trim() : '';
+    if (!item) {
+        if (statusEl) statusEl.textContent = '식당 정보를 찾을 수 없습니다.';
+        return;
+    }
+    if (message.length < 2) {
+        if (statusEl) statusEl.textContent = '내용을 2자 이상 입력해 주세요.';
+        return;
+    }
+    if (submitBtn) submitBtn.disabled = true;
+    if (statusEl) statusEl.textContent = '보내는 중…';
+    try {
+        const res = await fetch('/api/info-reports', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                restaurant_id: item.id,
+                restaurant_name: item.name || '',
+                message,
+            }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            if (statusEl) statusEl.textContent = (data && data.error) || '전송에 실패했습니다.';
+            if (submitBtn) submitBtn.disabled = false;
+            return;
+        }
+        if (statusEl) statusEl.textContent = '접수되었습니다. 감사합니다.';
+        if (msgEl) {
+            msgEl.value = '';
+            msgEl.disabled = true;
+        }
+        setTimeout(() => closeInfoReportModal(), 1400);
+    } catch (_) {
+        if (statusEl) statusEl.textContent = '네트워크 오류로 전송하지 못했습니다.';
+        if (submitBtn) submitBtn.disabled = false;
+    }
+}
+
+function setupInfoReportModal() {
+    const overlay = document.getElementById('info-report-overlay');
+    const cancelBtn = document.getElementById('infoReportCancel');
+    const submitBtn = document.getElementById('infoReportSubmit');
+    if (cancelBtn) cancelBtn.addEventListener('click', closeInfoReportModal);
+    if (submitBtn) submitBtn.addEventListener('click', () => submitInfoReport());
+    if (overlay) {
+        overlay.addEventListener('pointerdown', (e) => {
+            if (e.target === overlay) closeInfoReportModal();
+        });
+    }
+}
+
 function openMenuInfo(menuUrl) {
     const img = document.getElementById('full-menu-img');
     const ov = document.getElementById('menu-overlay');
@@ -1743,7 +1850,7 @@ let idleTimer;
 function resetIdleTimer() {
     clearTimeout(idleTimer);
     idleTimer = setTimeout(() => {
-        closeModal(); closeMap(); closeMenuInfo(); closeBuildingFloorModal();
+        closeModal(); closeMap(); closeMenuInfo(); closeInfoReportModal(); closeBuildingFloorModal();
         window.location.assign('/index.html');
     }, KIOSK_IDLE_MS_TO_HOME);
 }

@@ -1421,3 +1421,122 @@ html[data-kiosk-page='list'] #searchInput[readonly] {
 .clear-btn:active {
     color: var(--pink);
 }
+
+/* list.html — 틀린정보 신고 */
+.list-store .list-report-row {
+    margin: 0;
+    padding: 2px 0 4px;
+}
+
+.list-store .list-report-btn {
+    display: inline-block;
+    padding: 4px 10px;
+    font-size: clamp(0.62rem, 2.1cqh, 0.78rem);
+    font-weight: 600;
+    color: #868e96;
+    background: transparent;
+    border: 1px solid #dee2e6;
+    border-radius: 999px;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.list-store .list-report-btn:active {
+    color: var(--pink);
+    border-color: var(--pink);
+    background: var(--pink-glow);
+}
+
+.info-report-overlay {
+    z-index: 2100;
+}
+
+.info-report-panel {
+    width: min(92vw, 520px);
+    max-height: 85vh;
+    overflow-y: auto;
+    background: var(--bg-card, #fff);
+    border-radius: clamp(12px, 2cqh, 20px);
+    padding: clamp(16px, 3cqh, 24px);
+    box-shadow: var(--sh-card, 0 12px 40px rgba(0, 0, 0, 0.15));
+    box-sizing: border-box;
+}
+
+.info-report-title {
+    margin: 0 0 8px;
+    font-size: clamp(1rem, 3.2cqh, 1.25rem);
+    font-weight: 800;
+    color: var(--text-900, #212529);
+}
+
+.info-report-store {
+    margin: 0 0 8px;
+    font-weight: 700;
+    color: var(--pink, #e64980);
+    font-size: clamp(0.9rem, 2.8cqh, 1.05rem);
+}
+
+.info-report-hint {
+    margin: 0 0 12px;
+    font-size: clamp(0.75rem, 2.4cqh, 0.88rem);
+    color: var(--text-500, #868e96);
+    line-height: 1.45;
+}
+
+.info-report-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px;
+    border: 1.5px solid #e5e5e8;
+    border-radius: 12px;
+    font-size: clamp(0.85rem, 2.6cqh, 1rem);
+    font-family: inherit;
+    resize: vertical;
+    min-height: 120px;
+}
+
+.info-report-textarea:focus {
+    outline: none;
+    border-color: var(--pink, #e64980);
+    box-shadow: 0 0 0 3px var(--pink-glow, rgba(230, 73, 128, 0.15));
+}
+
+.info-report-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 14px;
+}
+
+.info-report-btn {
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-size: clamp(0.85rem, 2.5cqh, 0.95rem);
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.info-report-btn-cancel {
+    background: #f1f3f5;
+    color: #495057;
+}
+
+.info-report-btn-submit {
+    background: var(--pink, #e64980);
+    color: #fff;
+}
+
+.info-report-btn-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.info-report-status {
+    margin: 12px 0 0;
+    min-height: 1.2em;
+    font-size: clamp(0.8rem, 2.4cqh, 0.9rem);
+    color: var(--text-700, #495057);
+    text-align: center;
+}
