@@ -722,7 +722,20 @@ app.delete('/api/restaurants/:id', (req, res) => {
 /** 틀린정보 신고 (list.html) — 항상 data/kiosk.sqlite (db.infoReports) */
 const infoReportsDb = () => db.infoReports || db;
 
-app.post('/api/info-reports', express.json(), (req, res) => {
+function runInfoReportInsert(row) {
+    return new Promise((resolve, reject) => {
+        infoReportsDb().run(
+            'INSERT INTO info_reports (restaurant_id, restaurant_name, message, status, created_at) VALUES (?, ?, ?, ?, ?)',
+            row,
+            function (err) {
+                if (err) reject(err);
+                else resolve(this.lastID);
+            }
+        );
+    });
+}
+
+app.post('/api/info-reports', express.json(), async (req, res) => {
     const body = req.body || {};
     const restaurantName = body.restaurant_name != null ? String(body.restaurant_name).trim() : '';
     const message = body.message != null ? String(body.message).trim() : '';
@@ -732,44 +745,43 @@ app.post('/api/info-reports', express.json(), (req, res) => {
     const ridParsed = body.restaurant_id != null ? parseInt(body.restaurant_id, 10) : NaN;
     const rid = Number.isInteger(ridParsed) && ridParsed > 0 ? ridParsed : null;
     const createdAt = new Date().toISOString();
-    infoReportsDb().run(
-        'INSERT INTO info_reports (restaurant_id, restaurant_name, message, status, created_at) VALUES (?, ?, ?, ?, ?)',
-        [rid, restaurantName.slice(0, 200), message, 'new', createdAt],
-        function(err) {
-            if (err) {
-                if (/UNIQUE constraint failed/i.test(String(err.message))) {
-                    return res.status(500).json({
-                        error:
-                            'DB에 업체당 1건만 허용하는 제약이 남아 있습니다. 서버를 재시작해 마이그레이션을 적용하거나 관리자에게 문의하세요.',
-                    });
-                }
-                return res.status(500).json({ error: err.message });
-            }
-            const reportId = this.lastID;
-            const txtDir = infoReportsDb().dataDir || db.dataDir || path.join(projectRoot, 'data');
-            appendInfoReportTxt(txtDir, {
-                reportId,
-                restaurantId: rid,
-                restaurantName: restaurantName.slice(0, 200),
-                message,
-                createdAt,
-            }).catch(() => {});
-            sendInfoReportEmail({
-                reportId,
-                restaurantId: rid,
-                restaurantName: restaurantName.slice(0, 200),
-                message,
-                createdAt,
-            }).then((mailResult) => {
-                if (mailResult && !mailResult.ok && !mailResult.skipped) {
-                    console.error('[kiosk] 틀린정보 메일:', mailResult.error || 'unknown');
-                }
-            }).catch((mailErr) => {
-                console.error('[kiosk] 틀린정보 메일 예외:', mailErr && mailErr.message ? mailErr.message : mailErr);
+    const storeName = restaurantName.slice(0, 200);
+
+    let reportId;
+    try {
+        reportId = await runInfoReportInsert([rid, storeName, message, 'new', createdAt]);
+    } catch (err) {
+        if (/UNIQUE constraint failed/i.test(String(err.message))) {
+            return res.status(500).json({
+                error:
+                    'DB에 업체당 1건만 허용하는 제약이 남아 있습니다. 서버를 재시작해 마이그레이션을 적용하거나 관리자에게 문의하세요.',
             });
-            res.status(201).json({ ok: true, id: reportId });
         }
-    );
+        return res.status(500).json({ error: err.message });
+    }
+
+    const mailPayload = {
+        reportId,
+        restaurantId: rid,
+        restaurantName: storeName,
+        message,
+        createdAt,
+    };
+
+    const txtDir = infoReportsDb().dataDir || db.dataDir || path.join(projectRoot, 'data');
+    appendInfoReportTxt(txtDir, mailPayload).catch(() => {});
+
+    /* Vercel: 응답 전에 메일 전송 완료 (백그라운드 작업이 끊기지 않도록) */
+    const mailResult = await sendInfoReportEmail(mailPayload);
+    if (!mailResult.ok && !mailResult.skipped) {
+        console.error('[kiosk] 틀린정보 메일:', mailResult.error || 'unknown');
+    }
+
+    res.status(201).json({
+        ok: true,
+        id: reportId,
+        mailSent: !!mailResult.ok,
+    });
 });
 
 app.get('/api/info-reports', (req, res) => {
