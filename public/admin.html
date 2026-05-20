@@ -740,6 +740,7 @@
 </head>
 <body>
     <script src="js/disable-pinch-zoom.js?v=20260512"></script>
+    <script src="js/kiosk-upload-url.js?v=202605201800"></script>
     <div id="adminAccessGate" role="dialog" aria-modal="true" aria-labelledby="adminAccessTitle">
         <div class="admin-gate-box">
             <h1 id="adminAccessTitle">관리자 접속</h1>
@@ -2396,9 +2397,7 @@
                 const src = item.file
                     ? item.blobUrl
                     : item.url
-                      ? item.url.startsWith('/')
-                          ? item.url
-                          : '/' + String(item.url).replace(/^\//, '')
+                      ? resolveKioskImageUrl(item.url)
                       : '';
                 const li = document.createElement('li');
                 li.className = 'hero-gallery-item';
@@ -2512,15 +2511,19 @@
             if (item && item.image_gallery) {
                 try {
                     const p = JSON.parse(item.image_gallery);
-                    if (Array.isArray(p) && p.length) urls = p.map((u) => String(u).trim()).filter(Boolean);
+                    if (Array.isArray(p) && p.length) {
+                        urls = p
+                            .map((u) => resolveKioskImageUrl(String(u).trim()))
+                            .filter(Boolean);
+                    }
                 } catch (e) {}
             }
             if (urls.length === 0 && item && item.image_url) {
                 const u = String(item.image_url).trim();
-                if (u) urls = [u.startsWith('/') ? u : '/' + u.replace(/^\//, '')];
+                if (u) urls = [u];
             }
             urls.slice(0, HERO_GALLERY_MAX).forEach((u) => {
-                heroGalleryItems.push({ uid: heroGalleryUid(), url: u });
+                heroGalleryItems.push({ uid: heroGalleryUid(), url: resolveKioskImageUrl(u) });
             });
             renderHeroGallery();
         }
@@ -2548,7 +2551,7 @@
         function showPreviewFromUrl(inputId, url) {
             const img = document.getElementById(inputId + 'Preview');
             if (!img || !url) return;
-            img.src = url;
+            img.src = resolveKioskImageUrl(url);
             setPreviewVisible(inputId, true);
         }
 
@@ -2628,7 +2631,8 @@
         function fetchAdminList() {
             return fetchJson('/api/restaurants')
                 .then(({ data }) => {
-                    adminData = Array.isArray(data.data) ? data.data.slice() : [];
+                    const rows = Array.isArray(data.data) ? data.data : [];
+                    adminData = rows.map((r) => normalizeRestaurantMediaUrls(r));
                     renderAdminList(adminData);
                     const pMap = document.getElementById('adminPanelMap');
                     if (pMap && !pMap.hidden) {
@@ -2652,12 +2656,12 @@
                     const p = JSON.parse(item.image_gallery);
                     if (Array.isArray(p) && p.length) {
                         const s = String(p[0] != null ? p[0] : '').trim();
-                        if (s) return s;
+                        if (s) return resolveKioskImageUrl(s);
                     }
                 } catch (e) {}
             }
             const u = item.image_url != null ? String(item.image_url).trim() : '';
-            return u;
+            return u ? resolveKioskImageUrl(u) : '';
         }
 
         function renderAdminList(list) {
