@@ -283,6 +283,28 @@ function escapeAttr(s) {
     return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 }
 
+/** DB /uploads/… → iniini 직접 (API 프록시 없이) */
+const KIOSK_UPLOADS_INIINI_BASE = 'http://iniini.co.kr/kiosk/uploads';
+
+function encodeKioskUploadPathSegment(seg) {
+    if (!seg) return seg;
+    try {
+        return encodeURIComponent(decodeURIComponent(String(seg)));
+    } catch {
+        return encodeURIComponent(String(seg));
+    }
+}
+
+function kioskUploadRelToIniiniUrl(relPath) {
+    const encoded = String(relPath || '')
+        .split('/')
+        .filter((seg) => seg.length > 0)
+        .map((seg) => encodeKioskUploadPathSegment(seg))
+        .join('/');
+    if (!encoded) return '';
+    return KIOSK_UPLOADS_INIINI_BASE.replace(/\/+$/, '') + '/' + encoded;
+}
+
 /**
  * iniini 등 외부 이미지 URL — 한글·공백 파일명을 브라우저용 %인코딩으로 통일
  * 예: …/디저트39 대구…jpg → …/%EB%94%94%EC%A0%80%ED%8A%B839%20%EB%8C%80%EA%B5%AC…
@@ -290,8 +312,12 @@ function escapeAttr(s) {
 function resolveKioskImageUrl(raw) {
     const s = raw != null ? String(raw).trim() : '';
     if (!s || s.startsWith('data:')) return s;
-    /* API가 /api/uploads-proxy/… 로 주면 같은 출처(HTTPS) — 그대로 사용 */
-    if (s.startsWith('/api/uploads-proxy/')) return s;
+    if (s.startsWith('/api/uploads-proxy/')) {
+        return kioskUploadRelToIniiniUrl(s.slice('/api/uploads-proxy/'.length));
+    }
+    if (s.startsWith('/uploads/')) {
+        return kioskUploadRelToIniiniUrl(s.slice('/uploads/'.length));
+    }
     if (!/^https?:\/\//i.test(s)) return s;
     try {
         const u = new URL(s);

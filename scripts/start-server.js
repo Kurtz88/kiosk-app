@@ -5,6 +5,7 @@
 const path = require('path');
 
 process.env.KIOSK_USE_TMP_DB = '0';
+process.env.KIOSK_UPLOADS_USE_PROXY = process.env.KIOSK_UPLOADS_USE_PROXY || '0';
 process.chdir(path.join(__dirname, '..'));
 
 const db = require('../backend/db');
