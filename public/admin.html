@@ -269,9 +269,9 @@
         }
         #infoReportsTable tr.info-report-row-new td { background: #fff5f5; }
         #infoReportsTable .info-report-msg { white-space: pre-wrap; max-width: 420px; font-size: 0.88rem; line-height: 1.45; }
-        #infoReportsTable tr.info-report-group-start td { border-top: 2px solid #ffc078; }
-        #infoReportsTable tr.info-report-subrow td.info-report-store-cell { color: #adb5bd; font-size: 0.8rem; vertical-align: top; }
-        #infoReportsTable .info-report-count { font-weight: 800; color: #e67700; font-size: 0.85em; margin-left: 4px; }
+        #infoReportsTable tr.info-report-same-store td { border-top: 1px dashed #ffe8cc; }
+        #infoReportsTable tr.info-report-same-store td.info-report-store-cell { color: #868e96; font-size: 0.82rem; }
+        #infoReportsTable .info-report-same-tag { display: inline-block; margin-right: 6px; color: #e67700; font-weight: 700; font-size: 0.78rem; }
         #infoReportsTable .info-report-no { color: #868e96; font-size: 0.8rem; font-weight: 600; }
         .admin-panel[hidden] { display: none !important; }
         .dashboard.categories-only .list-section { flex: 1; max-width: 100%; }
@@ -934,7 +934,7 @@
             <div id="adminPanelReports" class="admin-panel" role="tabpanel" hidden>
                 <div class="category-admin-box" style="background:#fff4e6;border-color:#ffc078;">
                     <h3>틀린정보 신고</h3>
-                    <p class="hint">목록 화면(list.html)에서 사용자가 보낸 내용입니다. 같은 업체에 신고가 여러 번 들어오면 아래에 쌓여 표시됩니다. 각 건마다 읽음·삭제할 수 있습니다.</p>
+                    <p class="hint">목록 화면(list.html)에서 사용자가 보낸 내용입니다. 같은 업체를 여러 번 신고하면 신고 번호(#)별로 각각 한 줄씩 표시됩니다(「추가」는 같은 업체의 후속 신고). 각 건마다 읽음·삭제할 수 있습니다.</p>
                     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
                         <label style="display:flex;align-items:center;gap:8px;font-weight:600;">
                             필터
@@ -1248,51 +1248,23 @@
             } catch (_) {}
         }
 
-        function groupInfoReportsByRestaurant(rows) {
-            const map = new Map();
-            (rows || []).forEach((row) => {
-                const key =
-                    row.restaurant_id != null && row.restaurant_id !== ''
-                        ? 'id:' + row.restaurant_id
-                        : 'name:' + String(row.restaurant_name || '').trim();
-                if (!map.has(key)) {
-                    map.set(key, {
-                        restaurant_name: row.restaurant_name || '(이름 없음)',
-                        reports: [],
-                    });
-                }
-                map.get(key).reports.push(row);
-            });
-            const groups = Array.from(map.values());
-            groups.forEach((g) => {
-                g.reports.sort((a, b) => {
-                    const da = a.created_at || '';
-                    const db = b.created_at || '';
-                    if (da !== db) return db.localeCompare(da);
-                    return (b.id || 0) - (a.id || 0);
-                });
-            });
-            groups.sort((a, b) => {
-                const ta = a.reports[0]?.created_at || '';
-                const tb = b.reports[0]?.created_at || '';
-                return tb.localeCompare(ta);
-            });
-            return groups;
+        function infoReportStoreKey(row) {
+            const n = Number(row.restaurant_id);
+            if (Number.isInteger(n) && n > 0) return 'id:' + n;
+            return 'name:' + String(row.restaurant_name || '').trim();
         }
 
         function appendInfoReportRow(tbody, row, opts) {
-            const storeName = opts.storeName || row.restaurant_name || '(이름 없음)';
-            const storeCount = opts.storeCount || 1;
-            const isSub = !!opts.isSub;
+            const isFollowUp = !!(opts && opts.isFollowUp);
             const isNew = row.status === 'new';
             const statusLabel = isNew ? '미확인' : '확인';
             const name = row.restaurant_name || '(이름 없음)';
             const msg = row.message || '';
             const dateStr = formatInfoReportDate(row.created_at);
+            const reportId = Number(row.id);
             const tr = document.createElement('tr');
             if (isNew) tr.classList.add('info-report-row-new');
-            if (opts.groupStart) tr.classList.add('info-report-group-start');
-            if (isSub) tr.classList.add('info-report-subrow');
+            if (isFollowUp) tr.classList.add('info-report-same-store');
 
             const actions = document.createElement('td');
             actions.style.padding = '8px 10px';
@@ -1302,7 +1274,7 @@
                 readBtn.type = 'button';
                 readBtn.className = 'action-btn edit-btn';
                 readBtn.textContent = '읽음';
-                readBtn.addEventListener('click', () => patchInfoReportStatus(row.id, 'read'));
+                readBtn.addEventListener('click', () => patchInfoReportStatus(reportId, 'read'));
                 actions.appendChild(readBtn);
             } else {
                 const newBtn = document.createElement('button');
@@ -1310,7 +1282,7 @@
                 newBtn.className = 'action-btn edit-btn';
                 newBtn.style.background = '#868e96';
                 newBtn.textContent = '미확인';
-                newBtn.addEventListener('click', () => patchInfoReportStatus(row.id, 'new'));
+                newBtn.addEventListener('click', () => patchInfoReportStatus(reportId, 'new'));
                 actions.appendChild(newBtn);
             }
             const delBtn = document.createElement('button');
@@ -1318,22 +1290,44 @@
             delBtn.className = 'action-btn delete-btn';
             delBtn.style.marginLeft = '4px';
             delBtn.textContent = '삭제';
-            delBtn.addEventListener('click', () => deleteInfoReport(row.id, name));
+            delBtn.addEventListener('click', () => deleteInfoReport(reportId, name));
             actions.appendChild(delBtn);
 
-            const storeCellClass = isSub ? 'info-report-store-cell' : '';
-            const storeHtml = isSub
-                ? '↳'
-                : escapeHtmlAdmin(storeName) +
-                  (storeCount > 1 ? `<span class="info-report-count">(${storeCount}건)</span>` : '');
+            const storeHtml = isFollowUp
+                ? '<span class="info-report-same-tag">추가</span>' + escapeHtmlAdmin(name)
+                : escapeHtmlAdmin(name);
 
-            tr.innerHTML = `
-                <td style="padding:8px 10px;" class="info-report-no">${row.id != null ? '#' + row.id : '—'}</td>
-                <td style="padding:8px 10px;font-weight:700;color:${isNew ? '#c92a2a' : '#495057'};">${statusLabel}</td>
-                <td class="${storeCellClass}" style="padding:8px 10px;">${storeHtml}</td>
-                <td class="info-report-msg" style="padding:8px 10px;">${escapeHtmlAdmin(msg)}</td>
-                <td style="padding:8px 10px;white-space:nowrap;">${escapeHtmlAdmin(dateStr)}</td>
-            `;
+            const tdNo = document.createElement('td');
+            tdNo.className = 'info-report-no';
+            tdNo.style.padding = '8px 10px';
+            tdNo.textContent = Number.isFinite(reportId) ? '#' + reportId : '—';
+
+            const tdStatus = document.createElement('td');
+            tdStatus.style.padding = '8px 10px';
+            tdStatus.style.fontWeight = '700';
+            tdStatus.style.color = isNew ? '#c92a2a' : '#495057';
+            tdStatus.textContent = statusLabel;
+
+            const tdStore = document.createElement('td');
+            tdStore.style.padding = '8px 10px';
+            if (isFollowUp) tdStore.className = 'info-report-store-cell';
+            tdStore.innerHTML = storeHtml;
+
+            const tdMsg = document.createElement('td');
+            tdMsg.className = 'info-report-msg';
+            tdMsg.style.padding = '8px 10px';
+            tdMsg.textContent = msg;
+
+            const tdDate = document.createElement('td');
+            tdDate.style.padding = '8px 10px';
+            tdDate.style.whiteSpace = 'nowrap';
+            tdDate.textContent = dateStr;
+
+            tr.appendChild(tdNo);
+            tr.appendChild(tdStatus);
+            tr.appendChild(tdStore);
+            tr.appendChild(tdMsg);
+            tr.appendChild(tdDate);
             tr.appendChild(actions);
             tbody.appendChild(tr);
         }
@@ -1347,20 +1341,22 @@
                 if (statusEl) statusEl.textContent = '신고 내역이 없습니다.';
                 return;
             }
-            const groups = groupInfoReportsByRestaurant(rows);
+            const sorted = [...rows].sort((a, b) => {
+                const da = a.created_at || '';
+                const db = b.created_at || '';
+                if (da !== db) return db.localeCompare(da);
+                return (Number(b.id) || 0) - (Number(a.id) || 0);
+            });
+            const storeKeys = new Set(sorted.map((r) => infoReportStoreKey(r)));
             if (statusEl) {
-                statusEl.textContent = `총 ${rows.length}건 · ${groups.length}개 업체`;
+                statusEl.textContent = `총 ${sorted.length}건 · ${storeKeys.size}개 업체`;
             }
-            groups.forEach((group) => {
-                const n = group.reports.length;
-                group.reports.forEach((row, idx) => {
-                    appendInfoReportRow(tbody, row, {
-                        storeName: group.restaurant_name,
-                        storeCount: n,
-                        isSub: idx > 0,
-                        groupStart: idx === 0 && n > 1,
-                    });
-                });
+            let prevKey = null;
+            sorted.forEach((row) => {
+                const key = infoReportStoreKey(row);
+                const isFollowUp = prevKey !== null && key === prevKey;
+                prevKey = key;
+                appendInfoReportRow(tbody, row, { isFollowUp });
             });
         }
 

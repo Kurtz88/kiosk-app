@@ -1740,6 +1740,7 @@ function closeMap() {
 // =============================================================================
 
 let infoReportPendingItem = null;
+let infoReportSubmitting = false;
 
 function openInfoReportModal(item) {
     infoReportPendingItem = item;
@@ -1756,6 +1757,7 @@ function openInfoReportModal(item) {
     if (statusEl) statusEl.textContent = '';
     const submitBtn = document.getElementById('infoReportSubmit');
     if (submitBtn) submitBtn.disabled = false;
+    infoReportSubmitting = false;
     overlay.classList.add('active');
     overlay.setAttribute('aria-hidden', 'false');
     if (msgEl) msgEl.focus();
@@ -1768,9 +1770,11 @@ function closeInfoReportModal() {
         overlay.setAttribute('aria-hidden', 'true');
     }
     infoReportPendingItem = null;
+    infoReportSubmitting = false;
 }
 
 async function submitInfoReport() {
+    if (infoReportSubmitting) return;
     const item = infoReportPendingItem;
     const msgEl = document.getElementById('infoReportMessage');
     const statusEl = document.getElementById('infoReportStatus');
@@ -1784,6 +1788,10 @@ async function submitInfoReport() {
         if (statusEl) statusEl.textContent = '내용을 2자 이상 입력해 주세요.';
         return;
     }
+    const ridParsed = item.id != null && item.id !== '' ? parseInt(item.id, 10) : NaN;
+    const restaurantId = Number.isInteger(ridParsed) && ridParsed > 0 ? ridParsed : null;
+
+    infoReportSubmitting = true;
     if (submitBtn) submitBtn.disabled = true;
     if (statusEl) statusEl.textContent = '보내는 중…';
     try {
@@ -1791,7 +1799,7 @@ async function submitInfoReport() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                restaurant_id: item.id,
+                restaurant_id: restaurantId,
                 restaurant_name: item.name || '',
                 message,
             }),
@@ -1799,6 +1807,7 @@ async function submitInfoReport() {
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
             if (statusEl) statusEl.textContent = (data && data.error) || '전송에 실패했습니다.';
+            infoReportSubmitting = false;
             if (submitBtn) submitBtn.disabled = false;
             return;
         }
@@ -1807,9 +1816,11 @@ async function submitInfoReport() {
             msgEl.value = '';
             msgEl.disabled = true;
         }
+        infoReportSubmitting = false;
         setTimeout(() => closeInfoReportModal(), 1400);
     } catch (_) {
         if (statusEl) statusEl.textContent = '네트워크 오류로 전송하지 못했습니다.';
+        infoReportSubmitting = false;
         if (submitBtn) submitBtn.disabled = false;
     }
 }

@@ -687,13 +687,13 @@ app.delete('/api/restaurants/:id', (req, res) => {
 /** 틀린정보 신고 (list.html) */
 app.post('/api/info-reports', express.json(), (req, res) => {
     const body = req.body || {};
-    const restaurantId = body.restaurant_id != null ? parseInt(body.restaurant_id, 10) : null;
     const restaurantName = body.restaurant_name != null ? String(body.restaurant_name).trim() : '';
     const message = body.message != null ? String(body.message).trim() : '';
     if (!restaurantName) return res.status(400).json({ error: '식당명이 필요합니다.' });
     if (message.length < 2) return res.status(400).json({ error: '내용을 2자 이상 입력해 주세요.' });
     if (message.length > 2000) return res.status(400).json({ error: '내용은 2000자 이하로 입력해 주세요.' });
-    const rid = Number.isFinite(restaurantId) ? restaurantId : null;
+    const ridParsed = body.restaurant_id != null ? parseInt(body.restaurant_id, 10) : NaN;
+    const rid = Number.isInteger(ridParsed) && ridParsed > 0 ? ridParsed : null;
     const createdAt = new Date().toISOString();
     db.run(
         'INSERT INTO info_reports (restaurant_id, restaurant_name, message, status, created_at) VALUES (?, ?, ?, ?, ?)',
@@ -724,7 +724,22 @@ app.get('/api/info-reports', (req, res) => {
     sql += ' ORDER BY datetime(created_at) DESC, id DESC';
     db.all(sql, params, (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
-        res.json({ data: rows || [] });
+        const normalized = (rows || []).map((r) => {
+            const id = parseInt(r.id, 10);
+            const restaurantId =
+                r.restaurant_id != null && r.restaurant_id !== ''
+                    ? parseInt(r.restaurant_id, 10)
+                    : NaN;
+            return {
+                id: Number.isInteger(id) ? id : r.id,
+                restaurant_id: Number.isInteger(restaurantId) && restaurantId > 0 ? restaurantId : null,
+                restaurant_name: r.restaurant_name,
+                message: r.message,
+                status: r.status,
+                created_at: r.created_at,
+            };
+        });
+        res.json({ data: normalized });
     });
 });
 

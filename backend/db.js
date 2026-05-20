@@ -157,9 +157,35 @@ function migrateInfoReportsAllowMultiple(db, cb) {
             /restaurant_id\s+INTEGER\s+UNIQUE/i.test(sql) ||
             /UNIQUE\s*\(\s*restaurant_id\s*\)/i.test(sql);
         if (!needsRebuild) {
-            db.run(
-                'CREATE INDEX IF NOT EXISTS idx_info_reports_restaurant ON info_reports(restaurant_id)',
-                () => done()
+            db.all(
+                "SELECT name, sql FROM sqlite_master WHERE type='index' AND tbl_name='info_reports'",
+                [],
+                (idxErr, indexes) => {
+                    const dropUniqueOnRestaurant = (i, next) => {
+                        if (i >= (indexes || []).length) {
+                            db.run(
+                                'CREATE INDEX IF NOT EXISTS idx_info_reports_restaurant ON info_reports(restaurant_id)',
+                                () => next()
+                            );
+                            return;
+                        }
+                        const idx = indexes[i];
+                        const sqlIdx = idx && idx.sql ? String(idx.sql) : '';
+                        if (/unique/i.test(sqlIdx) && /restaurant_id/i.test(sqlIdx)) {
+                            db.run('DROP INDEX IF EXISTS ' + idx.name, () => dropUniqueOnRestaurant(i + 1, next));
+                        } else {
+                            dropUniqueOnRestaurant(i + 1, next);
+                        }
+                    };
+                    if (idxErr) {
+                        db.run(
+                            'CREATE INDEX IF NOT EXISTS idx_info_reports_restaurant ON info_reports(restaurant_id)',
+                            () => done()
+                        );
+                        return;
+                    }
+                    dropUniqueOnRestaurant(0, done);
+                }
             );
             return;
         }
