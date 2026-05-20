@@ -1,21 +1,24 @@
 /**
- * iniini /kiosk/uploads 이미지 URL — 항상 http (https는 SSL 미지원)
- * app.js · admin.html 공통
+ * /uploads/… → https://dgbukfood.co.kr/uploads/… (app.js · admin.html 공통)
  */
 (function (global) {
-    const INIINI_UPLOADS_HTTP_BASE = 'http://iniini.co.kr/kiosk/uploads';
+    const KIOSK_UPLOADS_PUBLIC_BASE = 'https://dgbukfood.co.kr/uploads';
+    const LEGACY_INIINI_UPLOAD_PREFIX_RE = /^https?:\/\/(?:www\.)?iniini\.co\.kr\/kiosk\/uploads\/?/i;
 
-    function forceIniiniUploadHttp(urlStr) {
+    function migrateLegacyUploadUrl(urlStr) {
         return String(urlStr || '').replace(
-            /^https:\/\/((?:www\.)?iniini\.co\.kr\/kiosk\/uploads)/gi,
-            'http://$1'
+            LEGACY_INIINI_UPLOAD_PREFIX_RE,
+            KIOSK_UPLOADS_PUBLIC_BASE.replace(/\/+$/, '') + '/'
         );
     }
 
-    function isIniiniKioskUploadUrl(urlStr) {
+    function isPublicUploadUrl(urlStr) {
         try {
             const u = new URL(String(urlStr).trim());
-            return /(^|\.)iniini\.co\.kr$/i.test(u.hostname) && /\/kiosk\/uploads(\/|$)/i.test(u.pathname);
+            if (/(^|\.)dgbukfood\.co\.kr$/i.test(u.hostname) && /\/uploads(\/|$)/i.test(u.pathname)) {
+                return true;
+            }
+            return LEGACY_INIINI_UPLOAD_PREFIX_RE.test(u.href);
         } catch {
             return false;
         }
@@ -30,36 +33,38 @@
         }
     }
 
-    function kioskUploadRelToIniiniUrl(relPath) {
+    function kioskUploadRelToPublicUrl(relPath) {
         const encoded = String(relPath || '')
             .split('/')
             .filter((seg) => seg.length > 0)
             .map((seg) => encodeKioskUploadPathSegment(seg))
             .join('/');
         if (!encoded) return '';
-        return INIINI_UPLOADS_HTTP_BASE.replace(/\/+$/, '') + '/' + encoded;
+        return KIOSK_UPLOADS_PUBLIC_BASE.replace(/\/+$/, '') + '/' + encoded;
     }
 
     function resolveKioskImageUrl(raw) {
         let s = raw != null ? String(raw).trim() : '';
         if (!s || s.startsWith('data:')) return s;
-        s = forceIniiniUploadHttp(s);
+        s = migrateLegacyUploadUrl(s);
         if (s.startsWith('/api/uploads-proxy/')) {
-            return kioskUploadRelToIniiniUrl(s.slice('/api/uploads-proxy/'.length));
+            return kioskUploadRelToPublicUrl(s.slice('/api/uploads-proxy/'.length));
         }
         if (s.startsWith('/uploads/')) {
-            return kioskUploadRelToIniiniUrl(s.slice('/uploads/'.length));
+            return kioskUploadRelToPublicUrl(s.slice('/uploads/'.length));
         }
         if (!/^https?:\/\//i.test(s)) return s;
-        if (isIniiniKioskUploadUrl(s)) {
+        if (isPublicUploadUrl(s)) {
             try {
                 const u = new URL(s);
-                const rel = u.pathname.replace(/^\/kiosk\/uploads\/?/i, '');
-                if (rel) return kioskUploadRelToIniiniUrl(rel);
-                u.protocol = 'http:';
+                const basePath = '/uploads';
+                let rel = u.pathname;
+                if (rel.startsWith(basePath)) rel = rel.slice(basePath.length);
+                rel = rel.replace(/^\//, '');
+                if (rel) return kioskUploadRelToPublicUrl(rel);
                 return u.href;
             } catch {
-                return forceIniiniUploadHttp(s);
+                return migrateLegacyUploadUrl(s);
             }
         }
         try {
@@ -75,9 +80,9 @@
                     }
                 })
                 .join('/');
-            return forceIniiniUploadHttp(u.href);
+            return u.href;
         } catch {
-            return forceIniiniUploadHttp(encodeURI(s));
+            return encodeURI(s);
         }
     }
 
@@ -103,10 +108,10 @@
     }
 
     global.KIOSK_UPLOAD_URL = {
-        INIINI_UPLOADS_HTTP_BASE,
+        KIOSK_UPLOADS_PUBLIC_BASE,
         resolveKioskImageUrl,
         normalizeRestaurantMediaUrls,
-        forceIniiniUploadHttp,
+        migrateLegacyUploadUrl,
     };
     global.resolveKioskImageUrl = resolveKioskImageUrl;
     global.normalizeRestaurantMediaUrls = normalizeRestaurantMediaUrls;
