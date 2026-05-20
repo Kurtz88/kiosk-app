@@ -9,6 +9,7 @@ const {
     applyPublicUploadUrlsToRestaurant,
     applyPublicUploadUrlsToCategory,
 } = require('../lib/uploadsPublicUrl');
+const { appendInfoReportTxt } = require('../lib/infoReportTxt');
 const QRCode = require('qrcode');
 const XLSX = require('xlsx');
 
@@ -741,7 +742,16 @@ app.post('/api/info-reports', express.json(), (req, res) => {
                 }
                 return res.status(500).json({ error: err.message });
             }
-            res.status(201).json({ ok: true, id: this.lastID });
+            const reportId = this.lastID;
+            const txtDir = db.dataDir || path.join(projectRoot, 'data');
+            appendInfoReportTxt(txtDir, {
+                reportId,
+                restaurantId: rid,
+                restaurantName: restaurantName.slice(0, 200),
+                message,
+                createdAt,
+            }).catch(() => {});
+            res.status(201).json({ ok: true, id: reportId });
         }
     );
 });

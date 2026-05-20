@@ -432,4 +432,7 @@ function openMainDatabase() {
 
 migrateTmpReportsToPersistent(() => openMainDatabase());
 
+kioskDb.dataDir = dataDir;
+kioskDb.dbFile = dbFile;
+
 module.exports = kioskDb;
