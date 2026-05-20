@@ -5,26 +5,59 @@ const CATEGORY_DEFAULTS = require('../lib/categoryDefaults');
 const SUBCATEGORY_DEFAULTS = require('../lib/subcategoryDefaults');
 
 const rootDir = path.join(__dirname, '..');
+const persistentDataDir = path.join(rootDir, 'data');
+const persistentDbFile = path.join(persistentDataDir, 'kiosk.sqlite');
+const tmpDataDir = path.join(os.tmpdir(), 'kiosk-app', 'data');
+const tmpDbFile = path.join(tmpDataDir, 'kiosk.sqlite');
 
-/** Vercel 등: 프로젝트 루트는 읽기 전용 — SQLite는 /tmp 만 안정적으로 쓰기 가능 */
+/**
+ * /tmp DB는 Vercel 프로덕션(읽기 전용 파일시스템)에서만 사용.
+ * npm start · vercel dev · 로컬 PC는 항상 data/kiosk.sqlite (틀린정보 신고 등 유지).
+ */
+function shouldUseTmpSqlite() {
+    if (process.env.KIOSK_DB_FILE) return false;
+    if (process.env.KIOSK_DATA_DIR) return false;
+    if (process.env.KIOSK_USE_TMP_DB === '1') return true;
+    if (process.env.KIOSK_USE_TMP_DB === '0') return false;
+    return process.env.VERCEL === '1' && process.env.VERCEL_ENV === 'production';
+}
+
 function resolveKioskPaths() {
-    if (process.env.VERCEL) {
-        const dataDir = path.join(os.tmpdir(), 'kiosk-app', 'data');
+    if (process.env.KIOSK_DB_FILE) {
+        const f = path.resolve(process.env.KIOSK_DB_FILE);
         return {
-            dataDir,
-            dbFile: path.join(dataDir, 'kiosk.sqlite'),
-            legacyDb: path.join(rootDir, 'data', 'kiosk.sqlite'),
+            dataDir: path.dirname(f),
+            dbFile: f,
+            legacyDb: persistentDbFile,
+            usesTmpDb: false,
         };
     }
-    const dataDir = path.join(rootDir, 'data');
+    if (process.env.KIOSK_DATA_DIR) {
+        const dir = path.resolve(process.env.KIOSK_DATA_DIR);
+        return {
+            dataDir: dir,
+            dbFile: path.join(dir, 'kiosk.sqlite'),
+            legacyDb: persistentDbFile,
+            usesTmpDb: false,
+        };
+    }
+    if (shouldUseTmpSqlite()) {
+        return {
+            dataDir: tmpDataDir,
+            dbFile: tmpDbFile,
+            legacyDb: persistentDbFile,
+            usesTmpDb: true,
+        };
+    }
     return {
-        dataDir,
-        dbFile: path.join(dataDir, 'kiosk.sqlite'),
+        dataDir: persistentDataDir,
+        dbFile: persistentDbFile,
         legacyDb: path.join(rootDir, 'kiosk.sqlite'),
+        usesTmpDb: false,
     };
 }
 
-const { dataDir, dbFile, legacyDb } = resolveKioskPaths();
+const { dataDir, dbFile, legacyDb, usesTmpDb } = resolveKioskPaths();
 
 try {
     if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
@@ -36,9 +69,70 @@ try {
 if (!fs.existsSync(dbFile) && legacyDb && fs.existsSync(legacyDb)) {
     try {
         fs.copyFileSync(legacyDb, dbFile);
+        console.log('[kiosk] DB 초기 복사:', legacyDb, '→', dbFile);
     } catch (e) {
         console.error('기존 kiosk.sqlite 복사 실패:', e.message);
     }
+}
+
+/** vercel dev 등으로 /tmp에만 쌓인 틀린정보 신고를 data/kiosk.sqlite로 합침 */
+function migrateTmpReportsToPersistent(done) {
+    if (usesTmpDb) return done();
+    if (!fs.existsSync(tmpDbFile)) return done();
+
+    if (!fs.existsSync(persistentDbFile)) {
+        try {
+            if (!fs.existsSync(persistentDataDir)) fs.mkdirSync(persistentDataDir, { recursive: true });
+            fs.copyFileSync(tmpDbFile, persistentDbFile);
+            console.log('[kiosk] 임시 DB를 data/kiosk.sqlite로 복사했습니다.');
+        } catch (e) {
+            console.error('[kiosk] tmp → data DB 복사 실패:', e.message);
+        }
+        return done();
+    }
+
+    const sqlite3 = require('sqlite3').verbose();
+    const main = new sqlite3.Database(persistentDbFile);
+    main.serialize(() => {
+        main.run('ATTACH DATABASE ? AS tmpdb', [tmpDbFile], (attachErr) => {
+            if (attachErr) {
+                console.error('[kiosk] tmp DB attach 실패:', attachErr.message);
+                main.close(() => done());
+                return;
+            }
+            main.run(
+                `CREATE TABLE IF NOT EXISTS info_reports (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                restaurant_id INTEGER,
+                restaurant_name TEXT NOT NULL,
+                message TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'new',
+                created_at TEXT NOT NULL
+            )`,
+                () => {
+                    main.run(
+                        `INSERT INTO info_reports (restaurant_id, restaurant_name, message, status, created_at)
+                     SELECT t.restaurant_id, t.restaurant_name, t.message, t.status, t.created_at
+                     FROM tmpdb.info_reports t
+                     WHERE NOT EXISTS (
+                        SELECT 1 FROM info_reports p
+                        WHERE IFNULL(p.restaurant_id, -1) = IFNULL(t.restaurant_id, -1)
+                          AND p.message = t.message
+                          AND p.created_at = t.created_at
+                     )`,
+                        function (mergeErr) {
+                            const merged = mergeErr ? 0 : this.changes;
+                            if (mergeErr) console.error('[kiosk] 신고 병합 실패:', mergeErr.message);
+                            else if (merged > 0) {
+                                console.log(`[kiosk] /tmp에 있던 틀린정보 신고 ${merged}건을 data/kiosk.sqlite로 옮겼습니다.`);
+                            }
+                            main.run('DETACH DATABASE tmpdb', () => main.close(() => done()));
+                        }
+                    );
+                }
+            );
+        });
+    });
 }
 
 let resolveReady;
@@ -256,16 +350,22 @@ function bootstrapSchema(db) {
 
 let db;
 
-if (process.env.VERCEL) {
-    let DatabaseSync;
-    try {
-        ({ DatabaseSync } = require('node:sqlite'));
-    } catch (e) {
-        console.error('node:sqlite 로드 실패 — Vercel 프로젝트 Node 버전을 22.5 이상으로 설정하세요.', e.message);
-        rejectReady(e);
-        db = {};
-    }
-    if (DatabaseSync) {
+/** Vercel 프로덕션만 node:sqlite + /tmp. 그 외는 sqlite3 + data/kiosk.sqlite */
+const useNodeSqlite = process.env.VERCEL === '1' && usesTmpDb;
+
+function openMainDatabase() {
+    console.log('[kiosk] SQLite:', dbFile, usesTmpDb ? '(임시 — Vercel 프로덕션, 재배포 시 초기화)' : '(영구)');
+
+    if (useNodeSqlite) {
+        let DatabaseSync;
+        try {
+            ({ DatabaseSync } = require('node:sqlite'));
+        } catch (e) {
+            console.error('node:sqlite 로드 실패 — Vercel 프로젝트 Node 버전을 22.5 이상으로 설정하세요.', e.message);
+            rejectReady(e);
+            db = {};
+            return;
+        }
         const { wrapDb } = require('./node-sqlite-shim');
         try {
             const native = new DatabaseSync(dbFile);
@@ -276,8 +376,9 @@ if (process.env.VERCEL) {
             rejectReady(e);
             db = {};
         }
+        return;
     }
-} else {
+
     const sqlite3 = require('sqlite3').verbose();
     db = new sqlite3.Database(dbFile, (err) => {
         if (err) {
@@ -289,5 +390,9 @@ if (process.env.VERCEL) {
     });
 }
 
+migrateTmpReportsToPersistent(() => openMainDatabase());
+
 db.ready = readyPromise;
+db.dbFile = dbFile;
+db.usesTmpDb = usesTmpDb;
 module.exports = db;

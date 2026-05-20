@@ -1368,6 +1368,9 @@ function printListenBanner() {
     console.log(box);
     console.log('   RESTAURANT KIOSK · 서버 준비됨');
     console.log(line);
+    const dbPath = db.dbFile || '(unknown)';
+    const dbNote = db.usesTmpDb ? ' · 임시(/tmp, 신고 등 유지 안 됨)' : ' · 영구 저장';
+    console.log('   DB          ' + dbPath + dbNote);
     console.log('   이 PC       http://localhost:' + port + '/');
     if (lan) {
         console.log('   같은 Wi-Fi  http://' + lan + ':' + port + '/   관리자 /admin.html');
