@@ -73,8 +73,9 @@ if (!fs.existsSync(dbFile) && legacyDb && fs.existsSync(legacyDb)) {
     }
 }
 
-/** /tmp DB에만 쌓인 틀린정보 신고를 data/kiosk.sqlite로 합침 (Vercel·vercel dev 포함) */
+/** 로컬: /tmp에 쌓인 신고를 data/kiosk.sqlite로 합침 (Vercel은 data/ 쓰기 불가) */
 function migrateTmpReportsToPersistent(done) {
+    if (usesTmpDb) return done();
     if (!fs.existsSync(tmpDbFile)) return done();
 
     if (!fs.existsSync(persistentDbFile)) {
@@ -180,7 +181,27 @@ function bootstrapInfoReportsSchema(db, cb) {
     });
 }
 
+/** Vercel·임시 DB: 메인 DB와 같은 /tmp 파일에 info_reports 테이블만 추가 */
+function finishInfoReportsOnMainDb(conn, cb) {
+    infoReportsDb.dbFile = usesTmpDb ? tmpDbFile : persistentDbFile;
+    infoReportsDb.dataDir = usesTmpDb ? tmpDataDir : persistentDataDir;
+    attachInfoReportsConnection(conn);
+    bootstrapInfoReportsSchema(infoReportsDb, () => {
+        infoReportsDb.get('SELECT COUNT(*) AS c FROM info_reports', [], (countErr, row) => {
+            if (!countErr && row) {
+                console.log(
+                    `[kiosk] 틀린정보 신고(info_reports): ${row.c}건 → ${infoReportsDb.dbFile}` +
+                        (usesTmpDb ? ' (/tmp, 재배포 시 초기화)' : '')
+                );
+            }
+            if (typeof cb === 'function') cb();
+        });
+    });
+}
+
 function openInfoReportsDatabase() {
+    if (usesTmpDb) return;
+
     try {
         if (!fs.existsSync(persistentDataDir)) fs.mkdirSync(persistentDataDir, { recursive: true });
     } catch (e) {
@@ -346,8 +367,16 @@ function bootstrapSchema(db) {
                 rejectMainReady(e2);
                 return;
             }
-            db.run(`INSERT OR IGNORE INTO kiosk_settings (key, value) VALUES ('map_slot_address_hints', '{}')`, () => {});
-            markMainReady();
+            db.run(`INSERT OR IGNORE INTO kiosk_settings (key, value) VALUES ('map_slot_address_hints', '{}')`, () => {
+                if (usesTmpDb) {
+                    finishInfoReportsOnMainDb(kioskDb, () => {
+                        markMainReady();
+                        resolveReportsReady();
+                    });
+                } else {
+                    markMainReady();
+                }
+            });
 
             db.all('PRAGMA table_info(restaurants)', [], (pragmaRErr, rCols) => {
                 if (pragmaRErr) return;
@@ -490,11 +519,11 @@ function openMainDatabase() {
 }
 
 migrateTmpReportsToPersistent(() => {
-    openInfoReportsDatabase();
+    if (!usesTmpDb) openInfoReportsDatabase();
     openMainDatabase();
 });
 
-kioskDb.dataDir = persistentDataDir;
+kioskDb.dataDir = usesTmpDb ? tmpDataDir : persistentDataDir;
 kioskDb.dbFile = dbFile;
 
 module.exports = kioskDb;
