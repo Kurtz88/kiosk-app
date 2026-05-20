@@ -936,6 +936,13 @@
                 <div class="category-admin-box" style="background:#fff4e6;border-color:#ffc078;">
                     <h3>틀린정보 신고</h3>
                     <p class="hint">목록 화면(list.html)에서 사용자가 보낸 내용이 <strong>data/kiosk.sqlite</strong>에 저장됩니다. <strong>새로고침(F5)·「새로고침」버튼</strong>은 DB에서 다시 읽어 오는 것이지, 그때마다 새 신고가 생기는 것은 아닙니다. 확인한 뒤에는 「읽음」을 누르거나 삭제하세요. 같은 업체를 여러 번 신고하면 #번호별로 각각 한 줄씩 보입니다.</p>
+                    <div id="infoReportsMailBox" style="margin-bottom:12px;padding:10px 14px;border-radius:10px;background:#fff;border:1px solid #ffd8a8;font-size:0.88rem;line-height:1.5;">
+                        <strong>메일 알림</strong>
+                        <span id="infoReportsMailStatusText"> 확인 중…</span>
+                        <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+                            <button type="button" class="action-btn edit-btn" id="infoReportsTestMailBtn">테스트 메일 보내기</button>
+                        </div>
+                    </div>
                     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
                         <label style="display:flex;align-items:center;gap:8px;font-weight:600;">
                             필터
@@ -1415,11 +1422,68 @@
             refreshInfoReportsBadge().catch(() => {});
         }
 
+        async function refreshInfoReportsMailStatus() {
+            const el = document.getElementById('infoReportsMailStatusText');
+            const box = document.getElementById('infoReportsMailBox');
+            if (!el) return;
+            try {
+                const { ok, data } = await fetchJson('/api/info-reports/mail-status');
+                const s = ok && data ? data : {};
+                if (!s.configured) {
+                    el.textContent =
+                        ' — SMTP 미설정 (Vercel: GMAIL_USER + GMAIL_APP_PASSWORD 후 재배포)';
+                    if (box) box.style.background = '#fff5f5';
+                    return;
+                }
+                el.textContent =
+                    ' — 설정됨 · 수신 ' +
+                    escapeAdminHtml(s.notifyEmail || '') +
+                    ' · 발신 ' +
+                    escapeAdminHtml(s.smtpUser || '');
+                if (box) box.style.background = '#ebfbee';
+            } catch (e) {
+                el.textContent = ' — 상태 조회 실패';
+                if (box) box.style.background = '#fff5f5';
+            }
+        }
+
+        async function sendInfoReportsTestMail() {
+            const btn = document.getElementById('infoReportsTestMailBtn');
+            const statusEl = document.getElementById('infoReportsStatus');
+            if (btn) btn.disabled = true;
+            if (statusEl) statusEl.textContent = '테스트 메일 발송 중…';
+            try {
+                const { ok, data } = await fetchJson('/api/info-reports/test-mail', { method: 'POST' });
+                if (ok && data && data.mail && data.mail.sent) {
+                    if (statusEl) {
+                        statusEl.textContent =
+                            '테스트 메일 발송 성공 → ' + (data.mail.to || data.notifyEmail || '') + ' 받은편지함을 확인하세요.';
+                    }
+                    alert('테스트 메일을 보냈습니다. ' + (data.mail.to || '') + ' 메일함(스팸함 포함)을 확인하세요.');
+                } else {
+                    const err =
+                        (data && data.mail && data.mail.error) ||
+                        (data && data.error) ||
+                        '발송 실패';
+                    if (statusEl) statusEl.textContent = '테스트 메일 실패: ' + err;
+                    alert('테스트 메일 실패:\n' + err);
+                }
+            } catch (e) {
+                if (statusEl) statusEl.textContent = '테스트 메일 요청 실패';
+                alert('테스트 메일 요청 실패');
+            }
+            if (btn) btn.disabled = false;
+            refreshInfoReportsMailStatus().catch(() => {});
+        }
+
         function setupInfoReportsAdmin() {
             const filter = document.getElementById('infoReportsFilter');
             const refreshBtn = document.getElementById('infoReportsRefreshBtn');
+            const testMailBtn = document.getElementById('infoReportsTestMailBtn');
             if (filter) filter.addEventListener('change', () => fetchInfoReports().catch(() => {}));
             if (refreshBtn) refreshBtn.addEventListener('click', () => fetchInfoReports().catch(() => {}));
+            if (testMailBtn) testMailBtn.addEventListener('click', () => sendInfoReportsTestMail().catch(() => {}));
+            refreshInfoReportsMailStatus().catch(() => {});
         }
 
         function fillMapSlotSelect() {

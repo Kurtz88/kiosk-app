@@ -1797,13 +1797,33 @@ async function submitInfoReport() {
             if (submitBtn) submitBtn.disabled = false;
             return;
         }
-        if (statusEl) statusEl.textContent = '접수되었습니다. 감사합니다.';
+        const mail = data && data.mail;
+        if (mail && mail.sent) {
+            if (statusEl) {
+                statusEl.textContent =
+                    '접수되었습니다. 담당자 메일(' + (mail.to || '') + ')로 전달되었습니다.';
+            }
+        } else if (mail && mail.skipped) {
+            if (statusEl) {
+                statusEl.textContent =
+                    '접수되었습니다. (메일 알림은 서버에 설정되지 않아 보내지 않았습니다)';
+            }
+        } else if (mail && mail.error) {
+            if (statusEl) {
+                statusEl.textContent =
+                    '접수되었습니다. 메일 전송은 실패했지만 신고는 저장되었습니다.';
+            }
+        } else if (data && data.mailSent) {
+            if (statusEl) statusEl.textContent = '접수되었습니다. 담당자에게 메일로 전달되었습니다.';
+        } else {
+            if (statusEl) statusEl.textContent = '접수되었습니다. 감사합니다.';
+        }
         if (msgEl) {
             msgEl.value = '';
             msgEl.disabled = true;
         }
         infoReportSubmitting = false;
-        setTimeout(() => closeInfoReportModal(), 1400);
+        setTimeout(() => closeInfoReportModal(), mail && mail.sent ? 2200 : 1400);
     } catch (_) {
         if (statusEl) statusEl.textContent = '네트워크 오류로 전송하지 못했습니다.';
         infoReportSubmitting = false;

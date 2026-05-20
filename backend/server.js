@@ -10,7 +10,12 @@ const {
     applyPublicUploadUrlsToCategory,
 } = require('../lib/uploadsPublicUrl');
 const { appendInfoReportTxt } = require('../lib/infoReportTxt');
-const { sendInfoReportEmail } = require('../lib/infoReportEmail');
+const {
+    sendInfoReportEmail,
+    getInfoReportMailStatus,
+    sendInfoReportTestEmail,
+    getNotifyEmail,
+} = require('../lib/infoReportEmail');
 const QRCode = require('qrcode');
 const XLSX = require('xlsx');
 
@@ -781,6 +786,40 @@ app.post('/api/info-reports', express.json(), async (req, res) => {
         ok: true,
         id: reportId,
         mailSent: !!mailResult.ok,
+        mail: {
+            sent: !!mailResult.ok,
+            skipped: !!mailResult.skipped,
+            to: getNotifyEmail(),
+            error: mailResult.ok || mailResult.skipped ? null : mailResult.error || 'send failed',
+        },
+    });
+});
+
+/** 메일 설정 상태 (비밀번호 미포함) */
+app.get('/api/info-reports/mail-status', (req, res) => {
+    res.json(getInfoReportMailStatus());
+});
+
+/** 관리자: 테스트 메일 발송 → elysia0419@gmail.com */
+app.post('/api/info-reports/test-mail', express.json(), async (req, res) => {
+    const status = getInfoReportMailStatus();
+    if (!status.configured) {
+        return res.status(503).json({
+            ok: false,
+            error: 'SMTP 미설정. Vercel에 GMAIL_USER, GMAIL_APP_PASSWORD(앱 비밀번호)를 넣고 재배포하세요.',
+            ...status,
+        });
+    }
+    const mailResult = await sendInfoReportTestEmail();
+    res.status(mailResult.ok ? 200 : 502).json({
+        ok: !!mailResult.ok,
+        mail: {
+            sent: !!mailResult.ok,
+            skipped: !!mailResult.skipped,
+            to: status.notifyEmail,
+            error: mailResult.error || null,
+        },
+        ...status,
     });
 });
 
