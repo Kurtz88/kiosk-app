@@ -10,6 +10,7 @@ const {
     applyPublicUploadUrlsToCategory,
 } = require('../lib/uploadsPublicUrl');
 const { appendInfoReportTxt } = require('../lib/infoReportTxt');
+const { sendInfoReportEmail } = require('../lib/infoReportEmail');
 const QRCode = require('qrcode');
 const XLSX = require('xlsx');
 
@@ -753,6 +754,19 @@ app.post('/api/info-reports', express.json(), (req, res) => {
                 message,
                 createdAt,
             }).catch(() => {});
+            sendInfoReportEmail({
+                reportId,
+                restaurantId: rid,
+                restaurantName: restaurantName.slice(0, 200),
+                message,
+                createdAt,
+            }).then((mailResult) => {
+                if (mailResult && !mailResult.ok && !mailResult.skipped) {
+                    console.error('[kiosk] 틀린정보 메일:', mailResult.error || 'unknown');
+                }
+            }).catch((mailErr) => {
+                console.error('[kiosk] 틀린정보 메일 예외:', mailErr && mailErr.message ? mailErr.message : mailErr);
+            });
             res.status(201).json({ ok: true, id: reportId });
         }
     );

@@ -3,7 +3,10 @@
   "version": 2,
   "env": {
     "KIOSK_UPLOADS_BASE_URL": "https://dgbukfood.co.kr/uploads",
-    "KIOSK_USE_TMP_DB": "1"
+    "KIOSK_USE_TMP_DB": "1",
+    "KIOSK_INFO_REPORT_NOTIFY_EMAIL": "elysia0419@gmail.com",
+    "KIOSK_SMTP_HOST": "smtp.gmail.com",
+    "KIOSK_SMTP_PORT": "587"
   },
   "builds": [
     {
