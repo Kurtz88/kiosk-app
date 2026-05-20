@@ -2,7 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "env": {
     "KIOSK_UPLOADS_BASE_URL": "http://iniini.co.kr/kiosk/uploads",
-    "KIOSK_UPLOADS_USE_PROXY": "0",
     "KIOSK_USE_TMP_DB": "1"
   },
   "functions": {
