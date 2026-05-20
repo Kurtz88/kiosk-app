@@ -800,7 +800,7 @@ app.get('/api/info-reports/mail-status', (req, res) => {
     res.json(getInfoReportMailStatus());
 });
 
-/** 관리자: 테스트 메일 발송 → elysia0419@gmail.com */
+/** 관리자: 테스트 메일 발송 → ini0330@gmail.com */
 app.post('/api/info-reports/test-mail', express.json(), async (req, res) => {
     const status = getInfoReportMailStatus();
     if (!status.configured) {
