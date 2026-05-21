@@ -778,9 +778,6 @@ app.post('/api/info-reports', express.json(), async (req, res) => {
 
     /* Vercel: 응답 전에 메일 전송 완료 (백그라운드 작업이 끊기지 않도록) */
     const mailResult = await sendInfoReportEmail(mailPayload);
-    if (!mailResult.ok && !mailResult.skipped) {
-        console.error('[kiosk] 틀린정보 메일:', mailResult.error || 'unknown');
-    }
 
     res.status(201).json({
         ok: true,
@@ -789,7 +786,8 @@ app.post('/api/info-reports', express.json(), async (req, res) => {
         mail: {
             sent: !!mailResult.ok,
             skipped: !!mailResult.skipped,
-            to: getNotifyEmail(),
+            to: mailResult.to || getNotifyEmail(),
+            messageId: mailResult.messageId || null,
             error: mailResult.ok || mailResult.skipped ? null : mailResult.error || 'send failed',
         },
     });
@@ -804,6 +802,15 @@ app.get('/api/info-reports/mail-status', (req, res) => {
 app.post('/api/info-reports/test-mail', express.json(), async (req, res) => {
     const status = getInfoReportMailStatus();
     if (!status.configured) {
+        console.warn(
+            '[kiosk-mail] ⏭️ 테스트 메일 생략 ' +
+                JSON.stringify({
+                    route: 'POST /api/info-reports/test-mail',
+                    reason: 'SMTP 미설정',
+                    missing: status.missing,
+                    vercelEnv: status.vercelEnv,
+                })
+        );
         return res.status(503).json({
             ok: false,
             error: 'SMTP 미설정. Vercel에 GMAIL_USER, GMAIL_APP_PASSWORD(앱 비밀번호)를 넣고 재배포하세요.',
@@ -817,6 +824,7 @@ app.post('/api/info-reports/test-mail', express.json(), async (req, res) => {
             sent: !!mailResult.ok,
             skipped: !!mailResult.skipped,
             to: status.notifyEmail,
+            messageId: mailResult.messageId || null,
             error: mailResult.error || null,
         },
         ...status,
