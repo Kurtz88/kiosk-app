@@ -1157,12 +1157,7 @@ function renderList(list, containerOverride, emptyMessage) {
             : PLACEHOLDER_LIST_IMG;
         const displayName = escapeHtml(item.name);
 
-        const status = checkIsOpen(item.open_time, item.close_time);
-        let statusHtml = '';
-        if (status) {
-            const statusClass = status.isOpen ? 'status-open' : 'status-closed';
-            statusHtml = `<div class="status-badge ${statusClass}">${escapeHtml(status.textKo)}</div>`;
-        }
+        const statusHtml = '';
 
         const telText = item.phone && String(item.phone).trim() ? escapeHtml(String(item.phone).trim()) : dict.listPlaceholder;
         const telMuted = !item.phone || !String(item.phone).trim() ? ' list-row-muted' : '';
