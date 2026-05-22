@@ -139,6 +139,8 @@ const IS_MAP = document.documentElement.dataset.kioskPage === 'map';
 
 /** GET /api/map-slot-assignments 결과 캐시 */
 let mapSlotAssignments = {};
+/** 구역별 주소 검색어(관리자) — 층별 모달 제목·자동 배치에 사용 */
+let mapSlotAddressHints = {};
 let mapSelectedSlot = null;
 
 /** 슬롯 항목: 레거시 숫자 또는 { id, floor?, unit? } */
@@ -183,6 +185,25 @@ function mapSlotMetaById(arr) {
 
 /** 홈 터치 자판: 자모 누적 버퍼 → Hangul.js assemble 로 완성형 표시 */
 let homeKeyboardBuffer = '';
+
+/** ㅂㅈㄷㄱㅅ 연속 2회 → ㅃㅉㄸㄲㅆ */
+const KEYBOARD_DOUBLE_JAMO = { 'ㅂ': 'ㅃ', 'ㅈ': 'ㅉ', 'ㄷ': 'ㄸ', 'ㄱ': 'ㄲ', 'ㅅ': 'ㅆ' };
+
+function appendHomeKeyboardJamo(ch) {
+    const jamo = String(ch || '').trim();
+    if (!jamo) return;
+    if (jamo.length === 1) {
+        const last = homeKeyboardBuffer.slice(-1);
+        const double = KEYBOARD_DOUBLE_JAMO[jamo];
+        if (double && last === jamo) {
+            homeKeyboardBuffer = homeKeyboardBuffer.slice(0, -1) + double;
+            return;
+        }
+        homeKeyboardBuffer += jamo;
+        return;
+    }
+    homeKeyboardBuffer += jamo;
+}
 
 function hangulAssembleFromBuffer(raw) {
     if (!raw) return '';
@@ -277,19 +298,6 @@ function escapeHtml(s) {
         .replace(/"/g, '&quot;');
 }
 
-/** img src 등 속성용 — URL은 escapeHtml 대신 사용 (& 깨짐 방지) */
-function escapeAttr(s) {
-    if (s == null || s === '') return '';
-    return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-}
-
-/** resolveKioskImageUrl · normalizeRestaurantMediaUrls → js/kiosk-upload-url.js */
-
-function normalizeRestaurantsFromApi(list) {
-    if (!Array.isArray(list)) return [];
-    return list.map((r) => normalizeRestaurantMediaUrls(r));
-}
-
 /** 오늘 날짜(로컬) 기준 키: 같은 날에는 동일 */
 function dailySeedKey() {
     const d = new Date();
@@ -365,6 +373,53 @@ function syncUrlToState() {
 const overlay = document.getElementById('modal-overlay');
 const restaurantListEl = document.getElementById('restaurant-list');
 
+/** 키보드·검색 버튼 닫힘 직후 목록 행으로 클릭이 새는 것(고스트 클릭) 방지 */
+const LIST_CLICK_GUARD_MS = 500;
+let restaurantListClickGuardUntil = 0;
+
+function armRestaurantListClickGuard(ms = LIST_CLICK_GUARD_MS) {
+    restaurantListClickGuardUntil = Date.now() + ms;
+    if (restaurantListEl) {
+        restaurantListEl.classList.add('list-click-guard');
+        window.setTimeout(() => restaurantListEl.classList.remove('list-click-guard'), ms);
+    }
+}
+
+function isRestaurantListClickGuarded() {
+    return Date.now() < restaurantListClickGuardUntil;
+}
+
+/** pointerdown에서 UI를 닫기 전에 pointerup까지 지연 (고스트 클릭 방지) */
+function afterPointerRelease(ev, fn) {
+    if (ev && typeof ev.pointerId === 'number') {
+        const pid = ev.pointerId;
+        const done = (up) => {
+            if (up.pointerId !== pid) return;
+            document.removeEventListener('pointerup', done);
+            document.removeEventListener('pointercancel', done);
+            fn();
+        };
+        document.addEventListener('pointerup', done);
+        document.addEventListener('pointercancel', done);
+    } else {
+        window.setTimeout(fn, 0);
+    }
+}
+
+function setupRestaurantListClickGuard() {
+    document.addEventListener(
+        'click',
+        (e) => {
+            if (!isRestaurantListClickGuarded()) return;
+            if (e.target.closest('#restaurant-list .store')) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        },
+        true
+    );
+}
+
 // =============================================================================
 // 카테고리 카드 · 목록 뱃지 · 아이콘 경로
 // =============================================================================
@@ -425,6 +480,22 @@ function countRestaurantsInCategory(value) {
     return allRestaurants.filter((r) => restaurantHasPrimaryCategory(r, value)).length;
 }
 
+/** 홈·목록 카테고리 탭 — 업소(장소) 수 많은 순, 동률이면 sort_order·이름 */
+function categoriesSortedByRestaurantCount(categories) {
+    return [...(categories || [])].sort((a, b) => {
+        const na = countRestaurantsInCategory(a.value);
+        const nb = countRestaurantsInCategory(b.value);
+        if (nb !== na) return nb - na;
+        const sa = a.sort_order != null ? Number(a.sort_order) : 0;
+        const sb = b.sort_order != null ? Number(b.sort_order) : 0;
+        if (sa !== sb) return sa - sb;
+        return String(a.label_ko || a.value || '').localeCompare(
+            String(b.label_ko || b.value || ''),
+            'ko'
+        );
+    });
+}
+
 /** 쉼표 구분 문자열 → 트림된 항목 배열 */
 function parseCommaSeparatedList(raw) {
     if (!raw || !String(raw).trim()) return [];
@@ -472,7 +543,7 @@ function iniconSrcFromTabIndex(i) {
 function categoryCardIconSrc(cat, idx) {
     const raw = cat.icon_image != null ? String(cat.icon_image).trim() : '';
     if (raw) {
-        if (raw.startsWith('http://') || raw.startsWith('https://')) return resolveKioskImageUrl(raw);
+        if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
         if (raw.startsWith('/')) return raw;
         return '/' + raw.replace(/^\//, '');
     }
@@ -500,19 +571,12 @@ function svgForListRow(svgHtml) {
 }
 
 // =============================================================================
-// 터치 자판 (false = 검색창·검색하기는 OS 기본 키보드)
+// 터치 자판 마크업 (public/partials/keyboard-modal.html 단일 유지)
 // =============================================================================
 
-const USE_KIOSK_TOUCH_KEYBOARD = false;
-
-const KEYBOARD_PARTIAL_URL = '/partials/keyboard-modal.html?v=202604105000';
+const KEYBOARD_PARTIAL_URL = '/partials/keyboard-modal.html?v=202605191400';
 
 async function injectKioskKeyboardModal() {
-    if (!USE_KIOSK_TOUCH_KEYBOARD) {
-        const mount = document.getElementById('keyboard-modal-mount');
-        if (mount) mount.remove();
-        return;
-    }
     const mount = document.getElementById('keyboard-modal-mount');
     if (document.getElementById('keyboardModal')) {
         if (mount) mount.remove();
@@ -545,15 +609,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     await injectKioskKeyboardModal();
     loadKioskData();
     setupSearch();
-    focusSearchInputIfRequested();
-    if (USE_KIOSK_TOUCH_KEYBOARD && (IS_HOME || IS_LIST)) setupKioskKeyboardModal();
-    if (IS_LIST) setupInfoReportModal();
+    if (IS_HOME || IS_LIST) setupKioskKeyboardModal();
     setupCategoryTabsDelegation();
     setupSubcategoryTabsDelegation();
     setupIdleTimer();
     setupKioskClock();
     setupHeaderNav();
     setupFooterTabs();
+    setupRestaurantListClickGuard();
 });
 
 // =============================================================================
@@ -616,7 +679,9 @@ function renderCategoryTabs() {
     const total = allRestaurants.length;
 
     if (IS_HOME) {
-        const homeCats = categoriesCache.filter((c) => !categoryHiddenOnHome(c));
+        const homeCats = categoriesSortedByRestaurantCount(
+            categoriesCache.filter((c) => !categoryHiddenOnHome(c))
+        );
         homeCats.forEach((cat, idx) => {
             const a = document.createElement('a');
             a.href = listUrlForCat(cat.value);
@@ -638,7 +703,7 @@ function renderCategoryTabs() {
         allChip.setAttribute('data-cat', 'all');
         allChip.innerHTML = `${escapeHtml(dict.listCategoryAllChip)} <span class="n">${total}</span>`;
         el.appendChild(allChip);
-        categoriesCache.forEach((cat, idx) => {
+        categoriesSortedByRestaurantCount(categoriesCache).forEach((cat, idx) => {
             const b = document.createElement('button');
             b.type = 'button';
             b.className = 'chip' + (saved === cat.value ? ' on' : '');
@@ -660,7 +725,7 @@ function renderCategoryTabs() {
     allBtn.setAttribute('data-cat', 'all');
     allBtn.innerHTML = `<div class="k-food-icon"></div><div class="k-food-name">${escapeHtml(dict.allCat)}</div><div class="k-food-pill">${total}곳</div>`;
     el.appendChild(allBtn);
-    categoriesCache.forEach((cat, idx) => {
+    categoriesSortedByRestaurantCount(categoriesCache).forEach((cat, idx) => {
         const b = document.createElement('button');
         b.type = 'button';
         b.className =
@@ -697,9 +762,7 @@ function loadKioskData() {
             categoriesCache = catData.data || [];
             rebuildCategoryAliasMap(categoriesCache);
             subcategoriesCache = [];
-            const rawList = normalizeRestaurantsFromApi(
-                Array.isArray(restData.data) ? restData.data : []
-            );
+            const rawList = Array.isArray(restData.data) ? restData.data : [];
             allRestaurants = rawList.filter((r) => !Number(r.kiosk_hidden));
             if (!IS_HOME) readListUrlState();
             updateUILanguage();
@@ -889,7 +952,7 @@ function trimToKoreanRoadNameNumberForLabel(raw) {
 
     // 예: "대구광역시 달성군 유가읍 테크노상업로4길 17-5" → "테크노상업로4길 17-5"
     // 주소 안에 여러 개의 "로/길/대로 + 번지" 패턴이 있을 수 있으므로 마지막 패턴을 사용
-    const re = /([^\s,，]+(?:대로|길|로))\s+(\d+(?:-\d+)?)/g;
+    const re = /([^\s,，]+(?:대로|길|로))\s*(\d+(?:-\d+)?)/g;
     let m;
     let last = null;
 
@@ -916,6 +979,16 @@ function mapBuildingLabelFromAddress(rawAddress) {
 }
 
 function resolveMapBuildingTitle(slotKey, restaurants) {
+    const slot = String(slotKey);
+    const bySlot = dict.mapBuildingFloorTitleBySlot && dict.mapBuildingFloorTitleBySlot[slot];
+    if (bySlot != null && String(bySlot).trim()) return String(bySlot).trim();
+
+    const hint = String(mapSlotAddressHints[slot] || '').trim();
+    if (hint) {
+        const label = mapBuildingLabelFromAddress(hint) || hint;
+        return label + ' 층별 안내';
+    }
+
     if (Array.isArray(restaurants)) {
         for (const item of restaurants) {
             const label = mapBuildingLabelFromAddress(item && item.address);
@@ -1031,12 +1104,13 @@ function loadMapPage() {
             categoriesCache = catData.data || [];
             rebuildCategoryAliasMap(categoriesCache);
             subcategoriesCache = [];
-            const rawList = normalizeRestaurantsFromApi(
-                Array.isArray(restData.data) ? restData.data : []
-            );
+            const rawList = Array.isArray(restData.data) ? restData.data : [];
             allRestaurants = rawList.filter((r) => !Number(r.kiosk_hidden));
             const a = mapData.assignments;
             mapSlotAssignments = a && typeof a === 'object' && !Array.isArray(a) ? a : {};
+            const h = mapData.addressHints;
+            mapSlotAddressHints =
+                h && typeof h === 'object' && !Array.isArray(h) ? h : {};
             updateUILanguage();
             clearMapSelection();
             setupMapGrid();
@@ -1070,55 +1144,6 @@ function loadMapPage() {
     setupFooterTabs();
 }
 
-// =============================================================================
-// 목록 행: 영업중/종료 뱃지 (썸네일 위)
-// =============================================================================
-
-/** HH:MM 두 조각으로 정규화 (영업중 판정용) */
-function padHourMinParts(h, min) {
-    const hh = String(h).padStart(2, '0');
-    const mm = String(min).padStart(2, '0');
-    return hh + ':' + mm;
-}
-
-/**
- * DB: 예전처럼 open_time·close_time 분리, 또는 open_time 한 칸에 "09:00-21:00"만 — 둘 다 지원
- * @returns {{ open: string, close: string }} 빈 문자열이면 판정 불가
- */
-function extractOpenCloseForLogic(openTime, closeTime) {
-    const cRaw = closeTime != null ? String(closeTime).trim() : '';
-    const oRaw = openTime != null ? String(openTime).trim() : '';
-    if (cRaw && oRaw) {
-        return { open: oRaw, close: cRaw };
-    }
-    if (!oRaw) return { open: '', close: '' };
-    const m = oRaw.match(/^(\d{1,2}):(\d{2})\s*[-~～〜至－—]\s*(\d{1,2}):(\d{2})/);
-    if (m) {
-        return {
-            open: padHourMinParts(m[1], m[2]),
-            close: padHourMinParts(m[3], m[4])
-        };
-    }
-    return { open: '', close: '' };
-}
-
-function checkIsOpen(openTime, closeTime) {
-    const { open: openStr, close: closeStr } = extractOpenCloseForLogic(openTime, closeTime);
-    if (!openStr || !closeStr) return null;
-    const now = new Date();
-    const currentMins = now.getHours() * 60 + now.getMinutes();
-    const [oH, oM] = openStr.split(':').map(Number);
-    const openMins = oH * 60 + oM;
-    const [cH, cM] = closeStr.split(':').map(Number);
-    let closeMins = cH * 60 + cM;
-    if (closeMins < openMins) closeMins += 24 * 60;
-    let currentAdj = currentMins;
-    if (currentMins < openMins && currentMins < closeMins - 24 * 60) currentAdj += 24 * 60;
-
-    if (currentAdj >= openMins && currentAdj <= closeMins) return { isOpen: true, textKo: '영업중', textEn: 'Open Now' };
-    return { isOpen: false, textKo: '영업준비중', textEn: 'Closed' };
-}
-
 /** DB의 open_time·close_time → 한 줄 표시 (예: 09:00-21:00) */
 function formatBusinessHoursOneLine(openTime, closeTime) {
     const o = openTime != null ? String(openTime).trim() : '';
@@ -1147,17 +1172,19 @@ function renderList(list, containerOverride, emptyMessage) {
         const row = document.createElement('article');
         row.className = 'store';
         row.setAttribute('role', 'listitem');
-        row.addEventListener('click', () => openModal(item));
+        row.addEventListener('click', (ev) => {
+            if (isRestaurantListClickGuarded() || wasTouchScroll()) {
+                ev.preventDefault();
+                ev.stopPropagation();
+                return;
+            }
+            openModal(item);
+        });
 
-        const PLACEHOLDER_LIST_IMG =
-            'data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22200%22%20height%3D%22200%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23e8e8e8%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-size%3D%2214%22%20font-family%3D%22sans-serif%22%20text-anchor%3D%22middle%22%20fill%3D%22%23999%22%20dy%3D%22.3em%22%3E%EC%9D%B4%EB%AF%B8%EC%A7%80%20%EC%97%86%EC%9D%8C%3C%2Ftext%3E%3C%2Fsvg%3E';
-        const thumbList = restaurantHeroImageList(item);
-        const imgSrc = thumbList[0]
-            ? escapeAttr(resolveKioskImageUrl(thumbList[0]))
-            : PLACEHOLDER_LIST_IMG;
+        const imgSrc = item.image_url
+            ? item.image_url
+            : 'data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22200%22%20height%3D%22200%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23e8e8e8%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-size%3D%2214%22%20font-family%3D%22sans-serif%22%20text-anchor%3D%22middle%22%20fill%3D%22%23999%22%20dy%3D%22.3em%22%3E%EC%9D%B4%EB%AF%B8%EC%A7%80%20%EC%97%86%EC%9D%8C%3C%2Ftext%3E%3C%2Fsvg%3E';
         const displayName = escapeHtml(item.name);
-
-        const statusHtml = '';
 
         const telText = item.phone && String(item.phone).trim() ? escapeHtml(String(item.phone).trim()) : dict.listPlaceholder;
         const telMuted = !item.phone || !String(item.phone).trim() ? ' list-row-muted' : '';
@@ -1192,8 +1219,6 @@ function renderList(list, containerOverride, emptyMessage) {
                 <div class="list-tel-row${telMuted} tel"> <span class="list-tel-num"> 📱 ${telText}</span>
                 </div>
                 ${hoursRow}
-			<div class="right">${statusHtml}</div>
-
             </div>
         `;
         target.appendChild(row);
@@ -1286,9 +1311,12 @@ function applyFilters() {
         ? queryEl.value.toLowerCase().trim()
         : (searchQueryFromUrl || '').toLowerCase().trim();
     let filtered = allRestaurants;
-    if (currentCategory !== 'all') filtered = filtered.filter((item) => restaurantHasPrimaryCategory(item, currentCategory));
+    const hasSearch = query.length > 0;
+    if (!hasSearch && currentCategory !== 'all') {
+        filtered = filtered.filter((item) => restaurantHasPrimaryCategory(item, currentCategory));
+    }
 
-    if (query.length > 0)
+    if (hasSearch)
         filtered = filtered.filter((item) => {
             const nameKo = String(item.name || '').toLowerCase();
             const vals = restaurantCategoryValues(item);
@@ -1313,24 +1341,11 @@ function applyFilters() {
 // 검색창
 // =============================================================================
 
-function focusSearchInputIfRequested() {
-    if (!IS_LIST) return;
-    const si = document.getElementById('searchInput');
-    if (!si || location.hash !== '#search') return;
-    requestAnimationFrame(() => {
-        try {
-            si.focus({ preventScroll: false });
-        } catch (e) {
-            si.focus();
-        }
-    });
-}
-
 function setupSearch() {
     const searchInput = document.getElementById('searchInput');
     const clearBtn = document.getElementById('clearSearchBtn');
     if (!searchInput) return;
-    if (USE_KIOSK_TOUCH_KEYBOARD && IS_LIST && document.getElementById('keyboardModal')) {
+    if (IS_LIST && document.getElementById('keyboardModal')) {
         searchInput.readOnly = true;
         searchInput.setAttribute('inputmode', 'none');
         searchInput.setAttribute('aria-haspopup', 'dialog');
@@ -1347,11 +1362,6 @@ function setupSearch() {
             const km = document.getElementById('keyboardModal');
             if (km && !km.classList.contains('show')) openListSearchKeyboard(e);
         });
-    } else {
-        searchInput.readOnly = false;
-        searchInput.removeAttribute('aria-haspopup');
-        searchInput.removeAttribute('aria-controls');
-        if (!searchInput.getAttribute('inputmode')) searchInput.setAttribute('inputmode', 'search');
     }
     if (!clearBtn) {
         searchInput.addEventListener('input', () => applyFilters());
@@ -1369,7 +1379,7 @@ function setupSearch() {
         const kiClr = document.getElementById('kioskInput');
         if (kiClr) kiClr.value = '';
         applyFilters();
-        if (USE_KIOSK_TOUCH_KEYBOARD && IS_LIST && document.getElementById('keyboardModal')) {
+        if (IS_LIST && document.getElementById('keyboardModal')) {
             openListSearchKeyboard(null);
             searchInput.focus({ preventScroll: true });
         } else {
@@ -1441,21 +1451,18 @@ function setupKioskKeyboardModal() {
 
     keyboardModal.querySelector('.k-btn-close')?.addEventListener('pointerdown', (e) => {
         e.preventDefault();
+        e.stopPropagation();
         onKeypad(e);
-        closeHomeKeyboardModal();
-    });
-
-    keyboardModal.querySelector('.k-btn-clear')?.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        onKeypad(e);
-        resetHomeKeyboardBuffer(kioskInput);
-        if (syncList) syncListSearchFromKeyboardBuffer();
+        if (syncList) armRestaurantListClickGuard();
+        afterPointerRelease(e, () => closeHomeKeyboardModal());
     });
 
     keyboardModal.addEventListener('pointerdown', (e) => {
         if (e.target === keyboardModal) {
+            e.preventDefault();
             onKeypad(e);
-            closeHomeKeyboardModal();
+            if (syncList) armRestaurantListClickGuard();
+            afterPointerRelease(e, () => closeHomeKeyboardModal());
         }
     });
 
@@ -1474,7 +1481,7 @@ function setupKioskKeyboardModal() {
             } else {
                 const ch = key.getAttribute('data-char') || (key.textContent || '').trim();
                 if (!ch) return;
-                homeKeyboardBuffer += ch;
+                appendHomeKeyboardJamo(ch);
                 refreshDisplay();
             }
         });
@@ -1504,20 +1511,26 @@ function setupKioskKeyboardModal() {
 
     keyboardModal.querySelector('.k-btn-submit')?.addEventListener('pointerdown', (e) => {
         e.preventDefault();
+        e.stopPropagation();
         onKeypad(e);
         const keyword = hangulAssembleFromBuffer(homeKeyboardBuffer).trim();
         if (syncList) {
-            const si = document.getElementById('searchInput');
-            if (si) si.value = keyword;
-            const clearBtn = document.getElementById('clearSearchBtn');
-            if (clearBtn) clearBtn.classList.toggle('active', keyword.length > 0);
-            applyFilters();
-            syncUrlToState();
-            closeHomeKeyboardModal();
-            scrollKioskMainTo(0);
+            armRestaurantListClickGuard();
+            afterPointerRelease(e, () => {
+                const si = document.getElementById('searchInput');
+                if (si) si.value = keyword;
+                const clearBtn = document.getElementById('clearSearchBtn');
+                if (clearBtn) clearBtn.classList.toggle('active', keyword.length > 0);
+                applyFilters();
+                syncUrlToState();
+                closeHomeKeyboardModal();
+                scrollKioskMainTo(0);
+            });
             return;
         }
-        if (keyword !== '') window.location.assign('/list.html?q=' + encodeURIComponent(keyword));
+        afterPointerRelease(e, () => {
+            if (keyword !== '') window.location.assign('/list.html?q=' + encodeURIComponent(keyword));
+        });
     });
 }
 
@@ -1557,7 +1570,7 @@ function openModal(item, opts) {
     const PLACEHOLDER_IMG =
         'data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22200%22%20height%3D%22200%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23e8e8e8%22%2F%3E%3C/svg%3E';
     const imgList = restaurantHeroImageList(item);
-    const heroSrc = imgList[0] ? escapeAttr(resolveKioskImageUrl(imgList[0])) : PLACEHOLDER_IMG;
+    const heroSrc = imgList[0] ? escapeHtml(imgList[0]) : PLACEHOLDER_IMG;
     const bd = badgeClassForCategory(primaryCanonicalCategoryForItem(item));
     const displayName = escapeHtml(item.name);
     const displayCategory = escapeHtml(categoryDisplayLabel(item));
@@ -1632,12 +1645,6 @@ function openModal(item, opts) {
             <div class="info-content">
                 <div class="info-label">${escapeHtml(t.modalMenuLabel)}</div>
                 <div class="menu-chips">${mainMenuChipsHtml}</div>
-                ${IS_LIST ? `<div class="modal-report-wrap"><button type="button" class="modal-report-btn js-info-report">틀린정보 신고하기</button></div>` : ''}
-            </div></div>`;
-    } else if (IS_LIST) {
-        infoBlocks += `<div class="info-row modal-report-row">
-            <div class="info-content modal-report-content-only">
-                <div class="modal-report-wrap"><button type="button" class="modal-report-btn js-info-report">틀린정보 신고하기</button></div>
             </div></div>`;
     }
     if (facilitiesChipsHtml) {
@@ -1699,19 +1706,7 @@ function openModal(item, opts) {
     }
 
     const menuEl = modalBody.querySelector('.js-open-menu');
-    if (menuEl && item.menu_url) {
-        const menuSrc = resolveKioskImageUrl(item.menu_url);
-        menuEl.addEventListener('click', () => openMenuInfo(menuSrc));
-    }
-
-    const reportBtn = modalBody.querySelector('.js-info-report');
-    if (reportBtn) {
-        reportBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            openInfoReportModal(item);
-        });
-    }
+    if (menuEl && item.menu_url) menuEl.addEventListener('click', () => openMenuInfo(item.menu_url));
 
     if (showQrBlock) {
         const nMapUrl = buildNaverRouteUrl(item);
@@ -1742,134 +1737,10 @@ function closeMap() {
     document.getElementById('map-overlay')?.classList.remove('active');
 }
 
-// =============================================================================
-// list.html — 틀린정보 신고
-// =============================================================================
-
-let infoReportPendingItem = null;
-let infoReportSubmitting = false;
-
-function openInfoReportModal(item) {
-    infoReportPendingItem = item;
-    const overlay = document.getElementById('info-report-overlay');
-    const storeEl = document.getElementById('infoReportStoreName');
-    const msgEl = document.getElementById('infoReportMessage');
-    const statusEl = document.getElementById('infoReportStatus');
-    if (!overlay) return;
-    if (storeEl) storeEl.textContent = item && item.name ? String(item.name) : '';
-    if (msgEl) {
-        msgEl.value = '';
-        msgEl.disabled = false;
-    }
-    if (statusEl) statusEl.textContent = '';
-    const submitBtn = document.getElementById('infoReportSubmit');
-    if (submitBtn) submitBtn.disabled = false;
-    infoReportSubmitting = false;
-    overlay.classList.add('active');
-    overlay.setAttribute('aria-hidden', 'false');
-    if (msgEl) msgEl.focus();
-}
-
-function closeInfoReportModal() {
-    const overlay = document.getElementById('info-report-overlay');
-    if (overlay) {
-        overlay.classList.remove('active');
-        overlay.setAttribute('aria-hidden', 'true');
-    }
-    infoReportPendingItem = null;
-    infoReportSubmitting = false;
-}
-
-async function submitInfoReport() {
-    if (infoReportSubmitting) return;
-    const item = infoReportPendingItem;
-    const msgEl = document.getElementById('infoReportMessage');
-    const statusEl = document.getElementById('infoReportStatus');
-    const submitBtn = document.getElementById('infoReportSubmit');
-    const message = msgEl ? String(msgEl.value || '').trim() : '';
-    if (!item) {
-        if (statusEl) statusEl.textContent = '식당 정보를 찾을 수 없습니다.';
-        return;
-    }
-    if (message.length < 2) {
-        if (statusEl) statusEl.textContent = '내용을 2자 이상 입력해 주세요.';
-        return;
-    }
-    const ridParsed = item.id != null && item.id !== '' ? parseInt(item.id, 10) : NaN;
-    const restaurantId = Number.isInteger(ridParsed) && ridParsed > 0 ? ridParsed : null;
-
-    infoReportSubmitting = true;
-    if (submitBtn) submitBtn.disabled = true;
-    if (statusEl) statusEl.textContent = '보내는 중…';
-    try {
-        const res = await fetch('/api/info-reports', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                restaurant_id: restaurantId,
-                restaurant_name: item.name || '',
-                message,
-            }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-            if (statusEl) statusEl.textContent = (data && data.error) || '전송에 실패했습니다.';
-            infoReportSubmitting = false;
-            if (submitBtn) submitBtn.disabled = false;
-            return;
-        }
-        const mail = data && data.mail;
-        if (mail && mail.sent) {
-            if (statusEl) {
-                statusEl.textContent =
-                    '접수되었습니다. 담당자 메일(' + (mail.to || '') + ')로 전달되었습니다.';
-            }
-        } else if (mail && mail.skipped) {
-            if (statusEl) {
-                statusEl.textContent =
-                    '접수되었습니다. (메일 SMTP 미설정 — Vercel은 Production 환경 변수에도 넣어야 합니다)';
-            }
-        } else if (mail && mail.error) {
-            if (statusEl) {
-                const errShort = String(mail.error).slice(0, 80);
-                statusEl.textContent =
-                    '접수되었습니다. 메일 전송 실패: ' + errShort + ' (관리자·Vercel 로그 확인)';
-            }
-        } else if (data && data.mailSent) {
-            if (statusEl) statusEl.textContent = '접수되었습니다. 담당자에게 메일로 전달되었습니다.';
-        } else {
-            if (statusEl) statusEl.textContent = '접수되었습니다. 감사합니다.';
-        }
-        if (msgEl) {
-            msgEl.value = '';
-            msgEl.disabled = true;
-        }
-        infoReportSubmitting = false;
-        setTimeout(() => closeInfoReportModal(), mail && mail.sent ? 2200 : 1400);
-    } catch (_) {
-        if (statusEl) statusEl.textContent = '네트워크 오류로 전송하지 못했습니다.';
-        infoReportSubmitting = false;
-        if (submitBtn) submitBtn.disabled = false;
-    }
-}
-
-function setupInfoReportModal() {
-    const overlay = document.getElementById('info-report-overlay');
-    const cancelBtn = document.getElementById('infoReportCancel');
-    const submitBtn = document.getElementById('infoReportSubmit');
-    if (cancelBtn) cancelBtn.addEventListener('click', closeInfoReportModal);
-    if (submitBtn) submitBtn.addEventListener('click', () => submitInfoReport());
-    if (overlay) {
-        overlay.addEventListener('pointerdown', (e) => {
-            if (e.target === overlay) closeInfoReportModal();
-        });
-    }
-}
-
 function openMenuInfo(menuUrl) {
     const img = document.getElementById('full-menu-img');
     const ov = document.getElementById('menu-overlay');
-    if (img) img.src = resolveKioskImageUrl(menuUrl);
+    if (img) img.src = menuUrl;
     if (ov) ov.classList.add('active');
 }
 
@@ -1890,7 +1761,7 @@ let idleTimer;
 function resetIdleTimer() {
     clearTimeout(idleTimer);
     idleTimer = setTimeout(() => {
-        closeModal(); closeMap(); closeMenuInfo(); closeInfoReportModal(); closeBuildingFloorModal();
+        closeModal(); closeMap(); closeMenuInfo(); closeBuildingFloorModal();
         window.location.assign('/index.html');
     }, KIOSK_IDLE_MS_TO_HOME);
 }
@@ -1992,21 +1863,19 @@ function setupFooterTabs() {
         if (search) {
             search.addEventListener('pointerdown', (e) => {
                 resetIdleTimer(e);
-                if (USE_KIOSK_TOUCH_KEYBOARD) {
-                    const keyboardModal = document.getElementById('keyboardModal');
-                    if (keyboardModal) {
-                        e.preventDefault();
-                        keyboardModal.classList.add('show');
-                        keyboardModal.setAttribute('aria-hidden', 'false');
-                        resetKeyboardLayerToHangul();
-                        const ki = document.getElementById('kioskInput');
-                        const si = document.getElementById('searchInput');
-                        if (si) syncHomeKeyboardBufferFromInput(si);
-                        else if (ki) syncHomeKeyboardBufferFromInput(ki);
-                        return;
-                    }
+                const keyboardModal = document.getElementById('keyboardModal');
+                if (keyboardModal) {
+                    e.preventDefault();
+                    keyboardModal.classList.add('show');
+                    keyboardModal.setAttribute('aria-hidden', 'false');
+                    resetKeyboardLayerToHangul();
+                    const ki = document.getElementById('kioskInput');
+                    const si = document.getElementById('searchInput');
+                    if (si) syncHomeKeyboardBufferFromInput(si);
+                    else if (ki) syncHomeKeyboardBufferFromInput(ki);
+                } else {
+                    window.location.assign('/list.html');
                 }
-                window.location.assign('/list.html#search');
             });
         }
         if (map) {
@@ -2032,18 +1901,16 @@ function setupFooterTabs() {
     }
     if (search) {
         search.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             resetIdleTimer(e);
+            const keyboardModal = document.getElementById('keyboardModal');
             const si = document.getElementById('searchInput');
-            if (USE_KIOSK_TOUCH_KEYBOARD) {
-                const keyboardModal = document.getElementById('keyboardModal');
-                if (keyboardModal && si) {
-                    openListSearchKeyboard(e);
-                    return;
-                }
-            }
-            if (si) {
-                scrollKioskMainTo(0);
+            if (keyboardModal && si) {
+                openListSearchKeyboard(e);
+            } else if (si) {
                 si.focus();
+                scrollKioskMainTo(0);
             } else {
                 window.location.assign('/index.html');
             }
