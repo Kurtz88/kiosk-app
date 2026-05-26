@@ -625,6 +625,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupHeaderNav();
     setupFooterTabs();
     setupRestaurantListClickGuard();
+    if (IS_LIST) setupInfoReportModal();
 });
 
 // =============================================================================
@@ -1683,6 +1684,12 @@ function openModal(item, opts) {
             <div class="info-content">
                 <div class="info-label">${escapeHtml(t.modalMenuLabel)}</div>
                 <div class="menu-chips">${mainMenuChipsHtml}</div>
+                ${IS_LIST ? `<div class="modal-report-wrap"><button type="button" class="modal-report-btn js-info-report">틀린정보 신고하기</button></div>` : ''}
+            </div></div>`;
+    } else if (IS_LIST) {
+        infoBlocks += `<div class="info-row modal-report-row">
+            <div class="info-content modal-report-content-only">
+                <div class="modal-report-wrap"><button type="button" class="modal-report-btn js-info-report">틀린정보 신고하기</button></div>
             </div></div>`;
     }
     if (facilitiesChipsHtml) {
@@ -1746,6 +1753,15 @@ function openModal(item, opts) {
     const menuEl = modalBody.querySelector('.js-open-menu');
     if (menuEl && item.menu_url) menuEl.addEventListener('click', () => openMenuInfo(item.menu_url));
 
+    const reportBtn = modalBody.querySelector('.js-info-report');
+    if (reportBtn) {
+        reportBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openInfoReportModal(item);
+        });
+    }
+
     if (showQrBlock) {
         const nMapUrl = buildNaverRouteUrl(item);
         fetchJson('/api/qrcode?text=' + encodeURIComponent(nMapUrl))
@@ -1775,6 +1791,130 @@ function closeMap() {
     document.getElementById('map-overlay')?.classList.remove('active');
 }
 
+// =============================================================================
+// list.html — 틀린정보 신고
+// =============================================================================
+
+let infoReportPendingItem = null;
+let infoReportSubmitting = false;
+
+function openInfoReportModal(item) {
+    infoReportPendingItem = item;
+    const reportOverlay = document.getElementById('info-report-overlay');
+    const storeEl = document.getElementById('infoReportStoreName');
+    const msgEl = document.getElementById('infoReportMessage');
+    const statusEl = document.getElementById('infoReportStatus');
+    if (!reportOverlay) return;
+    if (storeEl) storeEl.textContent = item && item.name ? String(item.name) : '';
+    if (msgEl) {
+        msgEl.value = '';
+        msgEl.disabled = false;
+    }
+    if (statusEl) statusEl.textContent = '';
+    const submitBtn = document.getElementById('infoReportSubmit');
+    if (submitBtn) submitBtn.disabled = false;
+    infoReportSubmitting = false;
+    reportOverlay.classList.add('active');
+    reportOverlay.setAttribute('aria-hidden', 'false');
+    if (msgEl) msgEl.focus();
+}
+
+function closeInfoReportModal() {
+    const reportOverlay = document.getElementById('info-report-overlay');
+    if (reportOverlay) {
+        reportOverlay.classList.remove('active');
+        reportOverlay.setAttribute('aria-hidden', 'true');
+    }
+    infoReportPendingItem = null;
+    infoReportSubmitting = false;
+}
+
+async function submitInfoReport() {
+    if (infoReportSubmitting) return;
+    const item = infoReportPendingItem;
+    const msgEl = document.getElementById('infoReportMessage');
+    const statusEl = document.getElementById('infoReportStatus');
+    const submitBtn = document.getElementById('infoReportSubmit');
+    const message = msgEl ? String(msgEl.value || '').trim() : '';
+    if (!item) {
+        if (statusEl) statusEl.textContent = '해당 업소 정보를 찾을 수 없습니다.';
+        return;
+    }
+    if (message.length < 2) {
+        if (statusEl) statusEl.textContent = '내용을 2자 이상 입력해 주세요.';
+        return;
+    }
+    const ridParsed = item.id != null && item.id !== '' ? parseInt(item.id, 10) : NaN;
+    const restaurantId = Number.isInteger(ridParsed) && ridParsed > 0 ? ridParsed : null;
+
+    infoReportSubmitting = true;
+    if (submitBtn) submitBtn.disabled = true;
+    if (statusEl) statusEl.textContent = '보내는 중…';
+    try {
+        const res = await fetch('/api/info-reports', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                restaurant_id: restaurantId,
+                restaurant_name: item.name || '',
+                message,
+            }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            if (statusEl) statusEl.textContent = (data && data.error) || '전송에 실패했습니다.';
+            infoReportSubmitting = false;
+            if (submitBtn) submitBtn.disabled = false;
+            return;
+        }
+        const mail = data && data.mail;
+        if (mail && mail.sent) {
+            if (statusEl) {
+                statusEl.textContent =
+                    '접수되었습니다. 담당자 메일(' + (mail.to || '') + ')로 전달되었습니다.';
+            }
+        } else if (mail && mail.skipped) {
+            if (statusEl) {
+                statusEl.textContent =
+                    '접수되었습니다. (메일 SMTP 미설정 — Vercel Production 환경 변수를 넣어 주세요.)';
+            }
+        } else if (mail && mail.error) {
+            if (statusEl) {
+                const errShort = String(mail.error).slice(0, 80);
+                statusEl.textContent =
+                    '접수되었습니다. 메일 전송 실패: ' + errShort + ' (관리자·Vercel 로그 확인)';
+            }
+        } else if (data && data.mailSent) {
+            if (statusEl) statusEl.textContent = '접수되었습니다. 담당자에게 메일로 전달되었습니다.';
+        } else {
+            if (statusEl) statusEl.textContent = '접수되었습니다. 감사합니다.';
+        }
+        if (msgEl) {
+            msgEl.value = '';
+            msgEl.disabled = true;
+        }
+        infoReportSubmitting = false;
+        setTimeout(() => closeInfoReportModal(), mail && mail.sent ? 2200 : 1400);
+    } catch (_) {
+        if (statusEl) statusEl.textContent = '네트워크 오류로 전송하지 못했습니다.';
+        infoReportSubmitting = false;
+        if (submitBtn) submitBtn.disabled = false;
+    }
+}
+
+function setupInfoReportModal() {
+    const reportOverlay = document.getElementById('info-report-overlay');
+    const cancelBtn = document.getElementById('infoReportCancel');
+    const submitBtn = document.getElementById('infoReportSubmit');
+    if (cancelBtn) cancelBtn.addEventListener('click', closeInfoReportModal);
+    if (submitBtn) submitBtn.addEventListener('click', () => submitInfoReport());
+    if (reportOverlay) {
+        reportOverlay.addEventListener('pointerdown', (e) => {
+            if (e.target === reportOverlay) closeInfoReportModal();
+        });
+    }
+}
+
 function openMenuInfo(menuUrl) {
     const img = document.getElementById('full-menu-img');
     const ov = document.getElementById('menu-overlay');
@@ -1799,7 +1939,7 @@ let idleTimer;
 function resetIdleTimer() {
     clearTimeout(idleTimer);
     idleTimer = setTimeout(() => {
-        closeModal(); closeMap(); closeMenuInfo(); closeBuildingFloorModal();
+        closeModal(); closeMap(); closeMenuInfo(); closeBuildingFloorModal(); closeInfoReportModal();
         window.location.assign('/index.html');
     }, KIOSK_IDLE_MS_TO_HOME);
 }

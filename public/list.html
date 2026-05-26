@@ -84,10 +84,24 @@
         </div>
     </div>
 
+    <div id="info-report-overlay" class="modal-overlay info-report-overlay" aria-hidden="true" style="z-index: 2100;">
+        <div class="info-report-panel" role="dialog" aria-labelledby="infoReportTitle" aria-modal="true">
+            <h3 id="infoReportTitle" class="info-report-title">틀린정보 신고하기</h3>
+            <p class="info-report-store" id="infoReportStoreName"></p>
+            <p class="info-report-hint">영업시간·주소·전화·메뉴 등 틀린 내용을 적어 주세요.</p>
+            <textarea id="infoReportMessage" class="info-report-textarea" rows="5" maxlength="2000" placeholder="예: 영업시간이 바뀌었어요. 주소가 다릅니다."></textarea>
+            <div class="info-report-actions">
+                <button type="button" class="info-report-btn info-report-btn-cancel" id="infoReportCancel">취소</button>
+                <button type="button" class="info-report-btn info-report-btn-submit" id="infoReportSubmit">보내기</button>
+            </div>
+            <p id="infoReportStatus" class="info-report-status" role="status" aria-live="polite"></p>
+        </div>
+    </div>
+
     <script src="js/disable-pinch-zoom.js?v=20260512"></script>
     <script src="js/hangul.js?v=202604201000"></script>
     <script src="js/kiosk/kiosk-i18n.js?v=202604271448"></script>
-    <script src="js/app.js?v=202605211200"></script>
+    <script src="js/app.js?v=202605211300"></script>
     </div>
     </div>
 </body>
