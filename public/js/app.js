@@ -571,12 +571,19 @@ function svgForListRow(svgHtml) {
 }
 
 // =============================================================================
-// 터치 자판 마크업 (public/partials/keyboard-modal.html 단일 유지)
+// 터치 자판 (false = OS 기본 키보드만 사용)
 // =============================================================================
+
+const USE_KIOSK_TOUCH_KEYBOARD = false;
 
 const KEYBOARD_PARTIAL_URL = '/partials/keyboard-modal.html?v=202605191400';
 
 async function injectKioskKeyboardModal() {
+    if (!USE_KIOSK_TOUCH_KEYBOARD) {
+        const mount = document.getElementById('keyboard-modal-mount');
+        if (mount) mount.remove();
+        return;
+    }
     const mount = document.getElementById('keyboard-modal-mount');
     if (document.getElementById('keyboardModal')) {
         if (mount) mount.remove();
@@ -609,7 +616,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     await injectKioskKeyboardModal();
     loadKioskData();
     setupSearch();
-    if (IS_HOME || IS_LIST) setupKioskKeyboardModal();
+    focusSearchInputIfRequested();
+    if (USE_KIOSK_TOUCH_KEYBOARD && (IS_HOME || IS_LIST)) setupKioskKeyboardModal();
     setupCategoryTabsDelegation();
     setupSubcategoryTabsDelegation();
     setupIdleTimer();
@@ -1341,11 +1349,24 @@ function applyFilters() {
 // 검색창
 // =============================================================================
 
+function focusSearchInputIfRequested() {
+    if (!IS_LIST) return;
+    const si = document.getElementById('searchInput');
+    if (!si || location.hash !== '#search') return;
+    requestAnimationFrame(() => {
+        try {
+            si.focus({ preventScroll: false });
+        } catch (e) {
+            si.focus();
+        }
+    });
+}
+
 function setupSearch() {
     const searchInput = document.getElementById('searchInput');
     const clearBtn = document.getElementById('clearSearchBtn');
     if (!searchInput) return;
-    if (IS_LIST && document.getElementById('keyboardModal')) {
+    if (USE_KIOSK_TOUCH_KEYBOARD && IS_LIST && document.getElementById('keyboardModal')) {
         searchInput.readOnly = true;
         searchInput.setAttribute('inputmode', 'none');
         searchInput.setAttribute('aria-haspopup', 'dialog');
@@ -1362,7 +1383,21 @@ function setupSearch() {
             const km = document.getElementById('keyboardModal');
             if (km && !km.classList.contains('show')) openListSearchKeyboard(e);
         });
+    } else {
+        searchInput.readOnly = false;
+        searchInput.removeAttribute('aria-haspopup');
+        searchInput.removeAttribute('aria-controls');
+        if (!searchInput.getAttribute('inputmode')) searchInput.setAttribute('inputmode', 'search');
     }
+    searchInput.addEventListener(
+        'pointerdown',
+        (e) => {
+            if (e.button !== 0) return;
+            armRestaurantListClickGuard();
+        },
+        { passive: true }
+    );
+    searchInput.addEventListener('focus', () => armRestaurantListClickGuard());
     if (!clearBtn) {
         searchInput.addEventListener('input', () => applyFilters());
         return;
@@ -1371,7 +1406,10 @@ function setupSearch() {
         if (e.target.value.length > 0) clearBtn.classList.add('active'); else clearBtn.classList.remove('active');
         applyFilters();
     });
-    clearBtn.addEventListener('click', (ev) => {
+    clearBtn.addEventListener('pointerdown', (ev) => {
+        if (ev.button !== 0) return;
+        ev.preventDefault();
+        armRestaurantListClickGuard();
         resetIdleTimer(ev);
         searchInput.value = '';
         clearBtn.classList.remove('active');
@@ -1379,7 +1417,7 @@ function setupSearch() {
         const kiClr = document.getElementById('kioskInput');
         if (kiClr) kiClr.value = '';
         applyFilters();
-        if (IS_LIST && document.getElementById('keyboardModal')) {
+        if (USE_KIOSK_TOUCH_KEYBOARD && IS_LIST && document.getElementById('keyboardModal')) {
             openListSearchKeyboard(null);
             searchInput.focus({ preventScroll: true });
         } else {
@@ -1863,19 +1901,21 @@ function setupFooterTabs() {
         if (search) {
             search.addEventListener('pointerdown', (e) => {
                 resetIdleTimer(e);
-                const keyboardModal = document.getElementById('keyboardModal');
-                if (keyboardModal) {
-                    e.preventDefault();
-                    keyboardModal.classList.add('show');
-                    keyboardModal.setAttribute('aria-hidden', 'false');
-                    resetKeyboardLayerToHangul();
-                    const ki = document.getElementById('kioskInput');
-                    const si = document.getElementById('searchInput');
-                    if (si) syncHomeKeyboardBufferFromInput(si);
-                    else if (ki) syncHomeKeyboardBufferFromInput(ki);
-                } else {
-                    window.location.assign('/list.html');
+                if (USE_KIOSK_TOUCH_KEYBOARD) {
+                    const keyboardModal = document.getElementById('keyboardModal');
+                    if (keyboardModal) {
+                        e.preventDefault();
+                        keyboardModal.classList.add('show');
+                        keyboardModal.setAttribute('aria-hidden', 'false');
+                        resetKeyboardLayerToHangul();
+                        const ki = document.getElementById('kioskInput');
+                        const si = document.getElementById('searchInput');
+                        if (si) syncHomeKeyboardBufferFromInput(si);
+                        else if (ki) syncHomeKeyboardBufferFromInput(ki);
+                        return;
+                    }
                 }
+                window.location.assign('/list.html#search');
             });
         }
         if (map) {
@@ -1901,16 +1941,28 @@ function setupFooterTabs() {
     }
     if (search) {
         search.addEventListener('pointerdown', (e) => {
+            if (e.button !== 0) return;
             e.preventDefault();
             e.stopPropagation();
             resetIdleTimer(e);
-            const keyboardModal = document.getElementById('keyboardModal');
+            armRestaurantListClickGuard();
             const si = document.getElementById('searchInput');
-            if (keyboardModal && si) {
-                openListSearchKeyboard(e);
-            } else if (si) {
-                si.focus();
+            if (USE_KIOSK_TOUCH_KEYBOARD) {
+                const keyboardModal = document.getElementById('keyboardModal');
+                if (keyboardModal && si) {
+                    openListSearchKeyboard(e);
+                    return;
+                }
+            }
+            if (si) {
                 scrollKioskMainTo(0);
+                window.setTimeout(() => {
+                    try {
+                        si.focus({ preventScroll: true });
+                    } catch (err) {
+                        si.focus();
+                    }
+                }, 80);
             } else {
                 window.location.assign('/index.html');
             }
