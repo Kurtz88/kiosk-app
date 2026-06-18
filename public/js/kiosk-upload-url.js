@@ -1,24 +1,28 @@
 /**
- * /uploads/… → https://dgbukfood.co.kr/uploads/… (app.js · admin.html 공통)
+ * /uploads/… → https://dalseongfood.go.kr/uploads/… (app.js · admin.html 공통)
  */
 (function (global) {
-    const KIOSK_UPLOADS_PUBLIC_BASE = 'https://dgbukfood.co.kr/uploads';
+    const KIOSK_UPLOADS_PUBLIC_BASE = 'https://dalseongfood.go.kr/uploads';
     const LEGACY_INIINI_UPLOAD_PREFIX_RE = /^https?:\/\/(?:www\.)?iniini\.co\.kr\/kiosk\/uploads\/?/i;
+    const LEGACY_DGBUKFOOD_UPLOAD_PREFIX_RE = /^https?:\/\/(?:www\.)?dgbukfood\.co\.kr\/uploads\/?/i;
 
     function migrateLegacyUploadUrl(urlStr) {
-        return String(urlStr || '').replace(
-            LEGACY_INIINI_UPLOAD_PREFIX_RE,
-            KIOSK_UPLOADS_PUBLIC_BASE.replace(/\/+$/, '') + '/'
-        );
+        const base = KIOSK_UPLOADS_PUBLIC_BASE.replace(/\/+$/, '') + '/';
+        return String(urlStr || '')
+            .replace(LEGACY_INIINI_UPLOAD_PREFIX_RE, base)
+            .replace(LEGACY_DGBUKFOOD_UPLOAD_PREFIX_RE, base);
     }
 
     function isPublicUploadUrl(urlStr) {
         try {
             const u = new URL(String(urlStr).trim());
-            if (/(^|\.)dgbukfood\.co\.kr$/i.test(u.hostname) && /\/uploads(\/|$)/i.test(u.pathname)) {
+            if (/(^|\.)dalseongfood\.go\.kr$/i.test(u.hostname) && /\/uploads(\/|$)/i.test(u.pathname)) {
                 return true;
             }
-            return LEGACY_INIINI_UPLOAD_PREFIX_RE.test(u.href);
+            return (
+                LEGACY_INIINI_UPLOAD_PREFIX_RE.test(u.href) ||
+                LEGACY_DGBUKFOOD_UPLOAD_PREFIX_RE.test(u.href)
+            );
         } catch {
             return false;
         }
