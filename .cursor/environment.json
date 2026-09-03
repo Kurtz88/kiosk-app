@@ -1,0 +1,11 @@
+{
+  "name": "kiosk-app",
+  "install": "npm install && npm rebuild sqlite3",
+  "terminals": [
+    {
+      "name": "kiosk-server",
+      "command": "npm start"
+    }
+  ],
+  "ports": [3000]
+}
